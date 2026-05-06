@@ -192,7 +192,8 @@ const CubeAnalysisPage: React.FC<CubeAnalysisPageProps> = ({ cubeAnalytics, toke
   return (
     <Flexbox direction="col" gap="2" className="mb-2">
       <DynamicFlash />
-      <AnalysisNavbar />
+      {/* Smart Search has its own inline filter, so the global analysis filter bar is redundant there. */}
+      {view !== 'recommender' && <AnalysisNavbar />}
       {cube.cards.mainboard.length === 0 ? (
         <Text lg>This cube doesn't have any cards. Add cards to see analytics.</Text>
       ) : view === 'at-a-glance' ? (

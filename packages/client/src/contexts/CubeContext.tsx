@@ -20,7 +20,7 @@ import Card, {
   CubeCardRemove,
 } from '@utils/datatypes/Card';
 import { CardDetails } from '@utils/datatypes/Card';
-import Cube, { CubeCards, getViewByName, TagColor } from '@utils/datatypes/Cube';
+import Cube, { CubeCards, getViewByName, getViewDefinitions, TagColor } from '@utils/datatypes/Cube';
 import { getCubeSorts } from '@utils/sorting/Sort';
 import { deepCopy, isCubeOwner } from '@utils/Util';
 
@@ -1470,24 +1470,29 @@ export function CubeContextProvider({
       sortTertiary ?? defaultSorts[2],
       sortQuaternary ?? defaultSorts[3],
     ];
+
+    // Persist into the active view's defaultSorts (views are the new home for
+    // per-view sort defaults). Falls back to writing the whole derived view
+    // list if cube.views isn't materialized yet.
+    const allViews = getViewDefinitions(cube);
+    const updatedViews = allViews.map((view) =>
+      view.name.toLowerCase() === activeView.toLowerCase() ? { ...view, defaultSorts: currentSorts } : view,
+    );
+
     setLoading(true);
     setCube({
       ...cube,
-      defaultSorts: currentSorts,
+      views: updatedViews,
     });
-    await csrfFetch(`/cube/api/savesorts/${cube.id}`, {
+    await csrfFetch(`/cube/updateviews/${cube.id}`, {
       method: 'POST',
-      body: JSON.stringify({
-        sorts: currentSorts,
-        showUnsorted: cube.showUnsorted,
-        collapseDuplicateCards: cube.collapseDuplicateCards,
-      }),
+      body: JSON.stringify({ views: updatedViews }),
       headers: {
         'Content-Type': 'application/json',
       },
     });
     setLoading(false);
-  }, [sortPrimary, defaultSorts, sortSecondary, sortTertiary, sortQuaternary, cube, csrfFetch]);
+  }, [sortPrimary, defaultSorts, sortSecondary, sortTertiary, sortQuaternary, cube, activeView, csrfFetch]);
 
   const resetSorts = useCallback(() => {
     setSortPrimary(effectiveDefaultSorts[0]);

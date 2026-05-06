@@ -1,9 +1,9 @@
-import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { QuestionIcon } from '@primer/octicons-react';
 import { cardName } from '@utils/cardutil';
 import { BoardType } from '@utils/datatypes/Card';
-import { boardNameToKey, getBoardDefinitions } from '@utils/datatypes/Cube';
+import { boardNameToKey, getBoardDefinitions, getViewByName } from '@utils/datatypes/Cube';
 
 import Alert from 'components/base/Alert';
 import AutocompleteInput from 'components/base/AutocompleteInput';
@@ -13,6 +13,7 @@ import Collapse from 'components/base/Collapse';
 import Dropdown from 'components/base/Dropdown';
 import Input from 'components/base/Input';
 import { Flexbox } from 'components/base/Layout';
+import Link from 'components/base/Link';
 import Select from 'components/base/Select';
 import Text from 'components/base/Text';
 import Tooltip from 'components/base/Tooltip';
@@ -43,7 +44,7 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
   const { csrfFetch } = useContext(CSRFContext);
   const [addValue, setAddValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
-  const { setRightSidebarMode } = useContext(DisplayContext) as DisplayContextValue;
+  const { setRightSidebarMode, activeView } = useContext(DisplayContext) as DisplayContextValue;
   const addRef = useRef<HTMLInputElement>(null);
   const removeRef = useRef<HTMLInputElement>(null);
 
@@ -77,6 +78,26 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
       label: board.name,
     }));
   }, [cube, changedCards]);
+
+  // Default the edit board to the first board in the active view. Tracks the
+  // previously-seen view name with a ref so we only force a switch when the
+  // user actually navigates to a new view. Manual overrides via the Board
+  // dropdown stick — even to a board that isn't part of the current view —
+  // until the next view change.
+  const lastViewRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastViewRef.current === activeView) return;
+    const view = getViewByName(cube, activeView);
+    if (!view || !view.boards || view.boards.length === 0) return;
+    lastViewRef.current = activeView;
+    const target = view.boards[0] as BoardType;
+    if (target !== boardToEdit) {
+      setBoardToEdit(target);
+    }
+    // boardToEdit is intentionally not in the dep array — we only want this
+    // effect to react to view changes, not to user-driven board picks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView, cube]);
 
   const handleAdd = useCallback(
     async (event: React.FormEvent, match: string) => {
@@ -337,6 +358,14 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
               </Flexbox>
             </Flexbox>
           </Collapse>
+
+          <div className="pt-3 mt-2 border-t border-border">
+            <Text sm className="text-text-secondary">
+              Looking for new cards for your cube? Try using our{' '}
+              <Link href={`/cube/analysis/${cube.id}?view=recommender`}>Smart Search</Link> that sorts the cards by how
+              well we think the card will fit into your cube.
+            </Text>
+          </div>
         </Flexbox>
       ) : (
         // Horizontal layout for bottom card - completely redesigned
@@ -540,6 +569,14 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
               </Button>
             </div>
           )}
+
+          <div className="mt-4 pt-3 border-t border-border">
+            <Text sm className="text-text-secondary">
+              Looking for new cards for your cube? Try using our{' '}
+              <Link href={`/cube/analysis/${cube.id}?view=recommender`}>Smart Search</Link> that sorts the cards by how
+              well we think the card will fit into your cube.
+            </Text>
+          </div>
         </div>
       )}
     </>

@@ -73,10 +73,20 @@ const DisplayContext = React.createContext<DisplayContextValue>({
 interface DisplayContextProviderProps {
   cubeID: string;
   defaultView?: string;
+  /**
+   * When true, the right sidebar defaults to 'edit' on desktop. Used by the
+   * cube list page so owners always see the edit panel expanded on desktop.
+   */
+  defaultEditSidebarOpen?: boolean;
   children: ReactNode;
 }
 
-export const DisplayContextProvider: React.FC<DisplayContextProviderProps> = ({ cubeID, defaultView, ...props }) => {
+export const DisplayContextProvider: React.FC<DisplayContextProviderProps> = ({
+  cubeID,
+  defaultView,
+  defaultEditSidebarOpen = false,
+  ...props
+}) => {
   const [showCustomImages, setShowCustomImages] = useLocalStorage<boolean>('showcustomimages', true);
   const [openCollapse, setOpenCollapse] = useState<string | null>(() => {
     return Query.get('f') ? 'filter' : null;
@@ -172,6 +182,8 @@ export const DisplayContextProvider: React.FC<DisplayContextProviderProps> = ({ 
   }, [setUseBaseCardData]);
 
   const [rightSidebarMode, setRightSidebarMode] = useState<RightSidebarMode>(() => {
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+
     // Check if there are pending changes in local storage
     if (typeof localStorage !== 'undefined' && cubeID) {
       try {
@@ -186,13 +198,18 @@ export const DisplayContextProvider: React.FC<DisplayContextProviderProps> = ({ 
 
           // Only auto-open the edit sidebar on desktop (md breakpoint: 768px)
           // On mobile, show a visual cue on the edit button instead
-          if (hasPendingEdits && typeof window !== 'undefined' && window.innerWidth >= 768) {
+          if (hasPendingEdits && isDesktop) {
             return 'edit';
           }
         }
       } catch (_e) {
         // If parsing fails, just use default
       }
+    }
+
+    // For owned cube list views on desktop, always default the edit sidebar to expanded
+    if (defaultEditSidebarOpen && isDesktop) {
+      return 'edit';
     }
     return 'none';
   });

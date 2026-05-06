@@ -29,6 +29,14 @@ Since 1.6.0
 - New "Disable Follow Notifications" setting — suppress notifications when users follow your cube (cube-level, in Options settings) or follow you (user-level, in Display Preferences)
 - Bot decks now get meaningful archetype names (e.g. "UW Control", "RG Aggro") derived from ML cluster centers, instead of generic labels
 - Deck naming is back — you can set your own deck name in the deckbuilder, and if you leave it blank an archetype name is generated automatically using the same cluster-based mechanism
+- Streamlined cube creation — "Create A New Cube" now creates the cube instantly (named `${username}'s New Cube`) and drops you on its list page, no modal in the way. You can rename it from the cube hero whenever you want
+- Edit sidebar is now expanded by default on desktop when you're viewing the list page of a cube you own — your tools are right there the moment you land
+- New "Welcome to your new cube!" onboarding card on the list page of an empty cube you own, pointing you at the edit sidebar, packages, or the new seed crystal generator
+- New "Seed Crystal" generator — bootstrap a partial or complete cube from a single seed card by combining its synergistic neighbours with Smart Search fillers, with options for printing preference, card count, color inclusion, and a balanced mode that distributes the cube evenly across colors / colorless / multicolored / lands. Smart Search runs iteratively (~100 cards per call, with each batch fed back into the next call's context), so the cube refines as it grows instead of coming out of a single ranking pass
+- Renamed the "Recommender" Analysis tab to "Smart Search" — now sits right under "At a Glance" — and rebuilt the page to match the rest of CubeCobra's search UX: inline filter, paginated grid of card images. Same context-aware sort; the "Core Cards" panel, maybeboard toggle, and show-images checkbox are gone. Clicking a result opens the Add to Cube modal pre-filled with the cube you're searching from
+- Brought back "Save as Default Sort" in the display sidebar — saves the current sort order as the default for the active view (the new home for per-view sort defaults)
+- New help blurbs at the bottom of the display and edit sidebars — the display sidebar links to the Boards and Views settings, and the edit sidebar links to Smart Search
+- The edit sidebar's Board dropdown now defaults to the first board in the view you're looking at (and follows you when you switch views), instead of always starting on Mainboard
 
 # Bug Fixes
 

@@ -20,11 +20,10 @@ import CubePreview from 'components/cube/CubePreview';
 import CubesCard from 'components/cube/CubesCard';
 import DynamicFlash from 'components/DynamicFlash';
 import Feed from 'components/Feed';
-import CreateCubeModal from 'components/modals/CreateCubeModal';
 import DailyP1P1Card from 'components/p1p1/DailyP1P1Card';
+import withQuickCreateCube from 'components/QuickCreateCubeButton';
 import RecentDraftsCard from 'components/RecentDraftsCard';
 import RenderToRoot from 'components/RenderToRoot';
-import withModal from 'components/WithModal';
 import UserContext from 'contexts/UserContext';
 import MainLayout from 'layouts/MainLayout';
 
@@ -43,7 +42,7 @@ interface DashboardPageProps {
   lastDeckKey: any;
 }
 
-const CreateCubeModalButton = withModal(Button, CreateCubeModal);
+const CreateCubeModalButton = withQuickCreateCube(Button);
 
 const DashboardPage: React.FC<DashboardPageProps> = ({
   posts,

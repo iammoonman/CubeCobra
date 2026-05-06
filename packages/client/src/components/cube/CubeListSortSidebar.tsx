@@ -6,6 +6,7 @@ import { CUBE_DEFAULT_SORTS, getAllSorts, ORDERED_SORTS } from '@utils/sorting/S
 import Button from 'components/base/Button';
 import Checkbox from 'components/base/Checkbox';
 import { Flexbox } from 'components/base/Layout';
+import Link from 'components/base/Link';
 import Select from 'components/base/Select';
 import Text from 'components/base/Text';
 import Tooltip from 'components/base/Tooltip';
@@ -30,6 +31,7 @@ const CubeListSortSidebar: React.FC<CubeListSortSidebarProps> = ({ canEdit, isHo
     setShowUnsorted,
     setCollapseDuplicateCards,
     resetSorts,
+    saveSorts,
     effectiveDefaultSorts,
     sortPrimary,
     sortSecondary,
@@ -102,6 +104,11 @@ const CubeListSortSidebar: React.FC<CubeListSortSidebarProps> = ({ canEdit, isHo
           </Text>
 
           <Flexbox direction="col" gap="2">
+            {canEdit && (
+              <Button color="primary" onClick={saveSorts} disabled={!sortsModified} block>
+                Save as Default Sort
+              </Button>
+            )}
             <Button color="danger" onClick={resetSorts} disabled={!sortsModified} block>
               Reset Sort
             </Button>
@@ -161,6 +168,15 @@ const CubeListSortSidebar: React.FC<CubeListSortSidebarProps> = ({ canEdit, isHo
               </Tooltip>
             </Flexbox>
           </Flexbox>
+
+          {canEdit && (
+            <div className="pt-3 mt-2 border-t border-border">
+              <Text sm className="text-text-secondary">
+                Looking for more ways to customize how your cube is displayed? Customize the boards and views{' '}
+                <Link href={`/cube/settings/${cube.id}?view=boards-and-views`}>here</Link>.
+              </Text>
+            </div>
+          )}
         </Flexbox>
       ) : (
         // Horizontal layout for bottom card - completely redesigned
@@ -254,6 +270,11 @@ const CubeListSortSidebar: React.FC<CubeListSortSidebarProps> = ({ canEdit, isHo
               <Text semibold sm>
                 Actions
               </Text>
+              {canEdit && (
+                <Button color="primary" onClick={saveSorts} disabled={!sortsModified} block>
+                  Save as Default Sort
+                </Button>
+              )}
               <Button color="danger" onClick={resetSorts} disabled={!sortsModified} block>
                 Reset Sort
               </Button>
@@ -271,6 +292,15 @@ const CubeListSortSidebar: React.FC<CubeListSortSidebarProps> = ({ canEdit, isHo
               )}
             </div>
           </div>
+
+          {canEdit && (
+            <div className="pt-3 mt-3 border-t border-border">
+              <Text sm className="text-text-secondary">
+                Looking for more ways to customize how your cube is displayed? Customize the boards and views{' '}
+                <Link href={`/cube/settings/${cube.id}?view=boards-and-views`}>here</Link>.
+              </Text>
+            </div>
+          )}
         </div>
       )}
     </>

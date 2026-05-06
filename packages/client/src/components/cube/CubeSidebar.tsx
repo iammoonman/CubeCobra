@@ -99,11 +99,11 @@ const getNavigationItems = (cube: Cube, isCubeOwner: boolean, canEdit: boolean):
       icon: GraphIcon,
       subItems: [
         { label: 'At a Glance', key: 'at-a-glance' },
+        { label: 'Smart Search', key: 'recommender' },
         { label: 'Averages', key: 'averages' },
         { label: 'Table', key: 'table' },
         { label: 'Asfans', key: 'asfans' },
         { label: 'Chart', key: 'chart' },
-        { label: 'Recommender', key: 'recommender' },
         { label: 'Playtest Data', key: 'playtest-data' },
         { label: 'Tokens', key: 'tokens' },
         { label: 'Combos', key: 'combos' },

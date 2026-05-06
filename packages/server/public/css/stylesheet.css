@@ -986,6 +986,10 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
   margin-top: 1rem;
   margin-bottom: 1rem;
 }
+.my-6 {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
 .-ml-6 {
   margin-left: -1.5rem;
 }
@@ -1067,6 +1071,9 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 }
 .mt-0 {
   margin-top: 0px;
+}
+.mt-0\.5 {
+  margin-top: 0.125rem;
 }
 .mt-1 {
   margin-top: 0.25rem;
@@ -1316,6 +1323,9 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 .min-w-max {
   min-width: -webkit-max-content;
   min-width: max-content;
+}
+.max-w-3xl {
+  max-width: 48rem;
 }
 .max-w-full {
   max-width: 100%;

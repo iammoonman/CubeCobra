@@ -87,11 +87,11 @@ const MobileSubNav: React.FC<MobileSubNavProps> = ({ cube: _cubeProp, activeLink
     parentKey = 'analysis';
     subItems = [
       { key: 'at-a-glance', label: 'At a Glance' },
+      { key: 'recommender', label: 'Smart Search' },
       { key: 'averages', label: 'Averages' },
       { key: 'table', label: 'Table' },
       { key: 'asfans', label: 'Asfans' },
       { key: 'chart', label: 'Chart' },
-      { key: 'recommender', label: 'Recommender' },
       { key: 'playtest-data', label: 'Playtest Data' },
       { key: 'tokens', label: 'Tokens' },
       { key: 'combos', label: 'Combos' },

@@ -7,6 +7,7 @@ import Container from 'components/base/Container';
 import { Flexbox } from 'components/base/Layout';
 import Text from 'components/base/Text';
 import CardStacksView from 'components/cube/CardStacksView';
+import CubeEmptyState from 'components/cube/CubeEmptyState';
 import CubeListNavbar from 'components/cube/CubeListNavbar';
 import CubeListRightSidebar, { CubeListBottomCard } from 'components/cube/CubeListRightSidebar';
 import CurveView from 'components/cube/CurveView';
@@ -24,6 +25,7 @@ import CubeContext from 'contexts/CubeContext';
 import DisplayContext, { DisplayContextProvider } from 'contexts/DisplayContext';
 import FilterContext from 'contexts/FilterContext';
 import { RotoDraftContextProvider } from 'contexts/RotoDraftContext';
+import UserContext from 'contexts/UserContext';
 import useQueryParam from 'hooks/useQueryParam';
 import CubeLayout from 'layouts/CubeLayout';
 import MainLayout from 'layouts/MainLayout';
@@ -41,6 +43,7 @@ const CubeListPageRaw: React.FC = () => {
   const { changedCards, filterResult, canEdit, cube } = useContext(CubeContext);
   const { showAllBoards, activeView } = useContext(DisplayContext);
   const { filterInput, setFilterInput } = useContext(FilterContext);
+  const user = useContext(UserContext);
 
   // Get the current view definition
   const currentView = useMemo(() => getViewByName(cube, activeView), [cube, activeView]);
@@ -115,6 +118,18 @@ const CubeListPageRaw: React.FC = () => {
     }
   }
 
+  // Owners viewing a brand-new (zero-card) cube get a welcome card with
+  // onboarding paths instead of an empty board view.
+  // Basics get auto-populated by the backend on cube creation, so they don't
+  // count as "started" — only treat the cube as empty if mainboard and
+  // maybeboard are both empty.
+  const isCubeOwner = !!user && !!cube?.owner && cube.owner.id === user.id;
+  const realBoardsEmpty = Object.entries(changedCards).every(([boardname, list]) => {
+    if (boardname.toLowerCase() === 'basics') return true;
+    return !list || list.length === 0;
+  });
+  const showEmptyState = isCubeOwner && realBoardsEmpty;
+
   return (
     <>
       {canEdit && <ScryfallDragDropOverlay />}
@@ -141,76 +156,83 @@ const CubeListPageRaw: React.FC = () => {
       )}
       <DynamicFlash />
       <RotisserieDraftPanel />
-      {(() => {
-        // Calculate how many boards are active
-        const activeBoards = Object.entries(changedCards).filter(([boardname, boardcards]) => {
-          const boardKey = boardname.toLowerCase();
-          const isActive = showAllBoards || viewBoards.includes(boardKey);
-          return isActive && boardcards.length > 0;
-        });
-        const showBoardHeaders = activeBoards.length > 1;
-
-        return Object.entries(changedCards)
-          .sort(([a], [b]) => {
-            const aIndex = viewBoards.indexOf(a.toLowerCase());
-            const bIndex = viewBoards.indexOf(b.toLowerCase());
-            // Boards in the view come first in their defined order; others go to the end
-            if (aIndex === -1 && bIndex === -1) return 0;
-            if (aIndex === -1) return 1;
-            if (bIndex === -1) return -1;
-            return aIndex - bIndex;
-          })
-          .map(([boardname, boardcards]) => {
-            // Convert boardname to lowercase key for comparison with view's boards
+      {showEmptyState && <CubeEmptyState />}
+      {!showEmptyState &&
+        (() => {
+          // Calculate how many boards are active
+          const activeBoards = Object.entries(changedCards).filter(([boardname, boardcards]) => {
             const boardKey = boardname.toLowerCase();
             const isActive = showAllBoards || viewBoards.includes(boardKey);
-            // Capitalize board name for display
-            const displayBoardName = boardname.charAt(0).toUpperCase() + boardname.slice(1);
-
-            return (
-              <ErrorBoundary key={boardname}>
-                <Flexbox direction="col" gap="2">
-                  {isActive && (
-                    <>
-                      {showBoardHeaders && boardcards.length > 0 && (
-                        <div className="mt-6 mb-4">
-                          <h2 className="text-3xl font-bold text-center mb-3">{displayBoardName}</h2>
-                          <hr className="border-t border-border w-full" />
-                        </div>
-                      )}
-                      {boardcards.length === 0 && !showAllBoards && (
-                        <Text semibold md className="text-center mt-4">
-                          This board appears to be empty!
-                        </Text>
-                      )}
-                      {
-                        {
-                          table: <TableView cards={boardcards} />,
-                          spoiler: <VisualSpoiler cards={boardcards} />,
-                          curve: <CurveView cards={boardcards} />,
-                          list: <ListView cards={boardcards} />,
-                          stacks: (
-                            <CardStacksView cards={boardcards} formatLabel={(label, count) => `${label} (${count})`} />
-                          ),
-                        }[cubeView]
-                      }
-                    </>
-                  )}
-                </Flexbox>
-              </ErrorBoundary>
-            );
+            return isActive && boardcards.length > 0;
           });
-      })()}
+          const showBoardHeaders = activeBoards.length > 1;
+
+          return Object.entries(changedCards)
+            .sort(([a], [b]) => {
+              const aIndex = viewBoards.indexOf(a.toLowerCase());
+              const bIndex = viewBoards.indexOf(b.toLowerCase());
+              // Boards in the view come first in their defined order; others go to the end
+              if (aIndex === -1 && bIndex === -1) return 0;
+              if (aIndex === -1) return 1;
+              if (bIndex === -1) return -1;
+              return aIndex - bIndex;
+            })
+            .map(([boardname, boardcards]) => {
+              // Convert boardname to lowercase key for comparison with view's boards
+              const boardKey = boardname.toLowerCase();
+              const isActive = showAllBoards || viewBoards.includes(boardKey);
+              // Capitalize board name for display
+              const displayBoardName = boardname.charAt(0).toUpperCase() + boardname.slice(1);
+
+              return (
+                <ErrorBoundary key={boardname}>
+                  <Flexbox direction="col" gap="2">
+                    {isActive && (
+                      <>
+                        {showBoardHeaders && boardcards.length > 0 && (
+                          <div className="mt-6 mb-4">
+                            <h2 className="text-3xl font-bold text-center mb-3">{displayBoardName}</h2>
+                            <hr className="border-t border-border w-full" />
+                          </div>
+                        )}
+                        {boardcards.length === 0 && !showAllBoards && (
+                          <Text semibold md className="text-center mt-4">
+                            This board appears to be empty!
+                          </Text>
+                        )}
+                        {
+                          {
+                            table: <TableView cards={boardcards} />,
+                            spoiler: <VisualSpoiler cards={boardcards} />,
+                            curve: <CurveView cards={boardcards} />,
+                            list: <ListView cards={boardcards} />,
+                            stacks: (
+                              <CardStacksView
+                                cards={boardcards}
+                                formatLabel={(label, count) => `${label} (${count})`}
+                              />
+                            ),
+                          }[cubeView]
+                        }
+                      </>
+                    )}
+                  </Flexbox>
+                </ErrorBoundary>
+              );
+            });
+        })()}
     </>
   );
 };
 
 const CubeListPage: React.FC<CubeListPageProps> = ({ cube, cards }) => {
   const defaultView = getViewDefinitions(cube)[0]?.name || 'Mainboard';
+  const user = useContext(UserContext);
+  const isOwner = !!user && cube.owner?.id === user.id;
 
   return (
     <MainLayout useContainer={false}>
-      <DisplayContextProvider cubeID={cube.id} defaultView={defaultView}>
+      <DisplayContextProvider cubeID={cube.id} defaultView={defaultView} defaultEditSidebarOpen={isOwner}>
         <RotoDraftContextProvider>
           <CubeLayout
             cube={cube}

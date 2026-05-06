@@ -16,13 +16,13 @@ import NavButton from '../base/NavButton';
 import NavLink from '../base/NavLink';
 import NavMenu from '../base/NavMenu';
 import ResponsiveDiv from '../base/ResponsiveDiv';
-import CreateCubeModal from '../modals/CreateCubeModal';
 import LoginModal from '../modals/LoginModal';
+import withQuickCreateCube from '../QuickCreateCubeButton';
 import withModal from '../WithModal';
 import NotificationsNav from './NotificationsNav';
 
 const LoginButton = withModal(NavButton, LoginModal);
-const CreateCubeButton = withModal(NavButton, CreateCubeModal);
+const CreateCubeButton = withQuickCreateCube(NavButton);
 
 const navItems = [
   {
