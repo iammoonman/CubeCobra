@@ -299,5 +299,3 @@ export class RecordDynamoDao extends BaseDynamoDao<RecordEntity, UnhydratedRecor
     await putObject(process.env.DATA_BUCKET as string, `record_analytic/${cubeId}.json`, analytic);
   }
 }
-
-export default RecordDynamoDao;

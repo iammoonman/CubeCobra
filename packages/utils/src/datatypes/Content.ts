@@ -19,6 +19,7 @@ export const ContentStatusEnglish = {
   [ContentStatus.IN_REVIEW]: 'In Review',
   [ContentStatus.PUBLISHED]: 'Published',
 };
+
 export interface UnhydratedContent extends BaseObject {
   id: string;
   type: string;
@@ -36,7 +37,7 @@ export interface UnhydratedContent extends BaseObject {
   imageName?: string;
 }
 
-export interface Content extends Omit<UnhydratedContent, 'owner' | 'image'> {
+interface Content extends Omit<UnhydratedContent, 'owner' | 'image'> {
   owner: User;
 }
 

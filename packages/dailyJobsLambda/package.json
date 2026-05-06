@@ -13,10 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "archiver": "^7.0.1",
-    "@aws-sdk/lib-dynamodb": "^3.927.0",
-    "seedrandom": "^2.4.4",
-    "shuffle-seed": "^1.1.6"
+    "archiver": "^7.0.1"
   },
   "devDependencies": {
     "esbuild": "^0.25.5"

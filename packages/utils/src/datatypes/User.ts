@@ -1,7 +1,7 @@
 import { PrintingPreference } from './Card';
 import Cube from './Cube';
 import Image from './Image';
-import { Notification } from './Notification';
+import Notification from './Notification';
 
 export enum GridTightnessPreference {
   TIGHT = 'tight',

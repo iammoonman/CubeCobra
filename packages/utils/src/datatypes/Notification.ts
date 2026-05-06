@@ -14,7 +14,7 @@ export type NewNotification = {
   fromUsername?: string;
 };
 
-export type Notification = NewNotification &
+type Notification = NewNotification &
   BaseObject & {
     id: string;
     status: NotificationStatus;

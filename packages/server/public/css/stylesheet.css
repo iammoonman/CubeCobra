@@ -142,8 +142,8 @@ html,
   line-height: 1.5; /* 1 */
   -webkit-text-size-adjust: 100%; /* 2 */ /* 3 */
   tab-size: 4; /* 3 */
-  font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-    'Noto Color Emoji'; /* 4 */
+  font-family:
+    ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; /* 4 */
   font-feature-settings: normal; /* 5 */
   font-variation-settings: normal; /* 6 */
   -webkit-tap-highlight-color: transparent; /* 7 */
@@ -223,7 +223,8 @@ code,
 kbd,
 samp,
 pre {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; /* 1 */
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; /* 1 */
   font-feature-settings: normal; /* 2 */
   font-variation-settings: normal; /* 3 */
   font-size: 1em; /* 4 */
@@ -1361,9 +1362,6 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 .shrink {
   flex-shrink: 1;
 }
-.shrink-0 {
-  flex-shrink: 0;
-}
 .flex-grow {
   flex-grow: 1;
 }
@@ -1912,6 +1910,10 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 .border-green-500 {
   --tw-border-opacity: 1;
   border-color: rgb(34 197 94 / var(--tw-border-opacity));
+}
+.border-link {
+  --tw-border-opacity: 1;
+  border-color: rgb(var(--link) / var(--tw-border-opacity));
 }
 .border-red-200 {
   --tw-border-opacity: 1;
@@ -2772,8 +2774,9 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
     filter,
     -webkit-text-decoration-color,
     -webkit-backdrop-filter;
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow,
-    transform, filter, backdrop-filter;
+  transition-property:
+    color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter,
+    backdrop-filter;
   transition-property:
     color,
     background-color,
@@ -4470,18 +4473,8 @@ img.mana-symbol-sm {
 }
 
 @media (prefers-color-scheme: dark) {
-  .dark\:border-red-800 {
-    --tw-border-opacity: 1;
-    border-color: rgb(153 27 27 / var(--tw-border-opacity));
-  }
-
   .dark\:bg-red-900\/20 {
     background-color: rgb(127 29 29 / 0.2);
-  }
-
-  .dark\:text-red-200 {
-    --tw-text-opacity: 1;
-    color: rgb(254 202 202 / var(--tw-text-opacity));
   }
 
   .dark\:text-red-400 {

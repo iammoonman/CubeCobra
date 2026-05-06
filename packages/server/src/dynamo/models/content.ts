@@ -3,7 +3,7 @@
 import { CreateTableCommandOutput } from '@aws-sdk/client-dynamodb';
 import { NativeAttributeValue, PutCommandOutput } from '@aws-sdk/lib-dynamodb';
 import Article from '@utils/datatypes/Article';
-import { Content, ContentType, UnhydratedContent } from '@utils/datatypes/Content';
+import Content, { ContentType, UnhydratedContent } from '@utils/datatypes/Content';
 import Episode from '@utils/datatypes/Episode';
 import Image from '@utils/datatypes/Image';
 import Podcast from '@utils/datatypes/Podcast';

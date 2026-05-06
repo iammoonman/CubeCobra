@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 
-import { Content } from '@utils/datatypes/Content';
+import Content from '@utils/datatypes/Content';
 
 import ConfirmDeleteModal from 'components/modals/ConfirmDeleteModal';
 import { CSRFContext } from 'contexts/CSRFContext';
