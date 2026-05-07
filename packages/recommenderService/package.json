@@ -38,11 +38,13 @@
     "uuid": "^14.0.0"
   },
   "devDependencies": {
+    "@aws-sdk/lib-storage": "^3.927.0",
     "@types/archiver": "^6.0.2",
     "@types/compression": "^1.8.1",
     "@types/jest": "^29.5.14",
     "@types/response-time": "^2.3.8",
     "@types/uuid": "^10.0.0",
+    "archiver": "^7.0.1",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "copyfiles": "^2.4.1",
