@@ -37,6 +37,7 @@ export interface ViewDefinition {
   boards: string[]; // Array of board keys to display in this view
   displayView: CubeDisplayView; // Default display mode
   defaultSorts: string[]; // 4 sort options
+  mixBoards?: boolean; // Mix the boards in the view rather than show them separately
   defaultFilter?: string; // Optional default filter query
 }
 
