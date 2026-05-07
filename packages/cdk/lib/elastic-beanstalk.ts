@@ -156,12 +156,7 @@ export class ElasticBeanstalk extends Construct {
         {
           namespace: 'aws:elasticbeanstalk:command',
           optionName: 'DeploymentPolicy',
-          value: 'Rolling',
-        },
-        {
-          namespace: 'aws:elasticbeanstalk:command',
-          optionName: 'BatchSize',
-          value: '50',
+          value: 'Immutable',
         },
         {
           namespace: 'aws:elasticbeanstalk:environment:process:default',
