@@ -82,7 +82,8 @@
   },
   "packageManager": "npm@10.9.0",
   "overrides": {
-    "mdast-util-gfm-autolink-literal": "2.0.0"
+    "mdast-util-gfm-autolink-literal": "2.0.0",
+    "constructs": "^10.0.0"
   },
   "workspaces": [
     "packages/*"
