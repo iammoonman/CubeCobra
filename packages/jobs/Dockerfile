@@ -1,5 +1,7 @@
 # Build stage
-FROM node:22 AS builder
+# Pull from AWS's public ECR mirror of Docker Hub library images so CodeBuild
+# doesn't get rate-limited on unauthenticated docker.io pulls.
+FROM public.ecr.aws/docker/library/node:22 AS builder
 
 WORKDIR /app
 
@@ -26,7 +28,7 @@ RUN npm run build --workspace=packages/server
 RUN npm run build --workspace=packages/jobs
 
 # Production stage
-FROM node:22-slim
+FROM public.ecr.aws/docker/library/node:22-slim
 
 WORKDIR /app
 
