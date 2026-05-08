@@ -168,6 +168,42 @@ const CubeListPageRaw: React.FC = () => {
           });
           const showBoardHeaders = activeBoards.length > 1;
 
+          if (currentView?.mixBoards) {
+            const boardname = activeBoards.flatMap((b) => b[0]).join('');
+            const boardcards = activeBoards.flatMap((b) => b[1]);
+            const displayBoardName = activeBoards
+              .flatMap((b) => b[0].charAt(0).toUpperCase() + b[0].slice(1))
+              .join(' & ');
+            return (
+              <ErrorBoundary key={boardname}>
+                <Flexbox direction="col" gap="2">
+                  {showBoardHeaders && boardcards.length > 0 && (
+                    <div className="mt-6 mb-4">
+                      <h2 className="text-3xl font-bold text-center mb-3">{displayBoardName}</h2>
+                      <hr className="border-t border-border w-full" />
+                    </div>
+                  )}
+                  {boardcards.length === 0 && !showAllBoards && (
+                    <Text semibold md className="text-center mt-4">
+                      This board appears to be empty!
+                    </Text>
+                  )}
+                  {
+                    {
+                      table: <TableView cards={boardcards} />,
+                      spoiler: <VisualSpoiler cards={boardcards} />,
+                      curve: <CurveView cards={boardcards} />,
+                      list: <ListView cards={boardcards} />,
+                      stacks: (
+                        <CardStacksView cards={boardcards} formatLabel={(label, count) => `${label} (${count})`} />
+                      ),
+                    }[cubeView]
+                  }
+                </Flexbox>
+              </ErrorBoundary>
+            );
+          }
+
           return Object.entries(changedCards)
             .sort(([a], [b]) => {
               const aIndex = viewBoards.indexOf(a.toLowerCase());
