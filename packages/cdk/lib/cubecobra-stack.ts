@@ -192,6 +192,10 @@ export class CubeCobraStack extends cdk.Stack {
     serverEnvVars.ECS_TASK_DEFINITION_ARN = jobsTask.taskDefinition.taskDefinitionArn;
     serverEnvVars.ECS_SUBNET_IDS = cdk.Fn.join(',', subnetIds);
     serverEnvVars.ECS_ASSIGN_PUBLIC_IP = usePublicSubnets ? 'ENABLED' : 'DISABLED';
+    // Static assets are served from the AssetsStack (us-east-1) at this
+    // hostname by convention; the AssetsStack creates the matching cert,
+    // bucket, distribution, and Route53 record.
+    serverEnvVars.CDN_BASE_URL = `https://assets.${params.domain}`;
 
     const elasticBeanstalk = new ElasticBeanstalk(this, 'ElasticBeanstalk', {
       certificate: cert.consoleCertificate,
