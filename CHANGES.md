@@ -38,6 +38,7 @@ Since 1.6.0
 
 # Bug Fixes
 
+- Fixed deck data exports containing invalid -1 card values — exported deck data now correctly excludes cards that couldn't be mapped to valid card IDs
 - Fixed quarterly data exports including private and unlisted cubes — the cube export and deck export jobs now only export data from public cubes
 - Fixed blog posts from private and unlisted cubes leaking into follower feeds — blog posts, cube commits, package additions, and bulk imports for non-public cubes no longer publish feed items to followers
 - Fixed blog posts from unlisted cubes being visible on user blog pages and in dashboard feeds — display-side filtering now excludes both private and unlisted cube blogs (previously only private was filtered)
