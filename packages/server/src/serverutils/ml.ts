@@ -105,12 +105,29 @@ export const build = async (oracles: string[]): Promise<{ oracle: string; rating
   }
 };
 
-export const draft = async (pack: string[], pool: string[]): Promise<{ oracle: string; rating: number }[]> => {
+export const cubeContext = async (oracles: string[]): Promise<number[]> => {
   try {
+    const response = await mlServiceRequest<{ success: boolean; embedding: number[] }>('cubecontext', { oracles });
+    return response.embedding;
+  } catch {
+    console.warn('Failed to encode cube context, returning empty array');
+    return [];
+  }
+};
+
+export const draft = async (
+  pack: string[],
+  pool: string[],
+  cubeContextEmbedding?: number[],
+): Promise<{ oracle: string; rating: number }[]> => {
+  try {
+    const body: { pack: string[]; pool: string[]; cubeContext?: number[] } = { pack, pool };
+    if (cubeContextEmbedding) body.cubeContext = cubeContextEmbedding;
+
     const response = await mlServiceRequest<{
       success: boolean;
       cards: { oracle: string; rating: number }[];
-    }>('draft', { pack, pool });
+    }>('draft', body);
 
     return response.cards;
   } catch {
@@ -120,7 +137,7 @@ export const draft = async (pack: string[], pool: string[]): Promise<{ oracle: s
 };
 
 export const batchDraft = async (
-  inputs: { pack: string[]; pool: string[] }[],
+  inputs: { pack: string[]; pool: string[]; cubeContext?: number[] }[],
 ): Promise<{ oracle: string; rating: number }[][]> => {
   try {
     const response = await mlServiceRequest<{
