@@ -184,15 +184,20 @@ const render = (
     if (!options.metadata) {
       options.metadata = [];
     }
-    if (!options.metadata.some((data) => data.property === 'og:image')) {
-      // og:image must be an absolute URL for crawlers; baseUrl + cdnUrl handles
-      // both cases (CloudFront when CDN_BASE_URL is set, otherwise same-origin).
-      const stickerPath = cdnUrl('/content/sticker.png');
-      const ogImage = stickerPath.startsWith('http') ? stickerPath : `${getBaseUrl()}${stickerPath}`;
-      options.metadata.push({
-        property: 'og:image',
-        content: ogImage,
-      });
+    // og:image must be an absolute URL for crawlers; baseUrl + cdnUrl handles
+    // both cases (CloudFront when CDN_BASE_URL is set, otherwise same-origin).
+    const stickerPath = cdnUrl('/content/sticker.png');
+    const fallbackImage = stickerPath.startsWith('http') ? stickerPath : `${getBaseUrl()}${stickerPath}`;
+    const existingOgImage = options.metadata.find((data) => data.property === 'og:image');
+    if (!existingOgImage) {
+      options.metadata.push({ property: 'og:image', content: fallbackImage });
+    } else if (!existingOgImage.content) {
+      existingOgImage.content = fallbackImage;
+    }
+    // Mirror the fallback onto twitter:image so both crawlers get a usable image.
+    const existingTwitterImage = options.metadata.find((data) => data.property === 'twitter:image');
+    if (existingTwitterImage && !existingTwitterImage.content) {
+      existingTwitterImage.content = fallbackImage;
     }
 
     try {

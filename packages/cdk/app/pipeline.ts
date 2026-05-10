@@ -41,6 +41,8 @@ new DeploymentPipeline(pipelineStack, 'DeploymentPipeline', {
   codestarConnectionArn,
   betaDomain: environments.beta.domain,
   productionDomain: environments.production.domain,
+  betaDataBucket: environments.beta.dataBucket,
+  productionDataBucket: environments.production.dataBucket,
   account: pipelineConfig.account,
   region: pipelineConfig.region,
 });

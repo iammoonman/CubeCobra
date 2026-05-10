@@ -5,6 +5,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "download-data-files": "NODE_OPTIONS=--max-old-space-size=8192 ts-node -r tsconfig-paths/register --project tsconfig.json src/download-data-files.ts",
     "upload-assets": "ts-node -r tsconfig-paths/register --project tsconfig.json src/uploadAssets.ts",
+    "upload-ml-model": "ts-node -r tsconfig-paths/register --project tsconfig.json src/uploadMLModel.ts",
     "invalidate-cdn": "ts-node -r tsconfig-paths/register --project tsconfig.json src/invalidateCdn.ts",
     "update-hashes": "ts-node -r tsconfig-paths/register --project tsconfig.json src/jobs/repair_hashes.js",
     "export-cubes": "NODE_OPTIONS=--max-old-space-size=18192 ts-node src/jobs/export_cubes.ts",

@@ -35,6 +35,7 @@ Since 1.6.0
 - Brought back "Save as Default Sort" in the display sidebar — saves the current sort order as the default for the active view (the new home for per-view sort defaults)
 - New help blurbs at the bottom of the display and edit sidebars — the display sidebar links to the Boards and Views settings, and the edit sidebar links to Smart Search
 - The edit sidebar's Board dropdown now defaults to the first board in the view you're looking at (and follows you when you switch views), instead of always starting on Mainboard
+- Richer link previews for shared blog posts and comments — comment links now show the comment text and the poster's avatar, and blog post links show an excerpt of the post plus a summary of the changelist with the cube's image
 
 # Bug Fixes
 
@@ -69,7 +70,10 @@ Since 1.6.0
 - Fixed card edits (property changes) inflating +/- counts in the edit pane — edits no longer count as both an addition and a removal. Instead, edited cards are shown as a separate count with a wrench icon (e.g. "+5, -3, 🔧2"), both in the pending changes panel and in committed changelogs
 - Fixed committing large changelogs (e.g. bulk uploads with many cards) causing request timeouts
 - Improved performance of saving changes for large updates — card data is now fetched in a single batch request instead of one-at-a-time
+- Fixed newly-released cards missing data like "Drafted With" and other cross-card information after they were added to the database
 
 # Technical Changes
 
 - Added a new `archetypeAnnotater` package — a standalone tool for manually labeling draft/deck datasets and building the cluster-center annotations that power automatic archetype naming
+- Static assets (JS bundles, CSS, fonts, images) are now served via S3 + CloudFront instead of being served directly from the application servers — reduces load on the main fleet and improves cache hit rates and latency for users
+- Reduced the production main app fleet from 5/6 to 3/4 instances — feasible after offloading static asset serving to CloudFront

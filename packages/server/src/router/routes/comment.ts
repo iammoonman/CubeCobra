@@ -18,8 +18,9 @@ import {
 } from 'dynamo/daos';
 import { csrfProtection, ensureAuth } from 'router/middleware';
 import { getImageData } from 'serverutils/imageutil';
+import generateMeta, { truncateForMeta } from 'serverutils/meta';
 import { handleRouteError, redirect, render } from 'serverutils/render';
-import { addNotification } from 'serverutils/util';
+import { addNotification, getBaseUrl } from 'serverutils/util';
 
 import { Request, Response } from '../../types/express';
 
@@ -37,7 +38,23 @@ export const getHandler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    return render(req, res, 'CommentPage', { comment }, { title: 'Comment' });
+    const ownerName = comment.owner?.username || 'Anonymous';
+    const description = truncateForMeta(comment.body) || `A comment on Cube Cobra by ${ownerName}.`;
+    return render(
+      req,
+      res,
+      'CommentPage',
+      { comment },
+      {
+        title: 'Comment',
+        metadata: generateMeta(
+          `Comment by ${ownerName}`,
+          description,
+          comment.image?.uri || '',
+          `${getBaseUrl()}/comment/${req.params.id}`,
+        ),
+      },
+    );
   } catch (err) {
     return handleRouteError(req, res, err as Error, '/404');
   }
