@@ -10,6 +10,7 @@ import classNames from 'classnames';
 import Banner from 'components/Banner';
 import Button from 'components/base/Button';
 import { Card, CardHeader } from 'components/base/Card';
+import Container from 'components/base/Container';
 import { Col, Flexbox, Row } from 'components/base/Layout';
 import Link from 'components/base/Link';
 import Text from 'components/base/Text';
@@ -20,6 +21,7 @@ import CubePreview from 'components/cube/CubePreview';
 import CubesCard from 'components/cube/CubesCard';
 import DynamicFlash from 'components/DynamicFlash';
 import Feed from 'components/Feed';
+import HeroSearch from 'components/HeroSearch';
 import DailyP1P1Card from 'components/p1p1/DailyP1P1Card';
 import withQuickCreateCube from 'components/QuickCreateCubeButton';
 import RecentDraftsCard from 'components/RecentDraftsCard';
@@ -65,12 +67,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   }
 
   return (
-    <MainLayout>
-      <Banner />
-      <DynamicFlash />
+    <MainLayout useContainer={false} transparentNav>
+      <HeroSearch />
+      <Container xxxl className="px-2">
+        <Banner />
+        <DynamicFlash />
 
-      {/* MOBILE LAYOUT (< 768px) - Completely separate from desktop */}
-      <div className="md:hidden">
+        {/* MOBILE LAYOUT (< 768px) - Completely separate from desktop */}
+        <div className="md:hidden">
         <Flexbox direction="col" gap="2" className="my-2 px-2">
           <Card>
             <CardHeader>
@@ -233,6 +237,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           </Col>
         </Row>
       </div>
+      </Container>
     </MainLayout>
   );
 };

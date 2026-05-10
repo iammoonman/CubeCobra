@@ -1,16 +1,26 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 
-import { BellFillIcon, InfoIcon, MegaphoneIcon, PackageIcon, PersonIcon, SearchIcon } from '@primer/octicons-react';
+import {
+  BellFillIcon,
+  ClockIcon,
+  GraphIcon,
+  PackageIcon,
+  PersonAddIcon,
+  PersonIcon,
+  SearchIcon,
+  SignInIcon,
+  StarIcon,
+} from '@primer/octicons-react';
+import type { Icon as OcticonIcon } from '@primer/octicons-react';
 import { cdnUrl } from '@utils/cdnUrl';
 import Notification from '@utils/datatypes/Notification';
 import { UserRoles } from '@utils/datatypes/User';
 import { getCubeId } from '@utils/Util';
+import classNames from 'classnames';
 
 import { CSRFContext } from '../../contexts/CSRFContext';
 import UserContext from '../../contexts/UserContext';
-import Button from '../base/Button';
 import { CardFooter, CardHeader } from '../base/Card';
-import Input from '../base/Input';
 import { Flexbox } from '../base/Layout';
 import Link from '../base/Link';
 import NavButton from '../base/NavButton';
@@ -22,84 +32,67 @@ import withQuickCreateCube from '../QuickCreateCubeButton';
 import withModal from '../WithModal';
 import NotificationsNav from './NotificationsNav';
 
-const LoginButton = withModal(NavButton, LoginModal);
 const CreateCubeButton = withQuickCreateCube(NavButton);
 
-const navItems = [
+const NAV_ITEM_CLASSES =
+  'flex items-center gap-1 rounded-md select-none cursor-pointer p-2 font-semibold text-text-secondary hover:text-text-secondary-active transition-colors duration-200 ease-in-out';
+
+type NavTriggerProps = { onClick?: () => void; className?: string; children?: React.ReactNode };
+const NavLinkTrigger: React.FC<NavTriggerProps> = ({ onClick, className, children }) => (
+  <a onClick={onClick} role="button" tabIndex={0} className={className}>
+    {children}
+  </a>
+);
+const LoginNavLink = withModal(NavLinkTrigger, LoginModal);
+
+type MobileIconTriggerProps = { onClick?: () => void; className?: string };
+const MobileLoginIcon: React.FC<MobileIconTriggerProps> = ({ onClick, className }) => (
+  <button type="button" onClick={onClick} className={className}>
+    <SignInIcon size={24} />
+  </button>
+);
+const MobileLoginButton = withModal(MobileLoginIcon, LoginModal);
+
+type NavSubItem = { label: string; href: string; icon?: OcticonIcon };
+type NavSection = { header?: string; items: NavSubItem[] };
+
+const exploreSections: NavSection[] = [
   {
-    id: 'content',
-    title: 'Content',
-    icon: MegaphoneIcon,
+    header: 'Cubes',
     items: [
-      { label: 'Dev Blog', href: '/dev/blog' },
-      { label: 'Browse Content', href: '/content/browse' },
-      { label: 'Articles', href: '/content/articles' },
-      { label: 'Podcasts', href: '/content/podcasts' },
-      { label: 'Videos', href: '/content/videos' },
+      { label: 'Popular Cubes', href: '/search?order=pop', icon: StarIcon },
+      { label: 'Recently Updated', href: '/search?order=date', icon: ClockIcon },
     ],
   },
   {
-    id: 'explore',
-    title: 'Explore',
-    icon: SearchIcon,
+    header: 'Cards',
     items: [
-      { label: 'Explore cubes', href: '/explore' },
-      { label: 'Search cubes', href: '/search' },
-      { label: 'Featured queue', href: '/queue' },
-      { label: 'Top Cards', href: '/tool/topcards' },
-      { label: 'Search Cards', href: '/tool/searchcards' },
-      { label: 'Packages', href: '/packages' },
+      { label: 'Top Cards', href: '/tool/topcards', icon: GraphIcon },
+      { label: 'Search Cards', href: '/tool/searchcards', icon: SearchIcon },
     ],
   },
   {
-    id: 'about',
-    title: 'About',
-    icon: InfoIcon,
-    items: [
-      { label: 'Contact', href: '/contact' },
-      // {
-      //   label: 'Merchandise',
-      //   href: '/merchandise',
-      // },
-      { label: 'Donate', href: '/donate' },
-      { label: 'Github', href: 'https://github.com/dekkerglen/CubeCobra' },
-      { label: 'Filter Syntax', href: '/filters' },
-      { label: 'API Docs', href: '/apidocs' },
-      { label: 'Card Updates', href: '/tool/cardupdates' },
-    ],
+    header: 'Packages',
+    items: [{ label: 'Packages', href: '/packages', icon: PackageIcon }],
   },
 ];
 
-const userNavItems = [
-  {
-    id: 'notifications',
-    icon: BellFillIcon,
-  },
-  {
-    id: 'cubes',
-    icon: PackageIcon,
-  },
-  {
-    id: 'user',
-    icon: PersonIcon,
-  },
-];
+interface NavbarProps {
+  transparent?: boolean;
+}
 
-const guestNavItems = [
-  {
-    id: 'account',
-    icon: PersonIcon,
-  },
-];
-
-type NavbarProps = Record<string, never>;
-
-const Navbar: React.FC<NavbarProps> = () => {
+const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   const { csrfFetch } = useContext(CSRFContext);
   const user = useContext(UserContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>(user?.notifications || []);
-  const [cubeSearch, setCubeSearch] = useState('');
+  const [pathname, setPathname] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPathname(window.location.pathname);
+  }, []);
+
+  const isHomePage = pathname === '/landing' || pathname === '/dashboard';
 
   const toggleMobileMenu = (menuId: string) => {
     setMobileMenuOpen(mobileMenuOpen === menuId ? null : menuId);
@@ -112,150 +105,172 @@ const Navbar: React.FC<NavbarProps> = () => {
     setNotifications([]);
   };
 
-  const navs = (
+  const renderSubItem = (subItem: NavSubItem) => {
+    const SubIcon = subItem.icon;
+    return (
+      <NavLink key={subItem.label} href={subItem.href}>
+        {SubIcon ? (
+          <span className="flex items-center gap-2">
+            <SubIcon size={16} />
+            {subItem.label}
+          </span>
+        ) : (
+          subItem.label
+        )}
+      </NavLink>
+    );
+  };
+
+  const homeLink = (
+    <a href={isHomePage ? '#' : '/'} className={NAV_ITEM_CLASSES}>
+      Home
+    </a>
+  );
+
+  const exploreMenu = (
+    <NavMenu label="Explore" navBar icon={<SearchIcon size={24} />}>
+      <Flexbox direction="col" gap="2" className="p-3">
+        {exploreSections.map((section, idx) => (
+          <Flexbox direction="col" gap="1" key={section.header || `section-${idx}`}>
+            {section.header && (
+              <div className="text-xs uppercase font-bold text-text-secondary tracking-wide px-1 pt-1">
+                {section.header}
+              </div>
+            )}
+            {section.items.map(renderSubItem)}
+          </Flexbox>
+        ))}
+      </Flexbox>
+    </NavMenu>
+  );
+
+  const yourCubesMenu = user && (
+    <NavMenu label="Your Cubes" navBar icon={<PackageIcon size={24} />}>
+      <Flexbox direction="col" gap="1" className="max-h-96 overflow-auto p-2">
+        {(user.cubes || []).slice(0, 36).map((item) => (
+          <NavLink key={`dropdown_cube_${item.name}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
+            {item.name}
+          </NavLink>
+        ))}
+        {(user.collaboratingCubes || []).length > 0 && (
+          <>
+            <div className="text-xs text-text-secondary font-semibold px-1 pt-2 pb-1">Collaborating</div>
+            {(user.collaboratingCubes || []).slice(0, 12).map((item) => (
+              <NavLink key={`dropdown_collab_${item.id}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
+                {item.name}
+              </NavLink>
+            ))}
+          </>
+        )}
+      </Flexbox>
+      <CardFooter>
+        <Flexbox direction="col" gap="2">
+          {(user.cubes || []).length > 2 && <NavLink href={`/user/view/${user.id}`}>View All</NavLink>}
+          <CreateCubeButton>Create A New Cube</CreateCubeButton>
+        </Flexbox>
+      </CardFooter>
+    </NavMenu>
+  );
+
+  const userMenu = user && (
+    <NavMenu
+      label={
+        <Flexbox alignItems="center" direction="row" gap="2">
+          <PersonIcon size={20} />
+          {user.username}
+        </Flexbox>
+      }
+      navBar
+    >
+      <Flexbox direction="col" gap="2" className="p-3">
+        <NavLink href={`/user/view/${user.id}`}>Your Profile</NavLink>
+        {user.roles && user.roles.includes(UserRoles.ADMIN) && <NavLink href="/admin/dashboard">Admin Page</NavLink>}
+        {user.roles && user.roles.includes(UserRoles.CONTENT_CREATOR) && (
+          <NavLink href="/content/creators">Content Creator Dashboard</NavLink>
+        )}
+        <NavLink href="/user/social">Followed and Followers</NavLink>
+        <NavLink href="/user/account">Account Information</NavLink>
+        <NavLink href="/user/logout">Logout</NavLink>
+      </Flexbox>
+    </NavMenu>
+  );
+
+  const guestNav = !user && (
     <>
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        return (
-          <NavMenu key={item.title} label={item.title} navBar icon={<Icon size={24} />}>
-            <Flexbox direction="col" gap="2" className="p-3">
-              {item.items.map((subItem) => (
-                <NavLink key={subItem.label} href={subItem.href}>
-                  {subItem.label}
-                </NavLink>
-              ))}
-            </Flexbox>
-          </NavMenu>
-        );
-      })}
+      <LoginNavLink className={NAV_ITEM_CLASSES}>Login</LoginNavLink>
+      <a href="/user/register" className={NAV_ITEM_CLASSES}>
+        Register
+      </a>
+    </>
+  );
+
+  const leftNav = (
+    <>
+      {homeLink}
+      {exploreMenu}
+    </>
+  );
+
+  const rightNav = user ? (
+    <>
+      <NotificationsNav />
+      {yourCubesMenu}
+      {userMenu}
+    </>
+  ) : (
+    guestNav
+  );
+
+  const mobileIconButton = (id: string, Icon: OcticonIcon, badge?: number) => {
+    const isActive = mobileMenuOpen === id;
+    return (
+      <button
+        key={id}
+        onClick={() => toggleMobileMenu(id)}
+        className={`px-2 py-1 rounded transition-colors duration-200 relative ${
+          isActive ? 'bg-bg-active dark:text-white' : 'text-white'
+        }`}
+        style={isActive ? { color: 'var(--bg-secondary)' } : undefined}
+      >
+        {badge !== undefined && badge > 0 && (
+          <span className="absolute top-0 right-0 text-xs font-semibold text-white bg-button-danger rounded-full px-1 py-0.5 min-w-[1.25rem] text-center translate-x-1 -translate-y-1">
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
+        <Icon size={24} />
+      </button>
+    );
+  };
+
+  const mobileNavIcons = (
+    <>
+      {mobileIconButton('explore', SearchIcon)}
+      {user && mobileIconButton('cubes', PackageIcon)}
       {user ? (
         <>
-          <NotificationsNav />
-          <NavMenu label="Your Cubes" navBar icon={<PackageIcon size={24} />}>
-            <Flexbox direction="col" gap="1" className="max-h-96 overflow-auto p-2">
-              {(user.cubes || []).slice(0, 36).map((item) => (
-                <NavLink key={`dropdown_cube_${item.name}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
-                  {item.name}
-                </NavLink>
-              ))}
-              {(user.collaboratingCubes || []).length > 0 && (
-                <>
-                  <div className="text-xs text-text-secondary font-semibold px-1 pt-2 pb-1">Collaborating</div>
-                  {(user.collaboratingCubes || []).slice(0, 12).map((item) => (
-                    <NavLink
-                      key={`dropdown_collab_${item.id}`}
-                      href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}
-                    >
-                      {item.name}
-                    </NavLink>
-                  ))}
-                </>
-              )}
-            </Flexbox>
-            <CardFooter>
-              <Flexbox direction="col" gap="2">
-                {(user.cubes || []).length > 2 && <NavLink href={`/user/view/${user.id}`}>View All</NavLink>}
-                <CreateCubeButton>Create A New Cube</CreateCubeButton>
-              </Flexbox>
-            </CardFooter>
-          </NavMenu>
-          <NavMenu label={user.username} navBar icon={<PersonIcon size={24} />}>
-            <Flexbox direction="col" gap="2" className="p-3">
-              <NavLink href={`/user/view/${user.id}`}>Your Profile</NavLink>
-              {user.roles && user.roles.includes(UserRoles.ADMIN) && (
-                <NavLink href="/admin/dashboard">Admin Page</NavLink>
-              )}
-              {user.roles && user.roles.includes(UserRoles.CONTENT_CREATOR) && (
-                <NavLink href="/content/creators">Content Creator Dashboard</NavLink>
-              )}
-              <CreateCubeButton>Create A New Cube</CreateCubeButton>
-              <NavLink href="/user/social">Followed and Followers</NavLink>
-              <NavLink href="/user/account">Account Information</NavLink>
-              <NavLink href="/user/logout">Logout</NavLink>
-            </Flexbox>
-          </NavMenu>
+          {mobileIconButton('notifications', BellFillIcon, notifications.length)}
+          {mobileIconButton('user', PersonIcon)}
         </>
       ) : (
         <>
-          <NavMenu label="Account" navBar icon={<PersonIcon size={24} />}>
-            <Flexbox direction="col" gap="2" className="p-3">
-              <NavLink href="/user/register">Create Account</NavLink>
-              <LoginButton>Login</LoginButton>
-            </Flexbox>
-          </NavMenu>
+          <MobileLoginButton className="px-2 py-1 rounded text-white" />
+          <a href="/user/register" className="px-2 py-1 rounded text-white">
+            <PersonAddIcon size={24} />
+          </a>
         </>
       )}
     </>
   );
 
-  const mobileNavIcons = (
-    <>
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = mobileMenuOpen === item.id;
-        return (
-          <button
-            key={item.id}
-            onClick={() => toggleMobileMenu(item.id)}
-            className={`px-2 py-1 rounded transition-colors duration-200 ${
-              isActive ? 'bg-bg-active dark:text-white' : 'text-white'
-            }`}
-            style={isActive ? { color: 'var(--bg-secondary)' } : undefined}
-          >
-            <Icon size={24} />
-          </button>
-        );
-      })}
-      {user
-        ? userNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = mobileMenuOpen === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => toggleMobileMenu(item.id)}
-                className={`px-2 py-1 rounded transition-colors duration-200 relative ${
-                  isActive ? 'bg-bg-active dark:text-white' : 'text-white'
-                }`}
-                style={isActive ? { color: 'var(--bg-secondary)' } : undefined}
-              >
-                {item.id === 'notifications' && notifications.length > 0 && (
-                  <span className="absolute top-0 right-0 text-xs font-semibold text-white bg-button-danger rounded-full px-1 py-0.5 min-w-[1.25rem] text-center translate-x-1 -translate-y-1">
-                    {notifications.length > 99 ? '99+' : notifications.length}
-                  </span>
-                )}
-                <Icon size={24} />
-              </button>
-            );
-          })
-        : guestNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = mobileMenuOpen === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => toggleMobileMenu(item.id)}
-                className={`px-2 py-1 rounded transition-colors duration-200 ${
-                  isActive ? 'bg-bg-active dark:text-white' : 'text-white'
-                }`}
-                style={isActive ? { color: 'var(--bg-secondary)' } : undefined}
-              >
-                <Icon size={24} />
-              </button>
-            );
-          })}
-    </>
-  );
-
   return (
-    <div className="bg-bg-secondary px-3 py-2">
+    <div className={classNames('px-6 py-2', transparent ? 'nav-transparent bg-transparent' : 'bg-bg-secondary')}>
       <ResponsiveDiv baseVisible sm className="w-full max-w-full">
         <Flexbox justify="between" alignItems="center" direction="row">
           <a href="/">
             <img
               className="h-10"
               src={cdnUrl('/content/sticker.png')}
-              alt="Cube Cobra: a site for Magic: the Gathering Cubing"
+              alt="Cube Cobra: a site for Magic: the Gathering Cube"
             />
           </a>
           {mobileNavIcons}
@@ -263,60 +278,42 @@ const Navbar: React.FC<NavbarProps> = () => {
       </ResponsiveDiv>
 
       <ResponsiveDiv sm className="w-full max-w-full">
-        <Flexbox direction="col">
-          <Flexbox justify="between" alignItems="center" direction="row" gap="4">
-            <ResponsiveDiv sm>
-              <a href="/">
-                <img
-                  className="h-10"
-                  src={cdnUrl('/content/banner.png')}
-                  alt="Cube Cobra: a site for Magic: the Gathering Cubing"
-                />
-              </a>
-            </ResponsiveDiv>
-            <ResponsiveDiv xl className="flex-grow">
-              <Flexbox direction="row" className="w-full" justify="between" gap="1">
-                <Input
-                  name="q"
-                  placeholder="Search cubes..."
-                  className="flex-grow"
-                  value={cubeSearch}
-                  onChange={(e) => setCubeSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      window.location.href = `/search?q=${encodeURIComponent(cubeSearch)}`;
-                    }
-                  }}
-                />
-                <Button color="primary" href={`/search?q=${encodeURIComponent(cubeSearch)}`}>
-                  <span className="px-4">Go</span>
-                </Button>
-              </Flexbox>
-            </ResponsiveDiv>
-            <ResponsiveDiv sm>
-              <Flexbox alignContent="end" direction="row" gap="2" className="height-auto">
-                {navs}
-              </Flexbox>
-            </ResponsiveDiv>
+        <Flexbox justify="between" alignItems="center" direction="row" gap="4">
+          <Flexbox alignItems="center" direction="row" gap="2">
+            <a href="/">
+              <img
+                className="h-10"
+                src={cdnUrl('/content/banner.png')}
+                alt="Cube Cobra: a site for Magic: the Gathering Cube"
+              />
+            </a>
+            <Flexbox alignItems="center" direction="row" gap="1">
+              {leftNav}
+            </Flexbox>
+          </Flexbox>
+          <Flexbox alignItems="center" direction="row" gap="2">
+            {rightNav}
           </Flexbox>
         </Flexbox>
       </ResponsiveDiv>
 
       {/* Mobile Menu Dropdown */}
       <ResponsiveDiv baseVisible sm>
-        {navItems.map(
-          (navItem) =>
-            mobileMenuOpen === navItem.id && (
-              <div key={navItem.id} className="bg-bg-active mt-3 p-4 rounded">
-                <Flexbox direction="col" gap="2">
-                  {navItem.items.map((subItem) => (
-                    <NavLink key={subItem.label} href={subItem.href}>
-                      {subItem.label}
-                    </NavLink>
-                  ))}
+        {mobileMenuOpen === 'explore' && (
+          <div className="bg-bg-active mt-3 p-4 rounded">
+            <Flexbox direction="col" gap="3">
+              {exploreSections.map((section, idx) => (
+                <Flexbox direction="col" gap="2" key={section.header || `mobile-section-${idx}`}>
+                  {section.header && (
+                    <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">
+                      {section.header}
+                    </div>
+                  )}
+                  {section.items.map(renderSubItem)}
                 </Flexbox>
-              </div>
-            ),
+              ))}
+            </Flexbox>
+          </div>
         )}
         {mobileMenuOpen === 'notifications' && user && (
           <div className="bg-bg-active mt-3 rounded">
@@ -398,14 +395,6 @@ const Navbar: React.FC<NavbarProps> = () => {
               <NavLink href="/user/social">Followed and Followers</NavLink>
               <NavLink href="/user/account">Account Information</NavLink>
               <NavLink href="/user/logout">Logout</NavLink>
-            </Flexbox>
-          </div>
-        )}
-        {mobileMenuOpen === 'account' && !user && (
-          <div className="bg-bg-active mt-3 p-4 rounded">
-            <Flexbox direction="col" gap="2">
-              <NavLink href="/user/register">Create Account</NavLink>
-              <LoginButton>Login</LoginButton>
             </Flexbox>
           </div>
         )}

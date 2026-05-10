@@ -94,17 +94,9 @@ const TopCardsTable = () => {
       <Controls className="p-2">
         <Flexbox direction="col" gap="2">
           <Banner />
-          <Flexbox direction="row" justify="between">
-            <Text xl semibold>
-              Search cards
-            </Text>
-            <ResponsiveDiv sm>
-              <Flexbox direction="row" gap="4">
-                <Link href="/tool/topcards">View Top cards</Link>
-                <Link href="/tool/searchcards">Search Cards</Link>
-              </Flexbox>
-            </ResponsiveDiv>
-          </Flexbox>
+          <Text xl semibold>
+            Search cards
+          </Text>
           <FilterCollapse isOpen buttonLabel="Search" />
           <Row>
             <Col xs={12} sm={6}>

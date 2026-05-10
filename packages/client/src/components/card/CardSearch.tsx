@@ -7,7 +7,6 @@ import { ORDERED_SORTS } from '@utils/sorting/Sort';
 import Banner from 'components/Banner';
 import Controls from 'components/base/Controls';
 import { Col, Flexbox, Row } from 'components/base/Layout';
-import Link from 'components/base/Link';
 import Paginate from 'components/base/Pagination';
 import ResponsiveDiv from 'components/base/ResponsiveDiv';
 import Select from 'components/base/Select';
@@ -92,17 +91,9 @@ const CardSearch: React.FC = () => {
       <Controls className="p-2">
         <Flexbox direction="col" gap="2">
           <Banner />
-          <Flexbox direction="row" justify="between">
-            <Text xl semibold>
-              Search cards
-            </Text>
-            <ResponsiveDiv sm>
-              <Flexbox direction="row" gap="4">
-                <Link href="/tool/topcards">View Top cards</Link>
-                <Link href="/packages">View Card Packages</Link>
-              </Flexbox>
-            </ResponsiveDiv>
-          </Flexbox>
+          <Text xl semibold>
+            Search cards
+          </Text>
           <FilterCollapse isOpen buttonLabel="Search" />
           <Row>
             <Col xs={12} sm={4}>

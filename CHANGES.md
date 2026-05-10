@@ -36,6 +36,8 @@ Since 1.6.0
 - New help blurbs at the bottom of the display and edit sidebars — the display sidebar links to the Boards and Views settings, and the edit sidebar links to Smart Search
 - The edit sidebar's Board dropdown now defaults to the first board in the view you're looking at (and follows you when you switch views), instead of always starting on Mainboard
 - Richer link previews for shared blog posts and comments — comment links now show the comment text and the poster's avatar, and blog post links show an excerpt of the post plus a summary of the changelist with the cube's image
+- Redesigned landing page and dashboard with a new hero — unified search across cubes, cards, and packages with curated suggestion chips, plus a prominent register CTA for logged-out users
+- Restructured the top nav and footer — Home is now a top-level link, Explore is a richer sectioned dropdown, logged-out users see separate Login and Register entries, the navbar cube search and the Explore Cubes page were removed, and footer columns were reorganized with new Popular / Recently Updated / Recently Drafted Cubes links
 
 # Bug Fixes
 

@@ -9,7 +9,6 @@ import Button from 'components/base/Button';
 import Controls from 'components/base/Controls';
 import Input from 'components/base/Input';
 import { Col, Flexbox, Row } from 'components/base/Layout';
-import Link from 'components/base/Link';
 import Pagination from 'components/base/Pagination';
 import ResponsiveDiv from 'components/base/ResponsiveDiv';
 import Select from 'components/base/Select';
@@ -148,17 +147,9 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
             </Alert>
           ))}
           <Flexbox direction="col" gap="2">
-            <Flexbox direction="row" justify="between">
-              <Text xl semibold>
-                Browse Card Packages
-              </Text>
-              <ResponsiveDiv sm>
-                <Flexbox direction="row" gap="4">
-                  <Link href="/tool/topcards">View Top cards</Link>
-                  <Link href="/tool/searchcards">Search Cards</Link>
-                </Flexbox>
-              </ResponsiveDiv>
-            </Flexbox>
+            <Text xl semibold>
+              Browse Card Packages
+            </Text>
             <Text sm className="text-text-secondary">
               Search by keywords, or filter packages that include a card using <code>card:cardname</code> syntax
             </Text>

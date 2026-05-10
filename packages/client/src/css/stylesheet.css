@@ -215,6 +215,17 @@
   }
 }
 
+/* Lighten navbar labels when the navbar is rendered transparent over a hero image */
+.nav-transparent .text-text-secondary {
+  color: rgb(255 255 255 / 0.7);
+}
+.nav-transparent .text-text-secondary:hover {
+  color: rgb(255 255 255);
+}
+.nav-transparent .hover\:text-text-secondary-active:hover {
+  color: rgb(255 255 255);
+}
+
 .dropdown-toggle::after {
   display: inline-block;
   margin-left: 0.255em;
