@@ -33,13 +33,16 @@ type ChipSuggestion = { label: string; href: string };
 const SUGGESTIONS: Partial<Record<SearchTab, ChipSuggestion[]>> = {
   cubes: [
     { label: 'Vintage', href: '/search?q=category%3A%22Vintage%22' },
-    { label: 'Desert', href: '/search?q=category%3A%22Desert%22' },
     { label: '100 Ornithopters', href: '/search?q=100%20Ornithopters' },
+    { label: 'card:"Life from the Loam"', href: '/search?q=card%3A"Life%20from%20the%20loam"' },
+  ],
+  cards: [
+    { label: 'Black Lotus', href: '/tool/searchcards?f=black+lotus&p=0&s=Elo&d=descending&di=names&v=cards' },
+    { label: 'type:snake', href: '/tool/searchcards?f=type%3Asnake&p=0&s=Elo&d=descending&di=names&v=cards' },
   ],
   packages: [
     { label: 'Shocklands', href: '/packages?q=Shocklands' },
-    { label: 'Fetches', href: '/packages?q=Fetches' },
-    { label: 'Signets', href: '/packages?q=Signets' },
+    { label: 'card:"Arid Mesa"', href: '/packages?q=card:"Arid%20Mesa"' },
   ],
 };
 

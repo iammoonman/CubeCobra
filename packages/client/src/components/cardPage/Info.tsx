@@ -87,6 +87,18 @@ const CardBreakdownInfo: React.FC<CardPageProps> = ({ card }) => {
               outline
               color="accent"
               block
+              href={`/packages?q=${encodeURIComponent(`card:"${card.name}"`)}`}
+              target="_blank"
+            >
+              {`Packages with ${card.name}`}
+            </Button>
+          </Col>
+          <Col xs={12} md={6}>
+            <Button
+              type="link"
+              outline
+              color="accent"
+              block
               href={`/tool/searchcards?f=name%3A"${card.name}"&p=0&di=printings`}
               target="_blank"
             >
