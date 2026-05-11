@@ -1,20 +1,16 @@
 import React from 'react';
 
-import Banner from 'components/Banner';
 import { Card, CardBody, CardHeader } from 'components/base/Card';
 import { Col, Flexbox, Row } from 'components/base/Layout';
 import Link from 'components/base/Link';
 import Text from 'components/base/Text';
-import DynamicFlash from 'components/DynamicFlash';
 import Markdown from 'components/Markdown';
 import RenderToRoot from 'components/RenderToRoot';
-import MainLayout from 'layouts/MainLayout';
+import HelpLayout from 'layouts/HelpLayout';
 
 const MarkdownPage: React.FC = () => (
-  <MainLayout>
-    <Banner />
-    <DynamicFlash />
-    <Card className="my-3 mx-4">
+  <HelpLayout activeHref="/markdown">
+    <Card>
       <Flexbox direction="col" gap="2">
         <CardHeader>
           <Text semibold lg>
@@ -816,7 +812,7 @@ const MarkdownPage: React.FC = () => (
         </CardBody>
       </Flexbox>
     </Card>
-  </MainLayout>
+  </HelpLayout>
 );
 
 export default RenderToRoot(MarkdownPage);

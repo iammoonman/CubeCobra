@@ -2,15 +2,13 @@ import React from 'react';
 
 import { CARD_STATUSES, FINISHES } from '@utils/datatypes/Card';
 
-import Banner from 'components/Banner';
 import Accordion from 'components/base/Accordion';
 import { Card, CardBody, CardHeader } from 'components/base/Card';
 import { Flexbox } from 'components/base/Layout';
 import Table from 'components/base/Table';
 import Text from 'components/base/Text';
-import DynamicFlash from 'components/DynamicFlash';
 import RenderToRoot from 'components/RenderToRoot';
-import MainLayout from 'layouts/MainLayout';
+import HelpLayout from 'layouts/HelpLayout';
 
 const LAND_SHORTCUTS: { primary: string; alternates?: string[] }[] = [
   {
@@ -77,10 +75,8 @@ const LAND_SHORTCUTS: { primary: string; alternates?: string[] }[] = [
 ];
 
 const FiltersPage: React.FC = () => (
-  <MainLayout>
-    <Flexbox direction="col" gap="2" className="my-2">
-      <Banner />
-      <DynamicFlash />
+  <HelpLayout activeHref="/filters">
+    <Flexbox direction="col" gap="2">
       <Card>
         <CardHeader>
           <Text semibold lg>
@@ -866,7 +862,7 @@ const FiltersPage: React.FC = () => (
         </CardBody>
       </Card>
     </Flexbox>
-  </MainLayout>
+  </HelpLayout>
 );
 
 export default RenderToRoot(FiltersPage);

@@ -4,14 +4,12 @@ import { Card, CardBody, CardHeader } from 'components/base/Card';
 import { Col, Flexbox, Row } from 'components/base/Layout';
 import Link from 'components/base/Link';
 import Text from 'components/base/Text';
-import DynamicFlash from 'components/DynamicFlash';
 import RenderToRoot from 'components/RenderToRoot';
-import MainLayout from 'layouts/MainLayout';
+import HelpLayout from 'layouts/HelpLayout';
 
 const DonatePage: React.FC = () => (
-  <MainLayout>
-    <DynamicFlash />
-    <Card className="my-3 mx-4">
+  <HelpLayout activeHref="/donate">
+    <Card>
       <CardHeader>
         <Text semibold lg>
           Donate
@@ -76,7 +74,7 @@ const DonatePage: React.FC = () => (
         </Flexbox>
       </CardBody>
     </Card>
-  </MainLayout>
+  </HelpLayout>
 );
 
 export default RenderToRoot(DonatePage);

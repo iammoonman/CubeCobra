@@ -42,6 +42,7 @@ Since 1.6.0
 - Restructured the top nav and footer — Home is now a top-level link, Explore is a richer sectioned dropdown that now includes a Search Cubes shortcut, a new top-level Resources entry sits alongside it, logged-out users see separate Login and Register entries, the navbar cube search and the Explore Cubes page were removed, and footer columns were reorganized with new Popular / Recently Updated / Recently Drafted Cubes links
 - Redesigned the Cube Search, Card Search, and Packages pages with the same hero treatment as Landing / Dashboard, and consolidated Top Cards into Search Cards with a toggle between **Card Images** and **Info Rows** (sortable table with Cost, Type, Elo, Total Picks, Cube Count)
 - Packages are now created on a dedicated page (with a clear warning that contents are locked once submitted), users get a Packages tab on their profile, and the navbar gains a `+` quick-create dropdown and a Your Packages menu
+- New Help hub at `/help` and a shared Help layout — Filter Syntax, Markdown Guide, API Docs, Card Updates, Contact, and Donate all share a year_of_snake hero with a sticky pill nav on the left to jump between them
 
 # Bug Fixes
 

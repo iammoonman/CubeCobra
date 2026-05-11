@@ -1,19 +1,15 @@
 import React from 'react';
 
-import Banner from 'components/Banner';
 import { Card, CardBody, CardHeader } from 'components/base/Card';
 import { Col, Flexbox, Row } from 'components/base/Layout';
 import Link from 'components/base/Link';
 import Text from 'components/base/Text';
-import DynamicFlash from 'components/DynamicFlash';
 import RenderToRoot from 'components/RenderToRoot';
-import MainLayout from 'layouts/MainLayout';
+import HelpLayout from 'layouts/HelpLayout';
 
 const ContactPage: React.FC = () => (
-  <MainLayout>
-    <Banner />
-    <DynamicFlash />
-    <Card className="my-3 mx-4">
+  <HelpLayout activeHref="/contact">
+    <Card>
       <CardHeader>
         <Text semibold xl>
           Contact
@@ -60,7 +56,7 @@ const ContactPage: React.FC = () => (
         </Flexbox>
       </CardBody>
     </Card>
-  </MainLayout>
+  </HelpLayout>
 );
 
 export default RenderToRoot(ContactPage);

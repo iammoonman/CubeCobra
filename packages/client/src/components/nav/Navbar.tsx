@@ -10,6 +10,7 @@ import {
   PackageIcon,
   PersonAddIcon,
   PersonIcon,
+  QuestionIcon,
   SearchIcon,
   SignInIcon,
   StarIcon,
@@ -135,7 +136,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   );
 
   const exploreMenu = (
-    <NavMenu label="Explore" navBar icon={<SearchIcon size={24} />} noChevron transparent={transparent}>
+    <NavMenu label="Explore" navBar icon={<SearchIcon size={24} />} transparent={transparent}>
       <Flexbox direction="col" gap="2" className="p-3">
         {exploreSections.map((section, idx) => (
           <Flexbox direction="col" gap="1" key={section.header || `section-${idx}`}>
@@ -311,11 +312,21 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
     </a>
   );
 
+  const helpLink = (
+    <a href="/help" className={NAV_ITEM_CLASSES}>
+      <span className="lg:hidden">
+        <QuestionIcon size={24} />
+      </span>
+      <span className="hidden lg:inline">Help</span>
+    </a>
+  );
+
   const leftNav = (
     <>
       {homeLink}
       {exploreMenu}
       {resourcesLink}
+      {helpLink}
     </>
   );
 
@@ -360,6 +371,9 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
       {mobileIconButton('explore', SearchIcon)}
       <a href="/resources" className="px-2 py-1 rounded text-white" aria-label="Resources">
         <ToolsIcon size={24} />
+      </a>
+      <a href="/help" className="px-2 py-1 rounded text-white" aria-label="Help">
+        <QuestionIcon size={24} />
       </a>
       {user && mobileIconButton('cubes', PackageIcon)}
       {user ? (
