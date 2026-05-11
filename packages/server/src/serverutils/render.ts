@@ -16,7 +16,8 @@ import { GIT_COMMIT } from './git';
 import { getBaseUrl } from './util';
 
 interface BundleManifest {
-  [key: string]: string;
+  [key: string]: string | { [key: string]: string } | undefined;
+  css?: { [key: string]: string };
 }
 
 let bundleManifest: BundleManifest | null = null;
@@ -78,11 +79,26 @@ const getBundlesForPage = (page: string): string[] => {
   // Try to get hashed filenames from manifest, fall back to non-hashed.
   // cdnUrl prepends CDN_BASE_URL when set (prod with CloudFront), otherwise
   // returns the same-origin path that Express serves from public/.
-  const vendors = cdnUrl(manifest['vendors'] || `/js/vendors.bundle.js`);
-  const commons = cdnUrl(manifest['commons'] || `/js/commons.bundle.js`);
-  const pageBundleName = cdnUrl(manifest[page] || `/js/${page}.bundle.js`);
+  const vendors = cdnUrl((manifest['vendors'] as string) || `/js/vendors.bundle.js`);
+  const commons = cdnUrl((manifest['commons'] as string) || `/js/commons.bundle.js`);
+  const pageBundleName = cdnUrl((manifest[page] as string) || `/js/${page}.bundle.js`);
 
   return [vendors, commons, pageBundleName];
+};
+
+const CSS_BUNDLE_NAMES = ['stylesheet', 'autocomplete', 'editcube', 'tags'] as const;
+type CssBundleName = (typeof CSS_BUNDLE_NAMES)[number];
+type CssBundles = Record<CssBundleName, string>;
+
+const getCssBundles = (): CssBundles => {
+  const manifest = loadManifest();
+  const cssMap = manifest.css || {};
+  return CSS_BUNDLE_NAMES.reduce((acc, name) => {
+    // In dev (no manifest), fall back to the un-hashed file with a commit
+    // query string so a browser refresh after a deploy picks up changes.
+    acc[name] = cdnUrl(cssMap[name] || `/css/${name}.css?v=${GIT_COMMIT}`);
+    return acc;
+  }, {} as CssBundles);
 };
 
 const sha256 = async (data: string): Promise<string> => {
@@ -208,6 +224,7 @@ const render = (
         reactHTML: null, // TODO renable ReactDOMServer.renderToString(React.createElement(page, reactProps)),
         reactProps: serialize(reactProps),
         bundles: getBundlesForPage(page),
+        cssBundles: getCssBundles(),
         metadata: options.metadata,
         title: options.title ? `${options.title} - Cube Cobra` : 'Cube Cobra',
         patron: req.user && (req.user.roles || []).includes(UserRoles.PATRON),
@@ -215,7 +232,6 @@ const render = (
         theme,
         htmlClasses,
         noindex: options.noindex || false,
-        cssVersion: GIT_COMMIT,
       });
     } catch {
       res.status(500).send('Error rendering page');

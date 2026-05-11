@@ -67,7 +67,7 @@ const HeroSearch: React.FC<HeroSearchProps> = ({ featured = [], showExploreMore 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-bg-secondary">
       <img
-        src={cdnUrl('/content/cobracube.png')}
+        src={cdnUrl('/content/cobracube.webp')}
         alt=""
         aria-hidden
         draggable={false}

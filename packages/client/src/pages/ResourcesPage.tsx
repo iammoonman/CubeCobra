@@ -198,7 +198,7 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ podcasts }) => {
       {/* HERO */}
       <div className="relative w-full min-h-screen overflow-hidden bg-bg-secondary">
         <img
-          src={cdnUrl('/content/skullsnake.png')}
+          src={cdnUrl('/content/skullsnake.webp')}
           alt=""
           aria-hidden
           draggable={false}

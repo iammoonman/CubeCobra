@@ -7,18 +7,18 @@ import path from 'path';
 dotenv.config();
 
 // Uploads packages/server/public/* to the assets S3 bucket configured for the
-// current stage. Hashed bundles get an immutable cache header; everything else
-// gets a 1-day TTL with stale-while-revalidate. manifest.json is uploaded last
-// so the server's bundle map flips atomically from old → new.
+// current stage. Everything except manifest.json is treated as immutable for
+// a year — hashed JS/CSS bundles can be safely cached forever because the URL
+// changes on content change, and content/* assets are renamed (not edited in
+// place) when they need to change. manifest.json is uploaded last so the
+// server's bundle map flips atomically from old → new.
 //
 // Used by `npm run upload-assets` (via root publish) and by CI against
 // LocalStack to smoke-test the path.
 
 const PUBLIC_DIR = path.resolve(__dirname, '../../server/public');
-const HASHED_RE = /\.[a-f0-9]{8}\.(?:js|css)$/;
 const MANIFEST_NAME = 'manifest.json';
 const IMMUTABLE = 'public, max-age=31536000, immutable';
-const SHORT = 'public, max-age=86400, stale-while-revalidate=604800';
 const NO_CACHE = 'public, max-age=60, must-revalidate';
 
 // The assets bucket lives in the AssetsStack, which is pinned to us-east-1
@@ -41,9 +41,7 @@ if (!bucket) {
 
 const cacheControlFor = (key: string): string => {
   if (key === MANIFEST_NAME) return NO_CACHE;
-  if (HASHED_RE.test(key)) return IMMUTABLE;
-  if (key.startsWith('js/')) return IMMUTABLE; // webpack outputs are content-hashed
-  return SHORT;
+  return IMMUTABLE;
 };
 
 const CONTENT_TYPE_BY_EXT: Record<string, string> = {

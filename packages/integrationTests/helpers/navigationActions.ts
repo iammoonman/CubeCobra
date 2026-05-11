@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test';
+import { Page } from '@playwright/test';
 
 /**
  * Navigate to the site homepage (entry point).
@@ -28,37 +28,6 @@ async function openNavDropdown(page: Page, menuLabel: string): Promise<void> {
   // On desktop (viewport >= 1024px / lg) the text label is visible.
   const trigger = page.getByText(menuLabel, { exact: true }).first();
   await trigger.click();
-}
-
-/**
- * Navigate to the landing page.
- * This is the site root for guests — no nav link specifically goes here,
- * so we go to '/' which shows landing for non-logged-in users.
- */
-export async function navigateToLanding(page: Page): Promise<void> {
-  await page.goto('/landing', { waitUntil: 'domcontentloaded' });
-}
-
-/**
- * Navigate to the Search page, optionally with a search query.
- * Uses the navbar search bar when a query is provided,
- * or the Explore dropdown > "Search cubes" when no query.
- */
-export async function navigateToSearch(page: Page, query?: string): Promise<void> {
-  if (query) {
-    // Use the search bar in the navbar header
-    await ensurePageLoaded(page);
-    const searchInput = page.locator('input[placeholder="Search cubes..."]').first();
-    await searchInput.waitFor({ state: 'visible', timeout: 10000 });
-    await searchInput.fill(query);
-    await searchInput.press('Enter');
-  } else {
-    // Navigate via the Explore dropdown
-    await openNavDropdown(page, 'Explore');
-    // Use href selector to avoid matching duplicate "Search cubes" text elsewhere on page
-    await page.locator('a[href="/search"]').first().click();
-  }
-  await page.waitForLoadState('domcontentloaded');
 }
 
 /**
@@ -111,21 +80,3 @@ export async function navigateToCubeFromNav(page: Page, cubeName: string): Promi
   }
 }
 
-/**
- * Search for cubes by typing in the search input on the search page
- */
-export async function searchCubes(page: Page, query: string): Promise<void> {
-  const searchInput = page.locator('input[placeholder*="Search cubes"]').first();
-  await searchInput.waitFor({ state: 'visible', timeout: 10000 });
-  await searchInput.fill(query);
-  await searchInput.press('Enter');
-  await page.waitForLoadState('domcontentloaded');
-}
-
-/**
- * Verify that a section with the given heading text exists on the page
- */
-export async function verifySectionExists(page: Page, sectionText: string, timeout = 10000): Promise<void> {
-  const section = page.locator(`text=${sectionText}`).first();
-  await expect(section).toBeVisible({ timeout });
-}
