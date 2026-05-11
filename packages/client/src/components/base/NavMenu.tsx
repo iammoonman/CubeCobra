@@ -92,7 +92,8 @@ const NavMenu: React.FC<NavMenuProps> = ({
         className={classNames('absolute shadow-lg rounded-md z-10 border border-border transition-all duration-300', {
           'bg-bg': !transparent,
           'bg-bg-secondary/40 backdrop-blur-sm text-button-text': transparent,
-          'mt-2': !noGap,
+          'mt-2': !noGap && !noPadding,
+          'mt-3.5': !noGap && noPadding,
           'mt-0': noGap,
           'opacity-100 max-h-screen': isOpen,
           'opacity-0 pointer-events-none max-h-0': !isOpen,
