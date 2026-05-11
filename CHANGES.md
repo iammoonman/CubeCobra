@@ -40,6 +40,8 @@ Since 1.6.0
 - Redesigned cube preview tiles — the cover image fills the tile, with the cube name, category tags, follower count, card count, and owner overlaid on a dark gradient at the bottom
 - New Resources page at `/resources`, linked from the top nav — gathers community tools, the content archive (articles, videos, podcasts), cube communities, the Hedron Network for cube tournaments, the Cube Map, and a list of the latest podcasts
 - Restructured the top nav and footer — Home is now a top-level link, Explore is a richer sectioned dropdown that now includes a Search Cubes shortcut, a new top-level Resources entry sits alongside it, logged-out users see separate Login and Register entries, the navbar cube search and the Explore Cubes page were removed, and footer columns were reorganized with new Popular / Recently Updated / Recently Drafted Cubes links
+- Redesigned the Cube Search, Card Search, and Packages pages with the same hero treatment as Landing / Dashboard, and consolidated Top Cards into Search Cards with a toggle between **Card Images** and **Info Rows** (sortable table with Cost, Type, Elo, Total Picks, Cube Count)
+- Packages are now created on a dedicated page (with a clear warning that contents are locked once submitted), users get a Packages tab on their profile, and the navbar gains a `+` quick-create dropdown and a Your Packages menu
 
 # Bug Fixes
 
@@ -76,9 +78,17 @@ Since 1.6.0
 - Improved performance of saving changes for large updates — card data is now fetched in a single batch request instead of one-at-a-time
 - Fixed newly-released cards missing data like "Drafted With" and other cross-card information after they were added to the database
 - Fixed Top Cards deduping rows by card name — different cards that happen to share a name (e.g. Everythingamajig) now appear as separate rows, and alternate-name printings of the same card (e.g. omenpath cards) are correctly collapsed into one
+- Fixed Card Search showing an infinite spinner on first load with no filter
+- Fixed search/result counts showing a stale "0 results" while a fetch was in flight — now shows "Searching…"
 
 # Technical Changes
 
 - Added a new `archetypeAnnotater` package — a standalone tool for manually labeling draft/deck datasets and building the cluster-center annotations that power automatic archetype naming
 - Static assets (JS bundles, CSS, fonts, images) are now served via S3 + CloudFront instead of being served directly from the application servers — reduces load on the main fleet and improves cache hit rates and latency for users
 - Reduced the production main app fleet from 5/6 to 3/4 instances — feasible after offloading static asset serving to CloudFront
+- "Your Cubes" navbar dropdown now queries 10 cubes from DynamoDB instead of 36, reducing read capacity per authenticated page render
+- Consolidated `TopCardsPage` + `CardSearchPage` into a single page driven by a `v=rows` / `v=cards` URL param; the old `TopCardsPage` bundle and `TopCardsTable` component were removed and `/tool/topcards` now redirects
+- Removed `CreatePackageModal` — replaced by a standalone `CreatePackagePage` rendered at `/packages/create`
+- New server routes: `/packages/create` (page), `/user/packages/:userid` (list), `/user/getmorepackages` (paginated fetch)
+- `Footer` now renders inside `Container xxxl` so its content max-width matches the rest of the layout
+- `NavMenu` gained `transparent`, `noPadding`, and tighter responsive label handling so the nav can baseline-align icon and label triggers and inherit the navbar's translucent backdrop on hero pages

@@ -7,17 +7,21 @@ import Text from './Text';
 export interface TableProps {
   headers?: string[];
   rows: { [key: string]: ReactNode }[];
+  hideOnMobile?: string[];
 }
 
-const Table: React.FC<TableProps> = ({ headers, rows }) => {
+const Table: React.FC<TableProps> = ({ headers, rows, hideOnMobile }) => {
+  const hiddenSet = new Set(hideOnMobile ?? []);
+  const cellHiddenClass = (header: string) => (hiddenSet.has(header) ? 'hidden md:table-cell' : '');
+
   if (headers) {
     return (
       <div className="overflow-x-auto max-w-full">
         <table className="border border-border w-full">
-          <thead className="bg-bg-active">
+          <thead className="bg-bg-active/80">
             <tr>
               {headers.map((header) => (
-                <th key={header} className="p-2 text-left">
+                <th key={header} className={classNames('p-2 text-left', cellHiddenClass(header))}>
                   <Text semibold md>
                     {header}
                   </Text>
@@ -29,13 +33,13 @@ const Table: React.FC<TableProps> = ({ headers, rows }) => {
             {rows.map((row, rowIndex) => (
               <tr
                 className={classNames({
-                  'bg-bg-accent': rowIndex % 2 === 0,
-                  'bg-bg-active': rowIndex % 2 === 1,
+                  'bg-bg-accent/80': rowIndex % 2 === 0,
+                  'bg-bg-active/80': rowIndex % 2 === 1,
                 })}
                 key={rowIndex}
               >
                 {headers.map((header) => (
-                  <td key={header} className="whitespace-nowrap p-2">
+                  <td key={header} className={classNames('whitespace-nowrap p-2', cellHiddenClass(header))}>
                     <Text sm>{row[header]}</Text>
                   </td>
                 ))}
@@ -53,8 +57,8 @@ const Table: React.FC<TableProps> = ({ headers, rows }) => {
         {rows.map((row, rowIndex) => (
           <tr
             className={classNames({
-              'bg-bg-accent': rowIndex % 2 === 0,
-              'bg-bg-active': rowIndex % 2 === 1,
+              'bg-bg-accent/80': rowIndex % 2 === 0,
+              'bg-bg-active/80': rowIndex % 2 === 1,
               'border-t border-border': rowIndex > 0,
             })}
             key={rowIndex}

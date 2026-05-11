@@ -449,21 +449,8 @@ export class PackageDynamoDao extends BaseDynamoDao<CardPackage, UnhydratedCardP
       Limit: limit,
     };
 
-    console.log('[queryByHashWithSort] Querying with params:', {
-      indexName,
-      hashString,
-      sortBy,
-      ascending,
-      limit,
-    });
-
     // Use raw query to get hash rows
     const rawResult = await this.dynamoClient.send(new QueryCommand(params));
-
-    console.log('[queryByHashWithSort] Raw result:', {
-      itemCount: rawResult.Items?.length || 0,
-      hasLastKey: !!rawResult.LastEvaluatedKey,
-    });
 
     if (!rawResult.Items || rawResult.Items.length === 0) {
       return { items: [], lastKey: rawResult.LastEvaluatedKey };
@@ -472,16 +459,11 @@ export class PackageDynamoDao extends BaseDynamoDao<CardPackage, UnhydratedCardP
     // Extract package IDs from hash rows
     const packageIds = rawResult.Items.map((item: any) => {
       const pk = item.PK as string;
-      console.log('[queryByHashWithSort] Hash row PK:', pk);
       return pk.split('#')[2]; // Extract ID from HASH#PACKAGE#{id}
     }).filter((id: string | undefined): id is string => id !== undefined);
 
-    console.log('[queryByHashWithSort] Extracted package IDs:', packageIds);
-
     // Batch get the actual packages
     const packages = await this.batchGet(packageIds);
-
-    console.log('[queryByHashWithSort] Retrieved packages:', packages.length);
 
     return {
       items: packages,

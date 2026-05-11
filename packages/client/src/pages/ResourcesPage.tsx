@@ -229,10 +229,12 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ podcasts }) => {
           </div>
         </div>
 
+        <div className="absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg pointer-events-none" />
+
         <button
           type="button"
           onClick={scrollToContent}
-          className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center text-button-text focus:outline-none"
+          className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center text-button-text focus:outline-none z-10"
           aria-label="Scroll to content"
         >
           <span className="text-xs font-semibold">EXPLORE MORE</span>
@@ -242,7 +244,7 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ podcasts }) => {
           href="https://cara.app/diosrevoredo/all"
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute bottom-2 right-3 text-xs text-button-text/60 hover:text-button-text underline-offset-2 hover:underline"
+          className="absolute top-20 right-3 text-xs text-button-text/70 hover:text-button-text underline-offset-2 hover:underline z-[15]"
         >
           Art by Dios Revoredo
         </a>

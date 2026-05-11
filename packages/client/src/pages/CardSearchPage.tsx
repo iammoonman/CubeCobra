@@ -8,7 +8,7 @@ import MainLayout from 'layouts/MainLayout';
 const CardSearchPage: React.FC = () => {
   return (
     <FilterContextProvider>
-      <MainLayout>
+      <MainLayout useContainer={false} transparentNav>
         <CardSearch />
       </MainLayout>
     </FilterContextProvider>

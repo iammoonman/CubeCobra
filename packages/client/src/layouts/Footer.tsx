@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 
+import Container from '../components/base/Container';
 import { Col, Row } from '../components/base/Layout';
 import Text from '../components/base/Text';
 import Copyright from '../components/Copyright';
@@ -26,7 +27,7 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="bg-bg-secondary text-text-secondary py-6">
-      <div className="container mx-auto px-4">
+      <Container xxxl className="px-4">
         <Row>
           <Col xs={6} sm={3}>
             <Text sm>
@@ -147,7 +148,7 @@ const Footer: React.FC = () => {
           <br />
           <Copyright />
         </p>
-      </div>
+      </Container>
     </footer>
   );
 };

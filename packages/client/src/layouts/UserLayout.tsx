@@ -30,6 +30,10 @@ const tabs = [
     href: '/user/view',
   },
   {
+    label: 'Packages',
+    href: '/user/packages',
+  },
+  {
     label: 'Decks',
     href: '/user/decks',
   },

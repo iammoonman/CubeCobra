@@ -1,25 +1,41 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 
-import { cardId, detailsToCard } from '@utils/cardutil';
-import { CardDetails } from '@utils/datatypes/Card';
+import { GearIcon, QuestionIcon } from '@primer/octicons-react';
+import { cardElo, cardId, detailsToCard } from '@utils/cardutil';
+import { cdnUrl } from '@utils/cdnUrl';
+import { allFields, CardDetails, FilterValues, isColorField, isNumField } from '@utils/datatypes/Card';
 import { ORDERED_SORTS } from '@utils/sorting/Sort';
 
 import Banner from 'components/Banner';
-import Controls from 'components/base/Controls';
-import { Col, Flexbox, Row } from 'components/base/Layout';
+import Button from 'components/base/Button';
+import Container from 'components/base/Container';
+import Input from 'components/base/Input';
+import { Flexbox } from 'components/base/Layout';
+import Link from 'components/base/Link';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from 'components/base/Modal';
 import Paginate from 'components/base/Pagination';
 import ResponsiveDiv from 'components/base/ResponsiveDiv';
 import Select from 'components/base/Select';
 import Spinner from 'components/base/Spinner';
+import Table from 'components/base/Table';
 import Text from 'components/base/Text';
 import CardGrid from 'components/card/CardGrid';
 import DynamicFlash from 'components/DynamicFlash';
-import FilterCollapse from 'components/FilterCollapse';
+import LoadingButton from 'components/LoadingButton';
+import AdvancedFilterModal from 'components/modals/AdvancedFilterModal';
+import SideBanner from 'components/SideBanner';
+import withAutocard from 'components/WithAutocard';
 import FilterContext from 'contexts/FilterContext';
 import Query from 'utils/Query';
 
+const AutocardA = withAutocard(Link);
+
+type ViewMode = 'cards' | 'rows';
+
+const PICK_COUNT_BASELINE = 'pickcount>=100';
+
 const CardSearch: React.FC = () => {
-  const { filterInput } = useContext(FilterContext);
+  const { filterInput, setFilterInput, filterValid } = useContext(FilterContext);
   const [cards, setCards] = useState<CardDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(parseInt(Query.get('p', '0'), 0));
@@ -27,160 +43,411 @@ const CardSearch: React.FC = () => {
   const [distinct, setDistinct] = useState(Query.get('di', 'names'));
   const [sort, setSort] = useState(Query.get('s', 'Elo'));
   const [direction, setDirection] = useState(Query.get('d', 'descending'));
+  const [view, setView] = useState<ViewMode>((Query.get('v', 'cards') as ViewMode) === 'rows' ? 'rows' : 'cards');
+
+  const [filterText, setFilterText] = useState(filterInput || '');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedValues, setAdvancedValues] = useState<Partial<FilterValues>>({});
+  const [controlsOpen, setControlsOpen] = useState(false);
+
+  useEffect(() => {
+    setFilterText(filterInput || '');
+  }, [filterInput]);
+
+  const effectiveFilter = useCallback(() => {
+    const user = filterInput?.trim() ?? '';
+    if (view === 'rows') {
+      return user ? `${PICK_COUNT_BASELINE} ${user}` : PICK_COUNT_BASELINE;
+    }
+    return user;
+  }, [filterInput, view]);
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams([
       ['p', page.toString()],
-      ['f', filterInput || ''],
+      ['f', effectiveFilter()],
       ['s', sort],
       ['d', direction],
       ['di', distinct],
     ]);
 
     const response = await fetch(`/tool/api/searchcards/?${params.toString()}`);
-    if (!response.ok) {
-      console.error(response);
-    }
+    if (!response.ok) console.error(response);
 
     Query.set('f', filterInput || '');
     Query.set('p', page.toString());
     Query.set('s', sort);
     Query.set('d', direction);
     Query.set('di', distinct);
+    Query.set('v', view);
 
     const json = await response.json();
 
     setCards(json.data);
     setCount(json.numResults.toString());
     setLoading(false);
-  }, [page, filterInput, sort, direction, distinct]);
+  }, [page, filterInput, sort, direction, distinct, view, effectiveFilter]);
 
   useEffect(() => {
-    if (filterInput && filterInput !== '') {
+    const shouldFetch = view === 'rows' || (!!filterInput && filterInput !== '');
+    if (shouldFetch) {
+      setLoading(true);
       fetchData();
     } else {
       setLoading(false);
       setCards([]);
     }
-  }, [page, direction, distinct, sort, filterInput, fetchData]);
+  }, [page, direction, distinct, sort, filterInput, view, fetchData]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [filterInput, view]);
 
   const updatePage = (index: number) => {
     setLoading(true);
     setPage(index);
   };
-  const updateSort = (index: string) => {
-    setLoading(true);
-    setSort(index);
-  };
-  const updateDirection = (index: string) => {
-    setLoading(true);
-    setDirection(index);
-  };
-  const updateDistinct = (index: string) => {
-    setLoading(true);
-    setDistinct(index);
-  };
 
-  useEffect(() => {
-    setLoading(true);
-    setPage(0);
-  }, [filterInput]);
+  const applyAdvanced = useCallback(() => {
+    const tokens: string[] = [];
+    for (const name of allFields) {
+      if (advancedValues[name]) {
+        if (isColorField(name)) {
+          const op = advancedValues[`${name}Op`] || '=';
+          if (advancedValues[name] && (advancedValues[name] as string[]).length > 0) {
+            tokens.push(`${name}${op}${(advancedValues[name] as string[]).join('')}`);
+          }
+        } else {
+          const op = isNumField(name) ? advancedValues[`${name}Op`] || '=' : ':';
+          let value = (advancedValues[name] as string).replace('"', '\\"');
+          if (value.indexOf(' ') > -1) value = `"${value}"`;
+          tokens.push(`${name}${op}${value}`);
+        }
+      }
+    }
+    const filterString = tokens.join(' ');
+    setFilterText(filterString);
+    setFilterInput(filterString);
+    setAdvancedOpen(false);
+  }, [advancedValues, setFilterInput]);
+
+  const updateAdvancedValue = useCallback(
+    (value: string | string[], name: keyof FilterValues) => {
+      setAdvancedValues({ ...advancedValues, [name]: value as any });
+    },
+    [advancedValues],
+  );
+
+  const pager = (
+    <Paginate count={Math.ceil(parseInt(count || '0', 10) / 96)} active={page} onClick={(i: number) => updatePage(i)} />
+  );
+
+  const tableHeaders = ['Name', 'Cost', 'Type', 'Elo', 'Total Picks', 'Cube Count'];
+  const tableRows = cards.map((card) => ({
+    Name: (
+      <AutocardA href={`/tool/card/${card.scryfall_id}`} card={detailsToCard(card)}>
+        {card.name}
+      </AutocardA>
+    ),
+    Cost: (
+      <span className="inline-flex items-center">
+        {(card.parsed_cost ?? [])
+          .slice(0)
+          .reverse()
+          .map((symbol, index) => (
+            <img
+              key={`mana-symbol-${index}`}
+              alt={symbol}
+              className="mana-symbol-sm"
+              src={cdnUrl(`/content/symbols/${symbol}.png`)}
+            />
+          ))}
+      </span>
+    ),
+    Type: card.type,
+    Elo: card.elo === null ? '' : Math.round(cardElo(detailsToCard(card))).toLocaleString(),
+    'Total Picks': card.pickCount === null ? '' : Number(card.pickCount).toLocaleString(),
+    'Cube Count': card.cubeCount === null ? '' : Number(card.cubeCount).toLocaleString(),
+  }));
+
+  const emptyMessage = view === 'cards' && !filterInput ? 'Enter a filter above to begin searching.' : 'No cards found';
+  const formattedCount = Number(count || '0').toLocaleString();
+  const showSummary = !(view === 'cards' && !filterInput);
+  const headlineCount = loading ? 'Searching…' : `${formattedCount} results`;
 
   return (
-    <>
-      <Controls className="p-2">
-        <Flexbox direction="col" gap="2">
-          <Flexbox direction="row" alignItems="start" gap="3" wrap="wrap">
-            <Text xl semibold className="whitespace-nowrap pt-2">
-              Search Cards
-            </Text>
-            <div className="flex-grow min-w-0">
-              <FilterCollapse isOpen buttonLabel="Search" />
+    <div className="relative min-h-screen">
+      <div className="absolute inset-x-0 top-0 h-screen overflow-hidden bg-bg-secondary pointer-events-none z-0">
+        <img
+          src={cdnUrl('/content/retrocobra.webp')}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="absolute inset-0 w-full h-full object-cover object-top select-none"
+        />
+        <div className="absolute inset-0 bg-bg-secondary/80" />
+        <div className="absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
+      </div>
+
+      <a
+        href="https://bsky.app/profile/firosart.bsky.social"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute top-20 right-3 text-xs text-button-text/70 hover:text-button-text underline-offset-2 hover:underline z-[15]"
+      >
+        Art by Santiago Rosas
+      </a>
+
+      <div className="relative z-10">
+        <div className="px-4 pt-28 md:pt-36">
+          <div className="w-full max-w-xl mx-auto flex flex-col items-center text-center gap-5">
+            <div>
+              <Text xxxxl bold className="!text-button-text block">
+                Search Cards
+              </Text>
+              <p className="mt-1 text-sm text-button-text/80">
+                Find any Magic card. Toggle between card images and an info table.
+              </p>
             </div>
-          </Flexbox>
-          <Row>
-            <Col xs={12} sm={4}>
+
+            <Flexbox direction="row" alignItems="center" gap="2" className="w-full">
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen(true)}
+                aria-label="Advanced filters"
+                className="text-button-text/80 hover:text-button-text cursor-pointer p-1 inline-flex items-center"
+              >
+                <QuestionIcon size={20} />
+              </button>
+              <Input
+                placeholder='Filter cards: e.g. name:"Ambush Viper"'
+                value={filterText}
+                valid={(filterInput?.length ?? 0) > 0 ? filterValid : undefined}
+                onChange={(event) => setFilterText(event.target.value)}
+                onEnter={() => setFilterInput(filterText)}
+                className="!bg-white !text-gray-800 !placeholder-gray-500 !border-gray-300"
+              />
+              <button
+                type="button"
+                onClick={() => setControlsOpen(true)}
+                aria-label="Display options"
+                className="md:hidden text-button-text/80 hover:text-button-text cursor-pointer p-1 inline-flex items-center"
+              >
+                <GearIcon size={20} />
+              </button>
+              <div className="hidden md:block">
+                <LoadingButton color="primary" onClick={() => setFilterInput(filterText)}>
+                  <span className="px-3">Search</span>
+                </LoadingButton>
+              </div>
+            </Flexbox>
+          </div>
+        </div>
+
+        <AdvancedFilterModal
+          isOpen={advancedOpen}
+          setOpen={setAdvancedOpen}
+          apply={applyAdvanced}
+          values={advancedValues}
+          updateValue={updateAdvancedValue}
+        />
+
+        <Modal isOpen={controlsOpen} setOpen={setControlsOpen} sm>
+          <ModalHeader setOpen={setControlsOpen}>Display Options</ModalHeader>
+          <ModalBody>
+            <Flexbox direction="col" gap="3">
+              <Select
+                label="Distinct"
+                options={[
+                  { value: 'names', label: 'Cards' },
+                  { value: 'printings', label: 'Printings' },
+                ]}
+                value={distinct}
+                setValue={(value) => {
+                  setLoading(true);
+                  setDistinct(value);
+                }}
+              />
+              <Select
+                label="View"
+                options={[
+                  { value: 'cards', label: 'Card Images' },
+                  { value: 'rows', label: 'Info Rows' },
+                ]}
+                value={view}
+                setValue={(value) => {
+                  setLoading(true);
+                  setView(value as ViewMode);
+                }}
+              />
               <Select
                 label="Sort"
-                value={sort}
-                setValue={(value) => updateSort(value)}
                 options={ORDERED_SORTS.map((s) => ({ value: s, label: s }))}
+                value={sort}
+                setValue={(value) => {
+                  setLoading(true);
+                  setSort(value);
+                }}
               />
-            </Col>
-            <Col xs={12} sm={4}>
               <Select
                 label="Direction"
-                value={direction}
-                setValue={(value) => updateDirection(value)}
                 options={[
                   { value: 'ascending', label: 'Ascending' },
                   { value: 'descending', label: 'Descending' },
                 ]}
+                value={direction}
+                setValue={(value) => {
+                  setLoading(true);
+                  setDirection(value);
+                }}
               />
-            </Col>
-            <Col xs={12} sm={4}>
-              <Select
-                label="Distinct"
-                value={distinct}
-                setValue={(value) => updateDistinct(value)}
-                options={[
-                  { value: 'names', label: 'Names' },
-                  { value: 'printings', label: 'Printings' },
-                ]}
-              />
-            </Col>
-          </Row>
-        </Flexbox>
-      </Controls>
-      <Banner />
-      <DynamicFlash />
-      {(cards && cards.length) > 0 ? (
-        <Flexbox direction="col" gap="2" className="my-2">
-          <Flexbox direction="row" justify="between" wrap="wrap" alignItems="center">
-            <Text lg semibold className="whitespace-nowrap">
-              <ResponsiveDiv baseVisible sm>
-                {`${count} results`}
-              </ResponsiveDiv>
-              <ResponsiveDiv md>{`Found ${count} results for the query: ${filterInput}`}</ResponsiveDiv>
-            </Text>
-            <Paginate
-              count={Math.ceil(parseInt(count, 10) / 96)}
-              active={page}
-              onClick={(i: number) => updatePage(i)}
-            />
-          </Flexbox>
-          {loading && (
-            <div className="centered m-4">
-              <Spinner xl />
+            </Flexbox>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="primary" onClick={() => setControlsOpen(false)} block>
+              Done
+            </Button>
+          </ModalFooter>
+        </Modal>
+
+        <Container xxxl className="pb-6">
+          <Flexbox direction="row" gap="4">
+            <ResponsiveDiv xxl className="pl-2 py-2 min-w-fit">
+              <SideBanner placementId="left-rail" />
+            </ResponsiveDiv>
+            <div className="flex-grow px-2 max-w-full min-w-0">
+              <Flexbox direction="col" gap="3" className="pt-3 md:pt-4 pb-3">
+                <Flexbox
+                  direction="row"
+                  alignItems="center"
+                  justify="center"
+                  gap="2"
+                  wrap="wrap"
+                  className="hidden md:flex lg:flex-nowrap"
+                >
+                  <div className="w-28">
+                    <Select
+                      dense
+                      options={[
+                        { value: 'names', label: 'Cards' },
+                        { value: 'printings', label: 'Printings' },
+                      ]}
+                      value={distinct}
+                      setValue={(value) => {
+                        setLoading(true);
+                        setDistinct(value);
+                      }}
+                    />
+                  </div>
+                  <span className="text-sm text-button-text/80">as</span>
+                  <div className="w-24">
+                    <Select
+                      dense
+                      options={[
+                        { value: 'cards', label: 'Images' },
+                        { value: 'rows', label: 'Rows' },
+                      ]}
+                      value={view}
+                      setValue={(value) => {
+                        setLoading(true);
+                        setView(value as ViewMode);
+                      }}
+                    />
+                  </div>
+                  <span className="text-sm text-button-text/80 whitespace-nowrap">sorted by</span>
+                  <div className="w-36">
+                    <Select
+                      dense
+                      options={ORDERED_SORTS.map((s) => ({ value: s, label: s }))}
+                      value={sort}
+                      setValue={(value) => {
+                        setLoading(true);
+                        setSort(value);
+                      }}
+                    />
+                  </div>
+                  <span className="text-sm text-button-text/80">:</span>
+                  <div className="w-32">
+                    <Select
+                      dense
+                      options={[
+                        { value: 'ascending', label: 'Ascending' },
+                        { value: 'descending', label: 'Descending' },
+                      ]}
+                      value={direction}
+                      setValue={(value) => {
+                        setLoading(true);
+                        setDirection(value);
+                      }}
+                    />
+                  </div>
+                </Flexbox>
+
+                {showSummary && (
+                  <Flexbox direction="row" alignItems="center" justify="between" gap="3" wrap="wrap" className="w-full">
+                    <Flexbox direction="col" gap="1" alignItems="start" className="text-left min-w-0">
+                      <Text lg semibold className="!text-button-text">
+                        {headlineCount}
+                      </Text>
+                      {filterInput && (
+                        <Text sm semibold italic className="!text-button-text/80 break-all">
+                          {filterInput}
+                        </Text>
+                      )}
+                    </Flexbox>
+                    {cards.length > 0 && pager}
+                  </Flexbox>
+                )}
+              </Flexbox>
+
+              <Banner />
+              <DynamicFlash />
+              <Flexbox direction="col" gap="3" className="mt-3">
+                {cards && cards.length > 0 ? (
+                  <Flexbox direction="col" gap="2">
+                    {loading ? (
+                      <div className="centered m-4">
+                        <Spinner xl />
+                      </div>
+                    ) : view === 'rows' ? (
+                      <Table headers={tableHeaders} rows={tableRows} hideOnMobile={['Cost', 'Type']} />
+                    ) : (
+                      <CardGrid
+                        cards={cards.map(detailsToCard)}
+                        xs={2}
+                        sm={3}
+                        md={4}
+                        lg={5}
+                        xl={6}
+                        xxl={8}
+                        cardProps={{ autocard: true, className: 'clickable' }}
+                        hrefFn={(card) => `/tool/card/${cardId(card)}`}
+                      />
+                    )}
+                    <Flexbox direction="row" justify="center" alignItems="center" className="w-full px-2">
+                      {pager}
+                    </Flexbox>
+                  </Flexbox>
+                ) : (
+                  <Flexbox direction="row" justify="center" alignItems="center" className="w-full px-2 py-12">
+                    {loading ? (
+                      <Spinner xl />
+                    ) : (
+                      <Text semibold lg className="!text-button-text">
+                        {emptyMessage}
+                      </Text>
+                    )}
+                  </Flexbox>
+                )}
+              </Flexbox>
             </div>
-          )}
-          {!loading && (
-            <CardGrid
-              cards={cards.map(detailsToCard)}
-              xs={2}
-              sm={3}
-              md={4}
-              lg={5}
-              xl={6}
-              xxl={8}
-              cardProps={{ autocard: true, className: 'clickable' }}
-              hrefFn={(card) => `/tool/card/${cardId(card)}`}
-            />
-          )}
-          <Flexbox direction="row" justify="end">
-            <Paginate
-              count={Math.ceil(parseInt(count, 10) / 96)}
-              active={page}
-              onClick={(i: number) => updatePage(i)}
-            />
+            <ResponsiveDiv lg className="pr-2 py-2 min-w-fit">
+              <SideBanner placementId="right-rail" />
+            </ResponsiveDiv>
           </Flexbox>
-        </Flexbox>
-      ) : (
-        <Text lg semibold className="mt-2">
-          No cards found
-        </Text>
-      )}
-    </>
+        </Container>
+      </div>
+    </div>
   );
 };
 

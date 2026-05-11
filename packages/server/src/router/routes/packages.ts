@@ -448,7 +448,7 @@ export const submitHandler = async (req: Request, res: Response) => {
     // make distinct
     const distinctKeywords = keywords.filter((value, index, self) => self.indexOf(value) === index);
 
-    await packageDao.createPackage({
+    const packageId = await packageDao.createPackage({
       title: packageName,
       date: Date.now(),
       owner: poster.id,
@@ -459,10 +459,15 @@ export const submitHandler = async (req: Request, res: Response) => {
 
     return res.status(200).send({
       success: 'true',
+      packageId,
     });
   } catch (err) {
     return handleRouteError(req, res, err, '/404');
   }
+};
+
+export const getCreatePageHandler = async (req: Request, res: Response) => {
+  return render(req, res, 'CreatePackagePage', {}, { title: 'Create Package' });
 };
 
 export const upvoteHandler = async (req: Request, res: Response) => {
@@ -598,6 +603,11 @@ export const routes = [
     path: '/submit',
     method: 'post',
     handler: [ensureAuth, csrfProtection, submitHandler],
+  },
+  {
+    path: '/create',
+    method: 'get',
+    handler: [ensureAuth, csrfProtection, getCreatePageHandler],
   },
   {
     path: '/upvote/:id',

@@ -4,7 +4,9 @@ import type { Icon as OcticonIcon } from '@primer/octicons-react';
 import {
   BellFillIcon,
   ClockIcon,
+  FeedPlusIcon,
   GraphIcon,
+  HomeIcon,
   PackageIcon,
   PersonAddIcon,
   PersonIcon,
@@ -69,7 +71,7 @@ const exploreSections: NavSection[] = [
   {
     header: 'Cards',
     items: [
-      { label: 'Top Cards', href: '/tool/topcards', icon: GraphIcon },
+      { label: 'Top Cards', href: '/tool/searchcards?v=rows', icon: GraphIcon },
       { label: 'Search Cards', href: '/tool/searchcards', icon: SearchIcon },
     ],
   },
@@ -125,12 +127,15 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
 
   const homeLink = (
     <a href={isHomePage ? '#' : '/'} className={classNames(NAV_ITEM_CLASSES, 'ml-6')}>
-      Home
+      <span className="lg:hidden">
+        <HomeIcon size={24} />
+      </span>
+      <span className="hidden lg:inline">Home</span>
     </a>
   );
 
   const exploreMenu = (
-    <NavMenu label="Explore" navBar icon={<SearchIcon size={24} />}>
+    <NavMenu label="Explore" navBar icon={<SearchIcon size={24} />} noChevron transparent={transparent}>
       <Flexbox direction="col" gap="2" className="p-3">
         {exploreSections.map((section, idx) => (
           <Flexbox direction="col" gap="1" key={section.header || `section-${idx}`}>
@@ -147,9 +152,19 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   );
 
   const yourCubesMenu = user && (
-    <NavMenu label="Your Cubes" navBar icon={<PackageIcon size={24} />}>
+    <NavMenu
+      label={
+        <>
+          <span className="whitespace-nowrap xl:hidden">Cubes</span>
+          <span className="whitespace-nowrap hidden xl:inline">Your Cubes</span>
+        </>
+      }
+      navBar
+      icon={<PackageIcon size={24} />}
+      transparent={transparent}
+    >
       <Flexbox direction="col" gap="1" className="max-h-96 overflow-auto p-2">
-        {(user.cubes || []).slice(0, 36).map((item) => (
+        {(user.cubes || []).slice(0, 10).map((item) => (
           <NavLink key={`dropdown_cube_${item.name}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
             {item.name}
           </NavLink>
@@ -174,16 +189,97 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
     </NavMenu>
   );
 
-  const userMenu = user && (
+  const yourPackagesMenu = user && (
     <NavMenu
       label={
-        <Flexbox alignItems="center" direction="row" gap="2">
-          <PersonIcon size={20} />
-          {user.username}
-        </Flexbox>
+        <>
+          <span className="whitespace-nowrap xl:hidden">Packages</span>
+          <span className="whitespace-nowrap hidden xl:inline">Your Packages</span>
+        </>
       }
       navBar
+      icon={<PackageIcon size={24} />}
+      transparent={transparent}
     >
+      <Flexbox direction="col" gap="2" className="p-3">
+        <NavLink href={`/user/packages/${user.id}`}>View All My Packages</NavLink>
+        <NavLink href="/packages/create">Create A New Package</NavLink>
+      </Flexbox>
+    </NavMenu>
+  );
+
+  const createMenu = user && (
+    <NavMenu
+      label={
+        <div className="flex items-center justify-center w-6 h-6">
+          <FeedPlusIcon size={20} />
+        </div>
+      }
+      navBar
+      noChevron
+      noPadding
+      transparent={transparent}
+    >
+      <Flexbox direction="col" gap="2" className="p-3" alignContent="start">
+        <CreateCubeButton>Create A New Cube</CreateCubeButton>
+        <NavLink href="/packages/create">Create A New Package</NavLink>
+      </Flexbox>
+    </NavMenu>
+  );
+
+  const yourStuffMenu = user && (
+    <NavMenu label="Your Stuff" navBar icon={<PackageIcon size={24} />} wide noChevron noGap transparent={transparent}>
+      <Flexbox direction="col">
+        <Flexbox direction="col" gap="3" className="p-3">
+          <Flexbox direction="col" gap="2">
+            <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Your Cubes</div>
+            {(user.cubes || []).slice(0, 10).map((item) => (
+              <NavLink key={`combined_cube_${item.name}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
+                {item.name}
+              </NavLink>
+            ))}
+          </Flexbox>
+
+          {(user.collaboratingCubes || []).length > 0 && (
+            <Flexbox direction="col" gap="2">
+              <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Collaborating</div>
+              {(user.collaboratingCubes || []).slice(0, 12).map((item) => (
+                <NavLink key={`combined_collab_${item.id}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
+                  {item.name}
+                </NavLink>
+              ))}
+            </Flexbox>
+          )}
+        </Flexbox>
+
+        <div className="bg-bg-active border-t border-border px-3 py-3 rounded-b-md">
+          <Flexbox direction="col" gap="2">
+            <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Actions</div>
+            {(user.cubes || []).length > 2 && (
+              <a href={`/user/view/${user.id}`} className="text-sm text-text-secondary hover:text-text cursor-pointer">
+                View all my cubes
+              </a>
+            )}
+            <CreateCubeButton>
+              <span className="text-sm text-text-secondary hover:text-text">Create a new cube</span>
+            </CreateCubeButton>
+            <a
+              href={`/user/packages/${user.id}`}
+              className="text-sm text-text-secondary hover:text-text cursor-pointer"
+            >
+              View all my packages
+            </a>
+            <a href="/packages/create" className="text-sm text-text-secondary hover:text-text cursor-pointer">
+              Create a new package
+            </a>
+          </Flexbox>
+        </div>
+      </Flexbox>
+    </NavMenu>
+  );
+
+  const userMenu = user && (
+    <NavMenu label={<span className="whitespace-nowrap">{user.username}</span>} navBar transparent={transparent}>
       <Flexbox direction="col" gap="2" className="p-3">
         <NavLink href={`/user/view/${user.id}`}>Your Profile</NavLink>
         {user.roles && user.roles.includes(UserRoles.ADMIN) && <NavLink href="/admin/dashboard">Admin Page</NavLink>}
@@ -208,7 +304,10 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
 
   const resourcesLink = (
     <a href="/resources" className={NAV_ITEM_CLASSES}>
-      Resources
+      <span className="lg:hidden">
+        <ToolsIcon size={24} />
+      </span>
+      <span className="hidden lg:inline">Resources</span>
     </a>
   );
 
@@ -222,8 +321,13 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
 
   const rightNav = user ? (
     <>
-      <NotificationsNav />
-      {yourCubesMenu}
+      <NotificationsNav transparent={transparent} />
+      {createMenu}
+      <ResponsiveDiv lg>{yourCubesMenu}</ResponsiveDiv>
+      <ResponsiveDiv lg>{yourPackagesMenu}</ResponsiveDiv>
+      <ResponsiveDiv baseVisible lg>
+        {yourStuffMenu}
+      </ResponsiveDiv>
       {userMenu}
     </>
   ) : (
@@ -281,7 +385,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
         transparent ? 'nav-transparent bg-bg-secondary/40 backdrop-blur-sm' : 'bg-bg-secondary',
       )}
     >
-      <ResponsiveDiv baseVisible sm className="w-full max-w-full">
+      <ResponsiveDiv baseVisible md className="w-full max-w-full">
         <Flexbox justify="between" alignItems="center" direction="row">
           <a href="/">
             <img
@@ -294,7 +398,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
         </Flexbox>
       </ResponsiveDiv>
 
-      <ResponsiveDiv sm className="w-full max-w-full">
+      <ResponsiveDiv md className="w-full max-w-full">
         <Flexbox justify="between" alignItems="center" direction="row" gap="4">
           <Flexbox alignItems="center" direction="row" gap="2">
             <a href="/">
@@ -315,9 +419,14 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
       </ResponsiveDiv>
 
       {/* Mobile Menu Dropdown */}
-      <ResponsiveDiv baseVisible sm>
+      <ResponsiveDiv baseVisible md>
         {mobileMenuOpen === 'explore' && (
-          <div className="bg-bg-active mt-3 p-4 rounded">
+          <div
+            className={classNames(
+              'mt-3 p-4 rounded',
+              transparent ? 'bg-bg-secondary/40 backdrop-blur-sm text-button-text' : 'bg-bg-active',
+            )}
+          >
             <Flexbox direction="col" gap="3">
               {exploreSections.map((section, idx) => (
                 <Flexbox direction="col" gap="2" key={section.header || `mobile-section-${idx}`}>
@@ -333,7 +442,12 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
           </div>
         )}
         {mobileMenuOpen === 'notifications' && user && (
-          <div className="bg-bg-active mt-3 rounded">
+          <div
+            className={classNames(
+              'mt-3 rounded',
+              transparent ? 'bg-bg-secondary/40 backdrop-blur-sm text-button-text' : 'bg-bg-active',
+            )}
+          >
             <Flexbox direction="col">
               <CardHeader>
                 <Flexbox justify="between" direction="row" className="font-semibold">
@@ -367,18 +481,29 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
           </div>
         )}
         {mobileMenuOpen === 'cubes' && user && (
-          <div className="bg-bg-active mt-3 rounded">
+          <div
+            className={classNames(
+              'mt-3 rounded overflow-hidden',
+              transparent ? 'bg-bg-secondary/40 backdrop-blur-sm text-button-text' : 'bg-bg-active',
+            )}
+          >
             <Flexbox direction="col">
-              <CardHeader className="font-semibold">Your Cubes</CardHeader>
-              <Flexbox direction="col" gap="1" className="max-h-96 overflow-auto p-2">
-                {(user.cubes || []).slice(0, 36).map((item) => (
-                  <NavLink key={`mobile_cube_${item.name}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
-                    {item.name}
-                  </NavLink>
-                ))}
+              <Flexbox direction="col" gap="3" className="p-4">
+                <Flexbox direction="col" gap="2">
+                  <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Your Cubes</div>
+                  {(user.cubes || []).slice(0, 10).map((item) => (
+                    <NavLink
+                      key={`mobile_cube_${item.name}`}
+                      href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}
+                    >
+                      {item.name}
+                    </NavLink>
+                  ))}
+                </Flexbox>
+
                 {(user.collaboratingCubes || []).length > 0 && (
-                  <>
-                    <div className="text-xs text-text-secondary font-semibold px-1 pt-2 pb-1">Collaborating</div>
+                  <Flexbox direction="col" gap="2">
+                    <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Collaborating</div>
                     {(user.collaboratingCubes || []).slice(0, 12).map((item) => (
                       <NavLink
                         key={`mobile_collab_${item.id}`}
@@ -387,20 +512,45 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                         {item.name}
                       </NavLink>
                     ))}
-                  </>
+                  </Flexbox>
                 )}
               </Flexbox>
-              <CardFooter>
+
+              <div className="bg-bg border-t border-border px-4 py-3">
                 <Flexbox direction="col" gap="2">
-                  {(user.cubes || []).length > 2 && <NavLink href={`/user/view/${user.id}`}>View All</NavLink>}
-                  <CreateCubeButton>Create A New Cube</CreateCubeButton>
+                  <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Actions</div>
+                  {(user.cubes || []).length > 2 && (
+                    <a
+                      href={`/user/view/${user.id}`}
+                      className="text-sm text-text-secondary hover:text-text cursor-pointer"
+                    >
+                      View all my cubes
+                    </a>
+                  )}
+                  <CreateCubeButton>
+                    <span className="text-sm text-text-secondary hover:text-text">Create a new cube</span>
+                  </CreateCubeButton>
+                  <a
+                    href={`/user/packages/${user.id}`}
+                    className="text-sm text-text-secondary hover:text-text cursor-pointer"
+                  >
+                    View all my packages
+                  </a>
+                  <a href="/packages/create" className="text-sm text-text-secondary hover:text-text cursor-pointer">
+                    Create a new package
+                  </a>
                 </Flexbox>
-              </CardFooter>
+              </div>
             </Flexbox>
           </div>
         )}
         {mobileMenuOpen === 'user' && user && (
-          <div className="bg-bg-active mt-3 p-4 rounded">
+          <div
+            className={classNames(
+              'mt-3 p-4 rounded',
+              transparent ? 'bg-bg-secondary/40 backdrop-blur-sm text-button-text' : 'bg-bg-active',
+            )}
+          >
             <Flexbox direction="col" gap="2">
               <NavLink href={`/user/view/${user.id}`}>Your Profile</NavLink>
               {user.roles && user.roles.includes(UserRoles.ADMIN) && (
