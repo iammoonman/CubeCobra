@@ -116,7 +116,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     {cubes.length > 2 && <Link href={`/user/view/${user?.id}`}>View All</Link>}
                   </Flexbox>
                   {cubes.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 5xl:grid-cols-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 4xl:grid-cols-3">
                       {cubes.slice(0, 12).map((cube) => (
                         <CubePreview key={cube.id} cube={cube} />
                       ))}

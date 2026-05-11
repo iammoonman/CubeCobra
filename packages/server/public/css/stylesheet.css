@@ -878,9 +878,6 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 .top-0 {
   top: 0px;
 }
-.top-24 {
-  top: 6rem;
-}
 .top-4 {
   top: 1rem;
 }
@@ -2292,9 +2289,6 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 }
 .p-6 {
   padding: 1.5rem;
-}
-.p-8 {
-  padding: 2rem;
 }
 .px-0 {
   padding-left: 0px;
@@ -4371,10 +4365,6 @@ img.mana-symbol-sm {
 
   .lg\:gap-4 {
     gap: 1rem;
-  }
-
-  .lg\:pr-44 {
-    padding-right: 11rem;
   }
 
   .lg\:text-2xl {
