@@ -42,8 +42,13 @@ test.describe('Dashboard', () => {
     await navigateToDashboard(page);
 
     // The dashboard should have a feed area or latest content section
-    // Dashboard shows "Feed (0)" or "Latest Content" or "Featured Cubes"
-    const feedOrContent = page.getByText(/Feed|Latest Content|Featured/).first();
+    // Dashboard shows "Feed (0)" or "Latest Content" or "Featured Cubes".
+    // The page renders separate mobile (md:hidden) and desktop (hidden md:block)
+    // layouts, so each label appears twice in the DOM — filter to the visible copy.
+    const feedOrContent = page
+      .getByText(/Feed|Latest Content|Featured/)
+      .filter({ visible: true })
+      .first();
     await expect(feedOrContent).toBeVisible({ timeout: 10000 });
   });
 

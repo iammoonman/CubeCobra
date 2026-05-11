@@ -2,8 +2,9 @@ import React, { useCallback, useContext, useState } from 'react';
 
 import Cube from '@utils/datatypes/Cube';
 
+import Banner from 'components/Banner';
 import { Card, CardBody, CardHeader } from 'components/base/Card';
-import { Col, Flexbox, Row } from 'components/base/Layout';
+import { Flexbox } from 'components/base/Layout';
 import Pagination from 'components/base/Pagination';
 import Spinner from 'components/base/Spinner';
 import Text from 'components/base/Text';
@@ -135,6 +136,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ cubes, lastKey, parsedQuery, qu
         go={go}
       />
       <DynamicFlash />
+      <Banner />
       <Card className="my-3">
         <CardHeader>
           <Flexbox direction="col" gap="2">
@@ -155,13 +157,11 @@ const SearchPage: React.FC<SearchPageProps> = ({ cubes, lastKey, parsedQuery, qu
         <CardBody>
           {items.length > 0 ? (
             <Flexbox direction="col" gap="2">
-              <Row xs={12}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 5xl:grid-cols-6">
                 {items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((cube) => (
-                  <Col key={cube.id} xxl={2} lg={3} md={4} xs={6}>
-                    <CubePreview cube={cube} />
-                  </Col>
+                  <CubePreview key={cube.id} cube={cube} />
                 ))}
-              </Row>
+              </div>
               <Flexbox direction="row" justify="end" alignItems="center" className="w-full">
                 {pager}
               </Flexbox>

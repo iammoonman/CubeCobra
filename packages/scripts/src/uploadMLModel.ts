@@ -68,9 +68,7 @@ const listAll = async (s3: S3Client, bucket: string, prefix: string): Promise<Ob
   const out: ObjectInfo[] = [];
   let token: string | undefined;
   do {
-    const res = await s3.send(
-      new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }),
-    );
+    const res = await s3.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }));
     for (const o of res.Contents || []) {
       if (!o.Key || o.Key.endsWith('/')) continue;
       out.push({ key: o.Key, etag: o.ETag || '' });
@@ -83,7 +81,9 @@ const listAll = async (s3: S3Client, bucket: string, prefix: string): Promise<Ob
 const invalidateModelPaths = async (): Promise<void> => {
   const distributionId = process.env.CDN_DISTRIBUTION_ID;
   if (!distributionId) {
-    console.warn('CDN_DISTRIBUTION_ID not set — skipping CloudFront invalidation. Cached model may be stale for up to 30 days.');
+    console.warn(
+      'CDN_DISTRIBUTION_ID not set — skipping CloudFront invalidation. Cached model may be stale for up to 30 days.',
+    );
     return;
   }
   const client = new CloudFrontClient({

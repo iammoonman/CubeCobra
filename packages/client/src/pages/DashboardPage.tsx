@@ -1,22 +1,16 @@
 import React, { useContext } from 'react';
 
 import BlogPost from '@utils/datatypes/BlogPost';
-import { ContentType } from '@utils/datatypes/Content';
 import Cube from '@utils/datatypes/Cube';
 import Draft from '@utils/datatypes/Draft';
 import { P1P1Pack } from '@utils/datatypes/P1P1Pack';
-import classNames from 'classnames';
 
 import Banner from 'components/Banner';
 import Button from 'components/base/Button';
-import { Card, CardHeader } from 'components/base/Card';
 import Container from 'components/base/Container';
 import { Col, Flexbox, Row } from 'components/base/Layout';
 import Link from 'components/base/Link';
 import Text from 'components/base/Text';
-import ArticlePreview from 'components/content/ArticlePreview';
-import PodcastEpisodePreview from 'components/content/PodcastEpisodePreview';
-import VideoPreview from 'components/content/VideoPreview';
 import CubePreview from 'components/cube/CubePreview';
 import CubesCard from 'components/cube/CubesCard';
 import DynamicFlash from 'components/DynamicFlash';
@@ -32,7 +26,6 @@ import MainLayout from 'layouts/MainLayout';
 interface DashboardPageProps {
   posts: BlogPost[];
   decks: Draft[];
-  content: any[];
   featured?: Cube[];
   collaboratingCubes?: Cube[];
   cubes?: Cube[];
@@ -52,7 +45,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   lastKey,
   lastDeckKey,
   decks,
-  content,
   featured = [],
   collaboratingCubes = [],
   cubes = [],
@@ -68,175 +60,95 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
   return (
     <MainLayout useContainer={false} transparentNav>
-      <HeroSearch />
+      <HeroSearch featured={featured} />
       <Container xxxl className="px-2">
         <Banner />
         <DynamicFlash />
 
         {/* MOBILE LAYOUT (< 768px) - Completely separate from desktop */}
         <div className="md:hidden">
-        <Flexbox direction="col" gap="2" className="my-2 px-2">
-          <Card>
-            <CardHeader>
-              <Flexbox direction="row" justify="between">
+          <Flexbox direction="col" gap="2" className="my-2 px-2">
+            <div>
+              <Flexbox direction="row" justify="between" className="px-2 mb-1">
                 <Text semibold lg>
                   Your Cubes
                 </Text>
                 {cubes.length > 2 && <Link href={`/user/view/${user?.id}`}>View All</Link>}
               </Flexbox>
-            </CardHeader>
-            <Row className="items-center" gutters={0}>
               {cubes.length > 0 ? (
-                cubes.slice(0, 4).map((cube) => (
-                  <Col key={cube.id} xs={6}>
-                    <CubePreview cube={cube} />
-                  </Col>
-                ))
+                <div className="grid grid-cols-1 sm:grid-cols-2">
+                  {cubes.slice(0, 4).map((cube) => (
+                    <CubePreview key={cube.id} cube={cube} />
+                  ))}
+                </div>
               ) : (
-                <Col className={classNames('p-4', 'grid-flow-col')}>
+                <div className="p-4">
                   <Flexbox direction="col" gap="2" alignItems="start">
                     <span>You don't have any cubes.</span>
                     <CreateCubeModalButton color="primary">Add a new cube?</CreateCubeModalButton>
                   </Flexbox>
-                </Col>
+                </div>
               )}
-            </Row>
-          </Card>
+            </div>
 
-          {collaboratingCubes.length > 0 && <CubesCard title="Collaborating On" cubes={collaboratingCubes} lean />}
+            {collaboratingCubes.length > 0 && <CubesCard title="Collaborating On" cubes={collaboratingCubes} lean />}
 
-          {!user?.hideFeatured && (
-            <>
-              <CubesCard
-                title="Featured Cubes"
-                cubes={featured}
-                lean
-                sideLink={{
-                  href: '/queue',
-                  text: 'View Queue',
-                }}
-              />
-              {dailyP1P1 && <DailyP1P1Card pack={dailyP1P1.pack} cube={dailyP1P1.cube} date={dailyP1P1.date} />}
-            </>
-          )}
+            {!user?.hideFeatured && dailyP1P1 && (
+              <DailyP1P1Card pack={dailyP1P1.pack} cube={dailyP1P1.cube} date={dailyP1P1.date} />
+            )}
 
-          <RecentDraftsCard decks={decks} lastKey={lastDeckKey} pageSize={5} />
+            <RecentDraftsCard decks={decks} lastKey={lastDeckKey} pageSize={5} />
 
-          <Card>
-            <CardHeader>
-              <Flexbox direction="row" justify="between">
-                <Text semibold lg>
-                  Latest Content
-                </Text>
-                <Link href="/content/browse">View more...</Link>
-              </Flexbox>
-            </CardHeader>
-            <Row gutters={0}>
-              {content.slice(0, 4).map((item) => (
-                <Col key={item.id} xs={6}>
-                  {item.type === ContentType.ARTICLE && <ArticlePreview article={item} />}
-                  {item.type === ContentType.VIDEO && <VideoPreview video={item} />}
-                  {item.type === ContentType.EPISODE && <PodcastEpisodePreview episode={item} />}
-                </Col>
-              ))}
-            </Row>
-          </Card>
+            <Feed items={posts} lastKey={lastKey} />
+          </Flexbox>
+        </div>
 
-          <Feed items={posts} lastKey={lastKey} />
-        </Flexbox>
-      </div>
-
-      {/* DESKTOP LAYOUT (≥ 768px) */}
-      <div className="hidden md:block">
-        <Row className="my-2">
-          <Col xs={12} md={6} xl={7}>
-            <Flexbox direction="col" gap="2">
-              <Card>
-                <CardHeader>
-                  <Flexbox direction="row" justify="between">
+        {/* DESKTOP LAYOUT (≥ 768px) */}
+        <div className="hidden md:block">
+          <Row className="my-2">
+            <Col xs={12} md={6} xl={7}>
+              <Flexbox direction="col" gap="2">
+                <div>
+                  <Flexbox direction="row" justify="between" className="px-2 mb-1">
                     <Text semibold lg>
                       Your Cubes
                     </Text>
                     {cubes.length > 2 && <Link href={`/user/view/${user?.id}`}>View All</Link>}
                   </Flexbox>
-                </CardHeader>
-                <Row className="items-center" gutters={0}>
                   {cubes.length > 0 ? (
-                    cubes.slice(0, 12).map((cube) => (
-                      <Col key={cube.id} lg={6} xl={4}>
-                        <CubePreview cube={cube} />
-                      </Col>
-                    ))
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 5xl:grid-cols-5">
+                      {cubes.slice(0, 12).map((cube) => (
+                        <CubePreview key={cube.id} cube={cube} />
+                      ))}
+                    </div>
                   ) : (
-                    <Col className={classNames('p-4', 'grid-flow-col')}>
+                    <div className="p-4">
                       <Flexbox direction="col" gap="2" alignItems="start">
                         <span>You don't have any cubes.</span>
                         <CreateCubeModalButton color="primary">Add a new cube?</CreateCubeModalButton>
                       </Flexbox>
-                    </Col>
+                    </div>
                   )}
-                </Row>
-              </Card>
-              {collaboratingCubes.length > 0 && <CubesCard title="Collaborating On" cubes={collaboratingCubes} lean />}
-              {featuredPosition === 'left' && (
-                <>
-                  <CubesCard
-                    title="Featured Cubes"
-                    cubes={featured}
-                    lean
-                    sideLink={{
-                      href: '/queue',
-                      text: 'View Queue',
-                    }}
-                  />
-                  {dailyP1P1 && <DailyP1P1Card pack={dailyP1P1.pack} cube={dailyP1P1.cube} date={dailyP1P1.date} />}
-                </>
-              )}
-              <Feed items={posts} lastKey={lastKey} />
-            </Flexbox>
-          </Col>
-          <Col xs={12} md={6} xl={5}>
-            <Flexbox direction="col" gap="2">
-              {featuredPosition === 'right' && (
-                <>
-                  <CubesCard
-                    title="Featured Cubes"
-                    cubes={featured}
-                    lean
-                    sideLink={{
-                      href: '/queue',
-                      text: 'View Queue',
-                    }}
-                  />
-                  {dailyP1P1 && <DailyP1P1Card pack={dailyP1P1.pack} cube={dailyP1P1.cube} date={dailyP1P1.date} />}
-                </>
-              )}
-              <RecentDraftsCard decks={decks} lastKey={lastDeckKey} />
-            </Flexbox>
-            <Col className="d-none d-md-block mt-3" md={4}>
-              <Card>
-                <CardHeader>
-                  <Flexbox direction="row" justify="between">
-                    <Text semibold lg>
-                      Latest Content
-                    </Text>
-                    <Link href="/content/browse">View more...</Link>
-                  </Flexbox>
-                </CardHeader>
-                <Row gutters={0}>
-                  {content.map((item) => (
-                    <Col key={item.id} xs={6}>
-                      {item.type === ContentType.ARTICLE && <ArticlePreview article={item} />}
-                      {item.type === ContentType.VIDEO && <VideoPreview video={item} />}
-                      {item.type === ContentType.EPISODE && <PodcastEpisodePreview episode={item} />}
-                    </Col>
-                  ))}
-                </Row>
-              </Card>
+                </div>
+                {collaboratingCubes.length > 0 && (
+                  <CubesCard title="Collaborating On" cubes={collaboratingCubes} lean />
+                )}
+                {featuredPosition === 'left' && dailyP1P1 && (
+                  <DailyP1P1Card pack={dailyP1P1.pack} cube={dailyP1P1.cube} date={dailyP1P1.date} />
+                )}
+                <Feed items={posts} lastKey={lastKey} />
+              </Flexbox>
             </Col>
-          </Col>
-        </Row>
-      </div>
+            <Col xs={12} md={6} xl={5}>
+              <Flexbox direction="col" gap="2">
+                {featuredPosition === 'right' && dailyP1P1 && (
+                  <DailyP1P1Card pack={dailyP1P1.pack} cube={dailyP1P1.cube} date={dailyP1P1.date} />
+                )}
+                <RecentDraftsCard decks={decks} lastKey={lastDeckKey} />
+              </Flexbox>
+            </Col>
+          </Row>
+        </div>
       </Container>
     </MainLayout>
   );

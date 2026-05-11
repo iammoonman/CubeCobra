@@ -31,15 +31,6 @@ async function openNavDropdown(page: Page, menuLabel: string): Promise<void> {
 }
 
 /**
- * Navigate to the Explore page by clicking through the navbar dropdown.
- */
-export async function navigateToExplore(page: Page): Promise<void> {
-  // Navigate directly — avoids action-timeout issues from click auto-waiting
-  // for the slow load event triggered by ad scripts.
-  await page.goto('/explore', { waitUntil: 'domcontentloaded' });
-}
-
-/**
  * Navigate to the landing page.
  * This is the site root for guests — no nav link specifically goes here,
  * so we go to '/' which shows landing for non-logged-in users.

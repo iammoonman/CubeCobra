@@ -73,6 +73,7 @@ Since 1.6.0
 - Fixed committing large changelogs (e.g. bulk uploads with many cards) causing request timeouts
 - Improved performance of saving changes for large updates — card data is now fetched in a single batch request instead of one-at-a-time
 - Fixed newly-released cards missing data like "Drafted With" and other cross-card information after they were added to the database
+- Fixed Top Cards deduping rows by card name — different cards that happen to share a name (e.g. Everythingamajig) now appear as separate rows, and alternate-name printings of the same card (e.g. omenpath cards) are correctly collapsed into one
 
 # Technical Changes
 

@@ -52,9 +52,8 @@ const mockCreateClient = jest.fn(() => mockClient);
 
 // Define to make typescript happy
 declare global {
-   
   var mockDynamoClient: MockDynamoClient;
-   
+
   var mockDynamoCreateClient: () => MockDynamoClient;
 }
 

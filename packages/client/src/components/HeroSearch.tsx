@@ -1,12 +1,12 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 
 import { ChevronDownIcon } from '@primer/octicons-react';
 import { cdnUrl } from '@utils/cdnUrl';
+import Cube from '@utils/datatypes/Cube';
 import classNames from 'classnames';
 
 import Input from 'components/base/Input';
-import Link from 'components/base/Link';
-import UserContext from 'contexts/UserContext';
+import CubePreview from 'components/cube/CubePreview';
 
 type SearchTab = 'cubes' | 'cards' | 'packages';
 
@@ -33,8 +33,8 @@ type ChipSuggestion = { label: string; href: string };
 const SUGGESTIONS: Partial<Record<SearchTab, ChipSuggestion[]>> = {
   cubes: [
     { label: 'Vintage', href: '/search?q=category%3A%22Vintage%22' },
-    { label: 'Pauper', href: '/search?q=category%3A%22Pauper%22' },
     { label: 'Desert', href: '/search?q=category%3A%22Desert%22' },
+    { label: '100 Ornithopters', href: '/search?q=100%20Ornithopters' },
   ],
   packages: [
     { label: 'Shocklands', href: '/packages?q=Shocklands' },
@@ -43,10 +43,16 @@ const SUGGESTIONS: Partial<Record<SearchTab, ChipSuggestion[]>> = {
   ],
 };
 
-const HeroSearch: React.FC = () => {
-  const user = useContext(UserContext);
+interface HeroSearchProps {
+  featured?: Cube[];
+  showExploreMore?: boolean;
+}
+
+const HeroSearch: React.FC<HeroSearchProps> = ({ featured = [], showExploreMore = true }) => {
   const [activeTab, setActiveTab] = useState<SearchTab>('cubes');
   const [query, setQuery] = useState('');
+
+  const carouselCubes = featured.slice(0, 8);
 
   const submit = () => {
     const trimmed = query.trim();
@@ -68,7 +74,7 @@ const HeroSearch: React.FC = () => {
         className="absolute inset-0 w-full h-full object-cover object-top select-none pointer-events-none"
       />
       <div className="absolute inset-0 bg-bg-secondary/80" />
-      <div className="relative h-full w-full flex items-center justify-center px-4">
+      <div className="relative h-full w-full flex items-start justify-center px-4 pt-40 md:items-center md:pt-0">
         <div className="w-full max-w-3xl flex flex-col items-center text-center">
           <img
             src={cdnUrl('/content/banner_textonly.png')}
@@ -122,30 +128,54 @@ const HeroSearch: React.FC = () => {
               </>
             )}
           </div>
-          {!user && (
-            <Link
-              href="/user/register"
-              className="mt-10 inline-block !text-button-text hover:!text-button-text !text-2xl md:!text-3xl !font-bold underline-offset-4 hover:underline"
-            >
-              Register to start creating a cube!
-            </Link>
-          )}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={scrollToContent}
-        className="absolute bottom-20 md:bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center text-button-text focus:outline-none"
-        aria-label="Scroll to content"
-      >
-        <span className="text-xs font-semibold">EXPLORE MORE</span>
-        <ChevronDownIcon size={20} />
-      </button>
+      {carouselCubes.length > 0 && (
+        <div className="absolute bottom-44 md:bottom-14 left-0 right-0 pointer-events-none">
+          <div className="text-center mb-2">
+            <a
+              href="/queue"
+              className="pointer-events-auto inline-block text-xs font-semibold uppercase tracking-widest text-button-text/80 hover:text-button-text underline-offset-4 hover:underline"
+            >
+              Featured Cubes
+            </a>
+          </div>
+          <div
+            className="overflow-hidden"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)',
+            }}
+          >
+            <div className="hero-marquee-track flex w-max pointer-events-auto">
+              {[...carouselCubes, ...carouselCubes].map((cube, i) => (
+                <div
+                  key={`${cube.id}-${i}`}
+                  className="w-72 flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity duration-200"
+                >
+                  <CubePreview cube={cube} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {showExploreMore && (
+        <button
+          type="button"
+          onClick={scrollToContent}
+          className="absolute bottom-28 md:bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center text-button-text focus:outline-none"
+          aria-label="Scroll to content"
+        >
+          <span className="text-xs font-semibold">EXPLORE MORE</span>
+          <ChevronDownIcon size={20} />
+        </button>
+      )}
       <a
         href="https://bsky.app/profile/firosart.bsky.social"
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute bottom-20 md:bottom-2 right-3 text-xs text-button-text/60 hover:text-button-text underline-offset-2 hover:underline"
+        className="absolute bottom-28 md:bottom-2 right-3 text-xs text-button-text/60 hover:text-button-text underline-offset-2 hover:underline"
       >
         Art by Santiago Rosas
       </a>

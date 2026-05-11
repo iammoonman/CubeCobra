@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 
+import type { Icon as OcticonIcon } from '@primer/octicons-react';
 import {
   BellFillIcon,
   ClockIcon,
@@ -10,8 +11,8 @@ import {
   SearchIcon,
   SignInIcon,
   StarIcon,
+  ToolsIcon,
 } from '@primer/octicons-react';
-import type { Icon as OcticonIcon } from '@primer/octicons-react';
 import { cdnUrl } from '@utils/cdnUrl';
 import Notification from '@utils/datatypes/Notification';
 import { UserRoles } from '@utils/datatypes/User';
@@ -62,6 +63,7 @@ const exploreSections: NavSection[] = [
     items: [
       { label: 'Popular Cubes', href: '/search?order=pop', icon: StarIcon },
       { label: 'Recently Updated', href: '/search?order=date', icon: ClockIcon },
+      { label: 'Search Cubes', href: '/search?order=alpha', icon: SearchIcon },
     ],
   },
   {
@@ -122,7 +124,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   };
 
   const homeLink = (
-    <a href={isHomePage ? '#' : '/'} className={NAV_ITEM_CLASSES}>
+    <a href={isHomePage ? '#' : '/'} className={classNames(NAV_ITEM_CLASSES, 'ml-6')}>
       Home
     </a>
   );
@@ -204,10 +206,17 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
     </>
   );
 
+  const resourcesLink = (
+    <a href="/resources" className={NAV_ITEM_CLASSES}>
+      Resources
+    </a>
+  );
+
   const leftNav = (
     <>
       {homeLink}
       {exploreMenu}
+      {resourcesLink}
     </>
   );
 
@@ -245,6 +254,9 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   const mobileNavIcons = (
     <>
       {mobileIconButton('explore', SearchIcon)}
+      <a href="/resources" className="px-2 py-1 rounded text-white" aria-label="Resources">
+        <ToolsIcon size={24} />
+      </a>
       {user && mobileIconButton('cubes', PackageIcon)}
       {user ? (
         <>
@@ -263,7 +275,12 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   );
 
   return (
-    <div className={classNames('px-6 py-2', transparent ? 'nav-transparent bg-transparent' : 'bg-bg-secondary')}>
+    <div
+      className={classNames(
+        'px-6 py-2',
+        transparent ? 'nav-transparent bg-bg-secondary/40 backdrop-blur-sm' : 'bg-bg-secondary',
+      )}
+    >
       <ResponsiveDiv baseVisible sm className="w-full max-w-full">
         <Flexbox justify="between" alignItems="center" direction="row">
           <a href="/">

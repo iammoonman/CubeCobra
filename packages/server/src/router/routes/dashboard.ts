@@ -37,7 +37,7 @@ const dashboardHandler = async (req: Request, res: Response) => {
     // Filter out blog posts from private cubes that the user doesn't own
     const filteredPosts = filterFeedItemsByPrivacy(posts.items || []);
 
-    const featured = await getFeaturedCubes();
+    const featured = await getFeaturedCubes(8);
 
     // Query all content types in parallel (excluding podcasts, only episodes)
     const [articlesResult, videosResult, episodesResult] = await Promise.all([

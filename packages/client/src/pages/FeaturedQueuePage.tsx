@@ -4,7 +4,7 @@ import Cube from '@utils/datatypes/Cube';
 
 import Badge from 'components/base/Badge';
 import { Card, CardBody, CardHeader } from 'components/base/Card';
-import { Col, Flexbox, Row } from 'components/base/Layout';
+import { Flexbox } from 'components/base/Layout';
 import Text from 'components/base/Text';
 import CubePreview from 'components/cube/CubePreview';
 import DynamicFlash from 'components/DynamicFlash';
@@ -50,18 +50,18 @@ const FeaturedQueuePage: React.FC<FeaturedQueuePageProps> = ({ cubes }) => {
                 </a>
                 .
               </Text>
-              <Row>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 5xl:grid-cols-6 mt-3">
                 {cubes.map((cube, index) => (
-                  <Col key={cube.id} className="mt-3" xs={6} sm={4} md={3} xl={2}>
+                  <div key={cube.id}>
                     <CubePreview cube={cube} />
                     {index < 2 && (
                       <div className="text-center mt-2">
                         <Badge color="primary">Currently Featured</Badge>
                       </div>
                     )}
-                  </Col>
+                  </div>
                 ))}
-              </Row>
+              </div>
             </Flexbox>
           </CardBody>
         </Card>

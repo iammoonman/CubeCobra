@@ -87,9 +87,9 @@ export async function rotateFeatured(): Promise<RotateResult> {
   };
 }
 
-export async function getFeaturedCubes() {
-  // The first 2 items in the queue are always the featured cubes
-  const queueResult = await featuredQueueDao.querySortedByDate(undefined, 2);
+export async function getFeaturedCubes(limit: number = 2) {
+  // The first `limit` items in the queue (first 2 are the currently featured cubes)
+  const queueResult = await featuredQueueDao.querySortedByDate(undefined, limit);
   if (!queueResult.items || queueResult.items.length === 0) {
     return [];
   }
