@@ -17,6 +17,7 @@
     "archiver": "^7.0.1"
   },
   "devDependencies": {
+    "dotenv": "^16.0.0",
     "esbuild": "^0.25.5"
   }
 }

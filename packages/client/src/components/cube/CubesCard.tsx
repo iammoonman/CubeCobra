@@ -4,7 +4,7 @@ import Cube from '@utils/datatypes/Cube';
 
 import Button from 'components/base/Button';
 import { Card, CardBody, CardHeader } from 'components/base/Card';
-import { Col, Flexbox, Row } from 'components/base/Layout';
+import { Flexbox } from 'components/base/Layout';
 import Link from 'components/base/Link';
 import Text from 'components/base/Text';
 import CubePreview from 'components/cube/CubePreview';
@@ -46,13 +46,11 @@ const CubesCard: React.FC<CubesCardProps> = ({
           {sideLink && <Link href={sideLink.href}>{sideLink.text}</Link>}
         </Flexbox>
       </CardHeader>
-      <Row gutters={0}>
+      <div className="grid grid-cols-1 sm:grid-cols-2">
         {displayCubes.map((cube) => (
-          <Col key={cube.id} xs={6}>
-            <CubePreview cube={cube} />
-          </Col>
+          <CubePreview key={cube.id} cube={cube} />
         ))}
-      </Row>
+      </div>
       {(!lean || cubes.length > 2) && viewAllLink && (
         <CardBody>
           {alternateViewFewer ? (

@@ -33,13 +33,11 @@ const UserSocialPage: React.FC<UserSocialPageProps> = ({ followedCubes, followed
           </CardHeader>
           {followedCubes.length > 0 ? (
             <CardBody className="p-0">
-              <Row className="g-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4">
                 {followedCubes.map((cube) => (
-                  <Col key={cube.id} xs={6} md={4}>
-                    <CubePreview cube={cube} />
-                  </Col>
+                  <CubePreview key={cube.id} cube={cube} />
                 ))}
-              </Row>
+              </div>
             </CardBody>
           ) : (
             <CardBody>You aren't following any cubes.</CardBody>

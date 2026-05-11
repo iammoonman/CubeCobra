@@ -18,9 +18,16 @@ import Footer from 'layouts/Footer';
 interface MainLayoutProps {
   children: React.ReactNode;
   useContainer?: boolean;
+  transparentNav?: boolean;
+  noAds?: boolean;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children, useContainer = true }) => {
+const MainLayout: React.FC<MainLayoutProps> = ({
+  children,
+  useContainer = true,
+  transparentNav = false,
+  noAds = false,
+}) => {
   const user = useContext(UserContext);
 
   const requestConsentForHashEmails = useMemo(() => {
@@ -42,40 +49,56 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, useContainer = true }
   }, [user]);
 
   return (
-    <Flexbox className="min-h-screen text-text" direction="col">
-      <Navbar />
+    <Flexbox className="min-h-screen text-text relative" direction="col">
+      {transparentNav ? (
+        <div className="absolute top-0 left-0 right-0 z-20">
+          <Navbar transparent />
+        </div>
+      ) : (
+        <Navbar />
+      )}
       <div className={classNames('bg-bg flex-grow', { 'flex flex-col': !useContainer })}>
         {useContainer ? (
           <Container xxxl>
             <Flexbox className="flex-grow max-w-full" direction="row" gap="4">
-              <ResponsiveDiv xxl className="pl-2 py-2 min-w-fit">
-                <SideBanner placementId="left-rail" />
-              </ResponsiveDiv>
+              {!noAds && (
+                <ResponsiveDiv xxl className="pl-2 py-2 min-w-fit">
+                  <SideBanner placementId="left-rail" />
+                </ResponsiveDiv>
+              )}
               <div className="flex-grow px-2 max-w-full">
                 <ErrorBoundary>{children}</ErrorBoundary>
                 <ConsentToHashedEmailsModal isOpen={requestConsentForHashEmails} />
               </div>
-              <ResponsiveDiv lg className="pr-2 py-2 min-w-fit">
-                <SideBanner placementId="right-rail" />
-              </ResponsiveDiv>
-              <ResponsiveDiv md>
-                <VideoBanner placementId="video" />
-              </ResponsiveDiv>
+              {!noAds && (
+                <ResponsiveDiv lg className="pr-2 py-2 min-w-fit">
+                  <SideBanner placementId="right-rail" />
+                </ResponsiveDiv>
+              )}
+              {!noAds && (
+                <ResponsiveDiv md>
+                  <VideoBanner placementId="video" />
+                </ResponsiveDiv>
+              )}
             </Flexbox>
           </Container>
         ) : (
           <>
             <ErrorBoundary>{children}</ErrorBoundary>
-            <ResponsiveDiv md>
-              <VideoBanner placementId="video" />
-            </ResponsiveDiv>
+            {!noAds && (
+              <ResponsiveDiv md>
+                <VideoBanner placementId="video" />
+              </ResponsiveDiv>
+            )}
           </>
         )}
       </div>
       <Footer />
-      <ResponsiveDiv baseVisible md>
-        <MobileBanner placementId="mobile-banner" />
-      </ResponsiveDiv>
+      {!noAds && (
+        <ResponsiveDiv baseVisible md>
+          <MobileBanner placementId="mobile-banner" />
+        </ResponsiveDiv>
+      )}
     </Flexbox>
   );
 };

@@ -9,9 +9,7 @@ import Button from 'components/base/Button';
 import Controls from 'components/base/Controls';
 import Input from 'components/base/Input';
 import { Col, Flexbox, Row } from 'components/base/Layout';
-import Link from 'components/base/Link';
 import Pagination from 'components/base/Pagination';
-import ResponsiveDiv from 'components/base/ResponsiveDiv';
 import Select from 'components/base/Select';
 import Text from 'components/base/Text';
 import CardPackage from 'components/card/CardPackage';
@@ -140,7 +138,6 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
     <MainLayout>
       <Flexbox direction="col" gap="4" className="pb-4">
         <Controls className="p-2">
-          <Banner />
           <DynamicFlash />
           {alerts.map(({ color, message }, index) => (
             <Alert color={color} key={index}>
@@ -148,21 +145,10 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
             </Alert>
           ))}
           <Flexbox direction="col" gap="2">
-            <Flexbox direction="row" justify="between">
-              <Text xl semibold>
+            <Flexbox direction="row" gap="2" alignItems="center">
+              <Text xl semibold className="whitespace-nowrap">
                 Browse Card Packages
               </Text>
-              <ResponsiveDiv sm>
-                <Flexbox direction="row" gap="4">
-                  <Link href="/tool/topcards">View Top cards</Link>
-                  <Link href="/tool/searchcards">Search Cards</Link>
-                </Flexbox>
-              </ResponsiveDiv>
-            </Flexbox>
-            <Text sm className="text-text-secondary">
-              Search by keywords, or filter packages that include a card using <code>card:cardname</code> syntax
-            </Text>
-            <Flexbox direction="row" gap="2" alignItems="center">
               <button
                 onClick={() => setShowSyntaxModal(true)}
                 className="text-green-600 hover:text-green-700 cursor-pointer"
@@ -180,7 +166,7 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
                     getNewData(query, sort, ascending);
                   }
                 }}
-                className="flex-grow"
+                className="flex-grow min-w-0"
               />
               <Button
                 color="primary"
@@ -191,6 +177,9 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
                 <span className="px-4">Apply</span>
               </Button>
             </Flexbox>
+            <Text sm className="text-text-secondary">
+              Search by keywords, or filter packages that include a card using <code>card:cardname</code> syntax
+            </Text>
             {currentParsedQuery.length > 0 && (
               <Flexbox direction="row" justify="start" gap="2" className="w-full">
                 <Text sm semibold italic>
@@ -232,6 +221,7 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
             </Row>
           </Flexbox>
         </Controls>
+        <Banner />
         {user && (
           <Flexbox direction="row" justify="end" gap="2">
             <Button color="primary" type="link" href={`/packages?q=user:${user.username}`}>

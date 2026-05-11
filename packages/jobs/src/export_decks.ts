@@ -48,11 +48,15 @@ const processDeck = (draft: { seats: any[]; id: any; cube: any; cards: any; basi
         owner: seat.owner.id,
         mainboard: seat.mainboard
           .flat(2)
-          .map((pick: any) => draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex)),
+          .map((pick: any) => draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex))
+          .filter((index: number) => index !== -1),
         sideboard: seat.sideboard
           .flat(2)
-          .map((pick: any) => draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex)),
-        basics: (draft.basics || []).map((pick: any) => draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex)),
+          .map((pick: any) => draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex))
+          .filter((index: number) => index !== -1),
+        basics: (draft.basics || [])
+          .map((pick: any) => draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex))
+          .filter((index: number) => index !== -1),
       });
     }
   });
@@ -88,10 +92,12 @@ const processPicks = (
   }
 
   // Create cube instance - map all draft cards to oracle indexes
-  const cubeInstance = Object.values(draft.cards || {}).map((card: any) => {
-    const oracleId = card?.details?.oracle_id;
-    return oracleToIndex[oracleId] || -1;
-  });
+  const cubeInstance = Object.values(draft.cards || {})
+    .map((card: any) => {
+      const oracleId = card?.details?.oracle_id;
+      return oracleToIndex[oracleId] || -1;
+    })
+    .filter((index: number) => index !== -1);
 
   draft.seats.forEach((seat: { pickorder: any; owner: { id: any } }) => {
     if (
@@ -105,12 +111,12 @@ const processPicks = (
         const drafterState = getDrafterState(draft as any as DraftType, 0, j);
 
         const picked = draftCardIndexToOracleIndex(drafterState.selection, draft.cards, oracleToIndex);
-        const pack = drafterState.cardsInPack.map((pick: any) =>
-          draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex),
-        );
-        const pool = drafterState.picked.map((pick: any) =>
-          draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex),
-        );
+        const pack = drafterState.cardsInPack
+          .map((pick: any) => draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex))
+          .filter((index: number) => index !== -1);
+        const pool = drafterState.picked
+          .map((pick: any) => draftCardIndexToOracleIndex(pick, draft.cards, oracleToIndex))
+          .filter((index: number) => index !== -1);
 
         const poolLands = drafterState.picked.filter((i: any) => {
           const c = draft.cards[i];

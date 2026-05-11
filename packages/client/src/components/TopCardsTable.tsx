@@ -93,19 +93,14 @@ const TopCardsTable = () => {
     <>
       <Controls className="p-2">
         <Flexbox direction="col" gap="2">
-          <Banner />
-          <Flexbox direction="row" justify="between">
-            <Text xl semibold>
-              Search cards
+          <Flexbox direction="row" alignItems="start" gap="3" wrap="wrap">
+            <Text xl semibold className="whitespace-nowrap pt-2">
+              Top Cards
             </Text>
-            <ResponsiveDiv sm>
-              <Flexbox direction="row" gap="4">
-                <Link href="/tool/topcards">View Top cards</Link>
-                <Link href="/tool/searchcards">Search Cards</Link>
-              </Flexbox>
-            </ResponsiveDiv>
+            <div className="flex-grow min-w-0">
+              <FilterCollapse isOpen buttonLabel="Search" />
+            </div>
           </Flexbox>
-          <FilterCollapse isOpen buttonLabel="Search" />
           <Row>
             <Col xs={12} sm={6}>
               <Select
@@ -129,6 +124,7 @@ const TopCardsTable = () => {
           </Row>
         </Flexbox>
       </Controls>
+      <Banner />
       <DynamicFlash />
       {(cards && cards.length) > 0 ? (
         <Flexbox direction="col" gap="2" className="my-2">

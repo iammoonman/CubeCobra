@@ -4,8 +4,9 @@ import UserType from '@utils/datatypes/User';
 import { blogDao, cubeDao, feedDao, userDao } from 'dynamo/daos';
 import { csrfProtection, ensureAuth, ensureAuthJson } from 'router/middleware';
 import { isCubeEditable, isCubeViewable } from 'serverutils/cubefn';
+import generateMeta, { summarizeChangelist, truncateForMeta } from 'serverutils/meta';
 import { handleRouteError, redirect, render } from 'serverutils/render';
-import { addNotification, getSafeReferrer } from 'serverutils/util';
+import { addNotification, getBaseUrl, getSafeReferrer } from 'serverutils/util';
 
 import { Request, Response } from '../../../types/express';
 
@@ -188,8 +189,9 @@ export const getBlogPostHandler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
+    let cube: CubeType | undefined;
     if (post.cube !== 'DEVBLOG') {
-      const cube = await cubeDao.getById(post.cube);
+      cube = (await cubeDao.getById(post.cube)) ?? undefined;
 
       if (!isCubeViewable(cube, req.user)) {
         req.flash('danger', 'Blog post not found');
@@ -207,7 +209,27 @@ export const getBlogPostHandler = async (req: Request, res: Response) => {
       }
     }
 
-    return render(req, res, 'BlogPostPage', { post }, { noindex: true });
+    const changelistSummary = summarizeChangelist(post.Changelog);
+    const bodyExcerpt = truncateForMeta(post.body, changelistSummary ? 220 : 280);
+    const description =
+      [bodyExcerpt, changelistSummary && `Changelist: ${changelistSummary}`].filter(Boolean).join(' — ') ||
+      `A blog post on Cube Cobra by ${post.owner?.username || 'a user'}.`;
+
+    return render(
+      req,
+      res,
+      'BlogPostPage',
+      { post },
+      {
+        noindex: true,
+        metadata: generateMeta(
+          post.title || 'Blog Post',
+          description,
+          cube?.image?.uri || '',
+          `${getBaseUrl()}/cube/blog/blogpost/${req.params.id}`,
+        ),
+      },
+    );
   } catch (err) {
     return handleRouteError(req, res, err as Error, '/404');
   }

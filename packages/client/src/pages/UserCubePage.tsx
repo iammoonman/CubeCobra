@@ -120,13 +120,11 @@ const UserCubePage: React.FC<UserCubePageProps> = ({
               />
             </Flexbox>
           )}
-          <Row>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 5xl:grid-cols-6 mt-3">
             {items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((cube) => (
-              <Col key={cube.id} className="mt-3" xs={6} sm={4} md={3} xl={2}>
-                <CubePreview cube={cube} />
-              </Col>
+              <CubePreview key={cube.id} cube={cube} />
             ))}
-          </Row>
+          </div>
           {items.length > 0 && (
             <Flexbox direction="row" justify="end" alignItems="center" className="w-full mt-3">
               <Pagination

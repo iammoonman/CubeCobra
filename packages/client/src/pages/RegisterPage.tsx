@@ -1,6 +1,5 @@
 import React from 'react';
 
-import Banner from 'components/Banner';
 import { Card, CardBody, CardHeader } from 'components/base/Card';
 import Text from 'components/base/Text';
 import DynamicFlash from 'components/DynamicFlash';
@@ -14,19 +13,20 @@ interface RegisterPageProps {
 }
 
 const RegisterPage: React.FC<RegisterPageProps> = ({ email = '', username = '' }) => (
-  <MainLayout>
-    <Banner />
-    <DynamicFlash />
-    <Card className="my-3">
-      <CardHeader>
-        <Text md semibold>
-          Register
-        </Text>
-      </CardHeader>
-      <CardBody>
-        <RegisterForm email={email} username={username} />
-      </CardBody>
-    </Card>
+  <MainLayout noAds>
+    <div className="max-w-md mx-auto my-3">
+      <DynamicFlash />
+      <Card>
+        <CardHeader>
+          <Text md semibold>
+            Register
+          </Text>
+        </CardHeader>
+        <CardBody>
+          <RegisterForm email={email} username={username} />
+        </CardBody>
+      </Card>
+    </div>
   </MainLayout>
 );
 

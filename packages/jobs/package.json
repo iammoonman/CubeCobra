@@ -8,7 +8,6 @@
     "update-metadata-dict": "NODE_OPTIONS=--max_old_space_size=28672 node dist/jobs/src/update_metadata_dict.js",
     "update-cards": "NODE_OPTIONS=--max_old_space_size=28672 node dist/jobs/src/update_cards.js",
     "update-combos": "NODE_OPTIONS=--max_old_space_size=28672 node dist/jobs/src/update_combos.js",
-    "update-scryfall-tags": "node dist/jobs/src/update_scryfall_tags.js",
     "repair-cube-hashes": "NODE_OPTIONS=--max_old_space_size=28672 node dist/jobs/src/repairCubeHashes.js --",
     "export-cubes": "NODE_OPTIONS=--max_old_space_size=28672 node dist/jobs/src/export_cubes.js",
     "export-decks": "NODE_OPTIONS=--max_old_space_size=28672 node dist/jobs/src/export_decks.js",
@@ -20,7 +19,6 @@
     "dev:update-metadata-dict": "NODE_OPTIONS=--max_old_space_size=28672 ts-node -r tsconfig-paths/register --project tsconfig.json src/update_metadata_dict.ts",
     "dev:update-cards": "NODE_OPTIONS=--max_old_space_size=28672 ts-node -r tsconfig-paths/register --project tsconfig.json src/update_cards.ts",
     "dev:update-combos": "NODE_OPTIONS=--max_old_space_size=28672 ts-node -r tsconfig-paths/register --project tsconfig.json src/update_combos.ts",
-    "dev:update-scryfall-tags": "ts-node -r tsconfig-paths/register --project tsconfig.json src/update_scryfall_tags.ts",
     "dev:repair-cube-hashes": "NODE_OPTIONS=--max_old_space_size=28672 ts-node -r tsconfig-paths/register --project tsconfig.json src/repairCubeHashes.ts --",
     "update-all": "npm run init-data && npm run update-draft-history && npm run update-cube-history && npm run update-metadata-dict && npm run update-cards",
     "fix-external-paths": "npx resolve-tspaths --out dist && node scripts/fixExternalPaths.js",
@@ -33,8 +31,13 @@
     "@aws-sdk/client-s3": "^3.927.0",
     "@aws-sdk/credential-providers": "^3.926.0",
     "@aws-sdk/lib-storage": "^3.927.0",
+    "JSONStream": "^1.3.5",
     "dotenv": "^16.0.0",
-    "module-alias": "^2.2.3"
+    "event-stream": "^4.0.1",
+    "hnswlib-node": "^3.0.0",
+    "lodash": "^4.17.21",
+    "module-alias": "^2.2.3",
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

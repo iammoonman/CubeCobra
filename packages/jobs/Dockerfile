@@ -1,5 +1,7 @@
 # Build stage
-FROM node:22 AS builder
+# Pull from AWS's public ECR mirror of Docker Hub library images so CodeBuild
+# doesn't get rate-limited on unauthenticated docker.io pulls.
+FROM public.ecr.aws/docker/library/node:22 AS builder
 
 WORKDIR /app
 
@@ -26,9 +28,18 @@ RUN npm run build --workspace=packages/server
 RUN npm run build --workspace=packages/jobs
 
 # Production stage
-FROM node:22-slim
+FROM public.ecr.aws/docker/library/node:22-slim
 
 WORKDIR /app
+
+# Native modules (e.g. hnswlib-node used by update_metadata_dict) compile with
+# node-gyp during `npm install`, which needs python + a C++ toolchain. The
+# slim base image doesn't include them, so install the minimum needed before
+# running the prod install. We remove them again afterwards to keep the image
+# small.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
@@ -39,6 +50,11 @@ COPY packages/recommenderService/package*.json ./packages/recommenderService/
 
 # Install only production dependencies
 RUN npm install --workspaces --omit=dev --include-workspace-root
+
+# Drop the build toolchain now that native modules are compiled — keeps the
+# final image lean.
+RUN apt-get purge -y --auto-remove python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy built artifacts from builder stage
 COPY --from=builder /app/packages/jobs/dist ./packages/jobs/dist

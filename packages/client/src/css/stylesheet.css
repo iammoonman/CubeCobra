@@ -215,6 +215,17 @@
   }
 }
 
+/* Lighten navbar labels when the navbar is rendered transparent over a hero image */
+.nav-transparent .text-text-secondary {
+  color: rgb(255 255 255 / 0.7);
+}
+.nav-transparent .text-text-secondary:hover {
+  color: rgb(255 255 255);
+}
+.nav-transparent .hover\:text-text-secondary-active:hover {
+  color: rgb(255 255 255);
+}
+
 .dropdown-toggle::after {
   display: inline-block;
   margin-left: 0.255em;
@@ -465,6 +476,25 @@ img.mana-symbol-sm {
 
 .max-h-95\/100 {
   max-height: 95dvh;
+}
+
+/* Hero search featured-cubes marquee */
+@keyframes hero-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.hero-marquee-track {
+  animation: hero-marquee 40s linear infinite;
+  will-change: transform;
+}
+
+.hero-marquee-track:hover {
+  animation-play-state: paused;
 }
 
 /* Disable all animations and transitions when user has this preference enabled */

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 
 import { QuestionIcon } from '@primer/octicons-react';
 
-import Banner from '../Banner';
 import Controls from '../base/Controls';
 import Input from '../base/Input';
 import { Flexbox } from '../base/Layout';
@@ -48,51 +47,54 @@ const CubeSearchController: React.FC<CubeSearchControllerProps> = ({
 
   return (
     <Controls className="p-2">
-      <Banner />
-      <Text lg bold>
-        {title}
-      </Text>
-      <Row xs={12}>
-        <Col xs={12} sm={3}>
-          <Flexbox direction="row" gap="1" alignItems="center">
-            <button
-              onClick={() => setShowSyntaxModal(true)}
-              className="text-green-600 hover:text-green-700 cursor-pointer"
-              aria-label="Search syntax help"
-            >
-              <QuestionIcon size={20} className="hidden md:inline" />
-            </button>
-            <Input
-              placeholder="Search cubes..."
-              value={queryText}
-              onEnter={() => go(queryText, searchOrder, searchAscending)}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </Flexbox>
-        </Col>
-        <Col xs={6} sm={3}>
-          <Select
-            options={searchOptions.map((search) => ({ value: search[1], label: search[0] }))}
-            value={searchOrder}
-            setValue={(value) => setSearchOrder(value)}
-          />
-        </Col>
-        <Col xs={6} sm={3}>
-          <Select
-            options={[
-              { value: 'true', label: 'Ascending' },
-              { value: 'false', label: 'Descending' },
-            ]}
-            value={searchAscending}
-            setValue={(value) => setSearchAscending(value)}
-          />
-        </Col>
-        <Col xs={12} sm={3}>
-          <LoadingButton block color="primary" onClick={() => go(queryText, searchOrder, searchAscending)}>
-            <span className="px-4">Search</span>
-          </LoadingButton>
-        </Col>
-      </Row>
+      <Flexbox direction="row" alignItems="start" gap="3" wrap="wrap">
+        <Text lg bold className="whitespace-nowrap pt-2">
+          {title}
+        </Text>
+        <div className="flex-grow min-w-0">
+          <Row xs={12}>
+            <Col xs={12} sm={3}>
+              <Flexbox direction="row" gap="1" alignItems="center">
+                <button
+                  onClick={() => setShowSyntaxModal(true)}
+                  className="text-green-600 hover:text-green-700 cursor-pointer"
+                  aria-label="Search syntax help"
+                >
+                  <QuestionIcon size={20} className="hidden md:inline" />
+                </button>
+                <Input
+                  placeholder="Search cubes..."
+                  value={queryText}
+                  onEnter={() => go(queryText, searchOrder, searchAscending)}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </Flexbox>
+            </Col>
+            <Col xs={6} sm={3}>
+              <Select
+                options={searchOptions.map((search) => ({ value: search[1], label: search[0] }))}
+                value={searchOrder}
+                setValue={(value) => setSearchOrder(value)}
+              />
+            </Col>
+            <Col xs={6} sm={3}>
+              <Select
+                options={[
+                  { value: 'true', label: 'Ascending' },
+                  { value: 'false', label: 'Descending' },
+                ]}
+                value={searchAscending}
+                setValue={(value) => setSearchAscending(value)}
+              />
+            </Col>
+            <Col xs={12} sm={3}>
+              <LoadingButton block color="primary" onClick={() => go(queryText, searchOrder, searchAscending)}>
+                <span className="px-4">Search</span>
+              </LoadingButton>
+            </Col>
+          </Row>
+        </div>
+      </Flexbox>
       <SearchSyntaxModal isOpen={showSyntaxModal} setOpen={setShowSyntaxModal} />
     </Controls>
   );

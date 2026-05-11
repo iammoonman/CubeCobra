@@ -18,8 +18,6 @@ Since 1.6.0
 - New `kw:`, `keyword:`, and `keywords:` filter for filtering cards by keyword (e.g. `kw:flying`, `keywords>3`)
 - New `is:standard` filter for cards that were first printed in a standard expansion set
 - New `is:supplemental` filter for cards that were first printed in supplemental products
-- New `otag:` (oracle tag) and `atag:` (art tag) filters powered by Scryfall tagging data — filter cards by community-maintained oracle tags (e.g. `otag:removal`, `otag:ramp`) and art/illustration tags (e.g. `atag:forest`, `atag:sword`)
-- New `Oracle Tags` and `Art Tags` group sorts for sorting/grouping cards by their Scryfall tags
 - Improved bot deckbuilding algorithm — cards are now added one at a time using ML scores with a cumulative 10% duplicate penalty per copy, preventing bots from stacking too many copies of the same card
 - New `game:arena` / `game:paper` / `game:mtgo` filter now checks across all printings of a card (any version ever available in that game), instead of only the current printing's availability
 - New `game:is-arena` / `game:is-paper` / `game:is-mtgo` filter for checking whether the specific printing is available in that game (the previous strict behavior)
@@ -37,9 +35,15 @@ Since 1.6.0
 - Brought back "Save as Default Sort" in the display sidebar — saves the current sort order as the default for the active view (the new home for per-view sort defaults)
 - New help blurbs at the bottom of the display and edit sidebars — the display sidebar links to the Boards and Views settings, and the edit sidebar links to Smart Search
 - The edit sidebar's Board dropdown now defaults to the first board in the view you're looking at (and follows you when you switch views), instead of always starting on Mainboard
+- Richer link previews for shared blog posts and comments — comment links now show the comment text and the poster's avatar, and blog post links show an excerpt of the post plus a summary of the changelist with the cube's image
+- Redesigned landing page and dashboard with a new hero — unified search across cubes, cards, and packages with curated suggestion chips, and a marquee carousel of Featured Cubes underneath. The landing page is now hero-only; the dashboard keeps Your Cubes, Daily P1P1, recent drafts, and the activity feed below the hero (the standalone "Latest Content" and "Featured Cubes" cards were removed since featured cubes now live in the hero)
+- Redesigned cube preview tiles — the cover image fills the tile, with the cube name, category tags, follower count, card count, and owner overlaid on a dark gradient at the bottom
+- New Resources page at `/resources`, linked from the top nav — gathers community tools, the content archive (articles, videos, podcasts), cube communities, the Hedron Network for cube tournaments, the Cube Map, and a list of the latest podcasts
+- Restructured the top nav and footer — Home is now a top-level link, Explore is a richer sectioned dropdown that now includes a Search Cubes shortcut, a new top-level Resources entry sits alongside it, logged-out users see separate Login and Register entries, the navbar cube search and the Explore Cubes page were removed, and footer columns were reorganized with new Popular / Recently Updated / Recently Drafted Cubes links
 
 # Bug Fixes
 
+- Fixed deck data exports containing invalid -1 card values — exported deck data now correctly excludes cards that couldn't be mapped to valid card IDs
 - Fixed quarterly data exports including private and unlisted cubes — the cube export and deck export jobs now only export data from public cubes
 - Fixed blog posts from private and unlisted cubes leaking into follower feeds — blog posts, cube commits, package additions, and bulk imports for non-public cubes no longer publish feed items to followers
 - Fixed blog posts from unlisted cubes being visible on user blog pages and in dashboard feeds — display-side filtering now excludes both private and unlisted cube blogs (previously only private was filtered)
@@ -70,7 +74,11 @@ Since 1.6.0
 - Fixed card edits (property changes) inflating +/- counts in the edit pane — edits no longer count as both an addition and a removal. Instead, edited cards are shown as a separate count with a wrench icon (e.g. "+5, -3, 🔧2"), both in the pending changes panel and in committed changelogs
 - Fixed committing large changelogs (e.g. bulk uploads with many cards) causing request timeouts
 - Improved performance of saving changes for large updates — card data is now fetched in a single batch request instead of one-at-a-time
+- Fixed newly-released cards missing data like "Drafted With" and other cross-card information after they were added to the database
+- Fixed Top Cards deduping rows by card name — different cards that happen to share a name (e.g. Everythingamajig) now appear as separate rows, and alternate-name printings of the same card (e.g. omenpath cards) are correctly collapsed into one
 
 # Technical Changes
 
 - Added a new `archetypeAnnotater` package — a standalone tool for manually labeling draft/deck datasets and building the cluster-center annotations that power automatic archetype naming
+- Static assets (JS bundles, CSS, fonts, images) are now served via S3 + CloudFront instead of being served directly from the application servers — reduces load on the main fleet and improves cache hit rates and latency for users
+- Reduced the production main app fleet from 5/6 to 3/4 instances — feasible after offloading static asset serving to CloudFront

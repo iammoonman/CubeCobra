@@ -31,35 +31,20 @@ const Footer: React.FC = () => {
           <Col xs={6} sm={3}>
             <Text sm>
               <Text semibold lg>
-                Content
-              </Text>
-              <ul className="list-none p-0">
-                <li className="mb-2">
-                  <FooterLink href="/content/browse">Browse</FooterLink>
-                </li>
-                <li className="mb-2">
-                  <FooterLink href="/content/articles">Articles</FooterLink>
-                </li>
-                <li className="mb-2">
-                  <FooterLink href="/content/podcasts">Podcasts</FooterLink>
-                </li>
-                <li className="mb-2">
-                  <FooterLink href="/content/videos">Videos</FooterLink>
-                </li>
-              </ul>
-            </Text>
-          </Col>
-          <Col xs={6} sm={3}>
-            <Text sm>
-              <Text semibold lg>
                 Cube
               </Text>
               <ul className="list-none p-0">
                 <li className="mb-2">
-                  <FooterLink href="/explore">Explore Cubes</FooterLink>
+                  <FooterLink href="/search">Search Cubes</FooterLink>
                 </li>
                 <li className="mb-2">
-                  <FooterLink href="/search">Search Cubes</FooterLink>
+                  <FooterLink href="/search?order=pop">Popular Cubes</FooterLink>
+                </li>
+                <li className="mb-2">
+                  <FooterLink href="/search?order=date">Recently Updated Cubes</FooterLink>
+                </li>
+                <li className="mb-2">
+                  <FooterLink href="/recentdrafts">Recently Drafted Cubes</FooterLink>
                 </li>
               </ul>
             </Text>
@@ -82,8 +67,26 @@ const Footer: React.FC = () => {
                 <li className="mb-2">
                   <FooterLink href="/filters">Filter Syntax</FooterLink>
                 </li>
+              </ul>
+            </Text>
+          </Col>
+          <Col xs={6} sm={3}>
+            <Text sm>
+              <Text semibold lg>
+                Content
+              </Text>
+              <ul className="list-none p-0">
                 <li className="mb-2">
-                  <FooterLink href="/tool/cardupdates">Card Updates</FooterLink>
+                  <FooterLink href="/content/browse">Browse</FooterLink>
+                </li>
+                <li className="mb-2">
+                  <FooterLink href="/content/articles">Articles</FooterLink>
+                </li>
+                <li className="mb-2">
+                  <FooterLink href="/content/podcasts">Podcasts</FooterLink>
+                </li>
+                <li className="mb-2">
+                  <FooterLink href="/content/videos">Videos</FooterLink>
                 </li>
               </ul>
             </Text>
@@ -91,7 +94,7 @@ const Footer: React.FC = () => {
           <Col xs={6} sm={3}>
             <Text sm>
               <Text semibold lg>
-                Cube Cobra
+                About
               </Text>
               <ul className="list-none p-0">
                 <li className="mb-2">
@@ -111,6 +114,9 @@ const Footer: React.FC = () => {
                 </li>
                 <li className="mb-2">
                   <FooterLink href="/apidocs">API Docs</FooterLink>
+                </li>
+                <li className="mb-2">
+                  <FooterLink href="/tool/cardupdates">Card Updates</FooterLink>
                 </li>
               </ul>
             </Text>

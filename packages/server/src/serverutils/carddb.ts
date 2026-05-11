@@ -323,15 +323,18 @@ export function getAllMostReasonable(
 ): CardDetails[] {
   const cards = filterCardsDetails(catalog.printedCardList, filter);
 
-  const keys = new Set();
-  const filtered = [];
+  const seen = new Set<string>();
+  const filtered: CardDetails[] = [];
   for (const card of cards) {
-    if (!keys.has(card.name_lower)) {
-      filtered.push(getMostReasonableById(card.scryfall_id, printing, filter));
-      keys.add(card.name_lower);
+    if (seen.has(card.oracle_id)) continue;
+    seen.add(card.oracle_id);
+    const ids = getVersionsByOracleId(card.oracle_id);
+    const best = getMostReasonableByPrintingPreference(ids, printing, filter);
+    if (best) {
+      filtered.push(best);
     }
   }
-  return filtered.filter((card) => card !== null) as CardDetails[];
+  return filtered;
 }
 
 /**

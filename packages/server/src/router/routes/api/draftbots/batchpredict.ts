@@ -8,6 +8,7 @@ interface PredictBody {
     pack: string[]; // oracle id
     picks: string[]; // oracle id
   }[];
+  cubeContext?: number[]; // 32-dim cube context embedding shared across inputs
 }
 
 export interface PredictResponse {
@@ -21,6 +22,8 @@ const OracleIDSchema = Joi.string().uuid();
 const CustomCard = Joi.string().valid('custom-card');
 const VoucherCard = Joi.string().valid('voucher');
 
+const CUBE_CONTEXT_DIM = 32;
+
 const PredictBodySchema = Joi.object({
   inputs: Joi.array()
     .items(
@@ -31,6 +34,7 @@ const PredictBodySchema = Joi.object({
     )
     .required()
     .max(20),
+  cubeContext: Joi.array().items(Joi.number()).length(CUBE_CONTEXT_DIM).optional(),
 });
 
 const validatePredictBody = (req: Request, res: Response, next: NextFunction): void => {
@@ -56,8 +60,11 @@ const handler = async (req: Request, res: Response) => {
       }
     }
 
-    // Single batched ML call — the model processes all inputs in one tensor forward pass
-    const prediction = await batchDraft(inputs.map((input) => ({ pack: input.pack, pool: input.picks })));
+    // Single batched ML call — the model processes all inputs in one tensor forward pass.
+    // All inputs in a batch represent seats of a single draft and share the same cube context.
+    const prediction = await batchDraft(
+      inputs.map((input) => ({ pack: input.pack, pool: input.picks, cubeContext: predictBody.cubeContext })),
+    );
 
     const result: PredictResponse = {
       prediction,

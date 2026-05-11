@@ -17,7 +17,6 @@ import { CardMetadata, Related } from '@utils/datatypes/CardCatalog';
 import { downloadModelsFromS3 } from '../../recommenderService/src/mlutils/downloadModel';
 import { encode, initializeMl, oracleInData } from '../../recommenderService/src/mlutils/ml';
 import { updateCombos } from './update_combos';
-import { updateScryfallTags } from './update_scryfall_tags';
 import { downloadJson, listFiles, uploadJson } from './utils/s3';
 const correlationLimit = 36;
 // import { HierarchicalNSW } from 'hnswlib-node';
@@ -89,7 +88,7 @@ const taskId = process.env.CARD_METADATA_TASK_ID;
   // Use the same directory structure as the recommenderService
   const mlModelDir = path.join(__dirname, '..', '..', 'ml');
   const modelDir = path.join(mlModelDir, 'model');
-  const requiredModels = ['encoder', 'cube_decoder', 'deck_build_decoder', 'draft_decoder'];
+  const requiredModels = ['encoder', 'cube_decoder', 'deck_build_decoder', 'draft_decoder', 'cube_context_encoder'];
 
   const modelDirExists = fs.existsSync(modelDir);
   const modelsExist =
@@ -541,23 +540,6 @@ const taskId = process.env.CARD_METADATA_TASK_ID;
   console.log('Finished all oracles, Writing metadatadict.json');
 
   await Promise.all([uploadJson('metadatadict.json', metadatadict), uploadJson('indexToOracle.json', indexToOracle)]);
-
-  // Update Scryfall tags using the same oracle index mapping
-  console.log('Starting Scryfall tag update with fresh oracle index...');
-  try {
-    // Load the illustration_id -> scryfall_id[] mapping (built by update_cards)
-    const illustrationIdToScryfallIds: Record<string, string[]> =
-      (await downloadJson('cards/illustrationIdToScryfallIds.json')) || {};
-
-    if (Object.keys(illustrationIdToScryfallIds).length === 0) {
-      console.warn('illustrationIdToScryfallIds.json not found — illustration tags will be empty');
-    }
-
-    await updateScryfallTags(oracleToIndex, illustrationIdToScryfallIds);
-  } catch (error) {
-    // Tag update failure is non-fatal — log and continue
-    console.error('Error updating Scryfall tags (non-fatal):', error);
-  }
 
   // Note: Manifest timestamp was already updated at the start of the process
   // to claim this run and prevent duplicates

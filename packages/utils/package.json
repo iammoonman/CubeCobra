@@ -9,5 +9,9 @@
   },
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "nearley": "^2.20.1",
+    "seedrandom": "^3.0.5"
+  }
 }

@@ -7,15 +7,19 @@ import { NextFunction, Request, Response } from '../../../../types/express';
 interface PredictBody {
   pack: string[]; // oracle id
   picks: string[]; // oracle id
+  cubeContext?: number[]; // 32-dim cube context embedding from /cubecontext, optional
 }
 
 const OracleIDSchema = Joi.string().uuid();
 const CustomCard = Joi.string().valid('custom-card');
 const VoucherCard = Joi.string().valid('voucher');
 
+const CUBE_CONTEXT_DIM = 32;
+
 const PredictBodySchema = Joi.object({
   pack: Joi.array().items(OracleIDSchema, CustomCard, VoucherCard).required(),
   picks: Joi.array().items(OracleIDSchema, CustomCard, VoucherCard).required(),
+  cubeContext: Joi.array().items(Joi.number()).length(CUBE_CONTEXT_DIM).optional(),
 });
 
 const validatePredictBody = (req: Request, res: Response, next: NextFunction): void => {
@@ -46,7 +50,7 @@ const handler = async (req: Request, res: Response) => {
     const mlPack = predictBody.pack.map((o) => toMl[o] ?? o);
     const mlPicks = predictBody.picks.map((o) => toMl[o] ?? o);
 
-    const mlPrediction = await draft(mlPack, mlPicks);
+    const mlPrediction = await draft(mlPack, mlPicks, predictBody.cubeContext);
 
     // Map ML oracles back to ALL original oracle IDs that mapped to them
     const prediction = mlPrediction.flatMap((item) =>

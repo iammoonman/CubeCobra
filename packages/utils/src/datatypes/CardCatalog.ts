@@ -107,24 +107,6 @@ export interface Combo {
   dateLastUpdated: number;
 }
 
-/**
- * Compressed tag dictionaries for efficient tag lookups.
- * For oracle tags: keys are OracleIdIndex values (compressed oracle indices).
- * For illustration tags: keys are ScryfallIdIndex values (compressed scryfall indices).
- * Values are arrays of tag name indices into the corresponding tag names array.
- *
- * Oracle tag lookup:
- *   1. Look up the card's compressed oracle index via oracleToIndex[oracleId]
- *   2. Look up oracleTagDict[oracleIndex] to get the array of tag name indices
- *   3. Resolve tag names via oracleTagNames[tagIndex]
- *
- * Illustration tag lookup:
- *   1. Look up the card's compressed scryfall index via scryfallIdToIndex[scryfallId]
- *   2. Look up illustrationTagDict[scryfallIndex] to get the array of tag name indices
- *   3. Resolve tag names via illustrationTagNames[tagIndex]
- */
-export type TagDict = Record<number, number[]>;
-
 export interface Catalog {
   cardtree: Record<string, any>;
   imagedict: Record<string, any>;
@@ -142,13 +124,4 @@ export interface Catalog {
   oracleToIndex: Record<string, number>;
   // Combo-specific oracle index mapping - saved alongside comboTree to ensure index consistency
   comboOracleToIndex: Record<string, number>;
-  // Scryfall oracle-level tags (e.g. "synergy-burn", "zombify") — keyed by oracle index
-  oracleTagDict: TagDict;
-  oracleTagNames: string[];
-  // Scryfall illustration-level tags (e.g. artwork-related classifications) — keyed by scryfall index
-  illustrationTagDict: TagDict;
-  illustrationTagNames: string[];
-  // Compressed scryfall ID index for illustration tag lookups
-  indexToScryfallId: string[];
-  scryfallIdToIndex: Record<string, number>;
 }

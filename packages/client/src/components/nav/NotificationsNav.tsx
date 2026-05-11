@@ -43,7 +43,7 @@ const NotificationsNav: React.FC = () => {
   );
 
   return (
-    <NavMenu label={label} wide navBar>
+    <NavMenu label={label} wide navBar noChevron>
       <Flexbox direction="col">
         <CardHeader>
           <Flexbox justify="between" direction="row" className="font-semibold">

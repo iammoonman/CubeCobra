@@ -40,7 +40,7 @@ interface CubeListPageProps {
 
 const CubeListPageRaw: React.FC = () => {
   const { versionMismatch } = useContext(ChangesContext);
-  const { changedCards, filterResult, canEdit, cube } = useContext(CubeContext);
+  const { changedCards, unfilteredChangedCards, filterResult, canEdit, cube } = useContext(CubeContext);
   const { showAllBoards, activeView } = useContext(DisplayContext);
   const { filterInput, setFilterInput } = useContext(FilterContext);
   const user = useContext(UserContext);
@@ -119,12 +119,13 @@ const CubeListPageRaw: React.FC = () => {
   }
 
   // Owners viewing a brand-new (zero-card) cube get a welcome card with
-  // onboarding paths instead of an empty board view.
-  // Basics get auto-populated by the backend on cube creation, so they don't
-  // count as "started" — only treat the cube as empty if mainboard and
-  // maybeboard are both empty.
+  // onboarding paths instead of an empty board view. Use the *unfiltered*
+  // boards so an active filter that returns no matches doesn't trip the
+  // empty state. Basics get auto-populated by the backend on cube creation,
+  // so they don't count as "started" — only treat the cube as empty if
+  // every non-basics board is empty.
   const isCubeOwner = !!user && !!cube?.owner && cube.owner.id === user.id;
-  const realBoardsEmpty = Object.entries(changedCards).every(([boardname, list]) => {
+  const realBoardsEmpty = Object.entries(unfilteredChangedCards).every(([boardname, list]) => {
     if (boardname.toLowerCase() === 'basics') return true;
     return !list || list.length === 0;
   });

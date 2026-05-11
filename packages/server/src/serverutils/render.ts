@@ -1,3 +1,4 @@
+import { cdnUrl } from '@utils/cdnUrl';
 import CubeType from '@utils/datatypes/Cube';
 import Image from '@utils/datatypes/Image';
 import { NotificationStatus } from '@utils/datatypes/Notification';
@@ -15,7 +16,8 @@ import { GIT_COMMIT } from './git';
 import { getBaseUrl } from './util';
 
 interface BundleManifest {
-  [key: string]: string;
+  [key: string]: string | { [key: string]: string } | undefined;
+  css?: { [key: string]: string };
 }
 
 let bundleManifest: BundleManifest | null = null;
@@ -45,6 +47,12 @@ export const getCubesSortValues = (user: User): { sort: SortOrder; ascending: bo
   }
 };
 
+const trimCube = (cube: CubeType): Pick<CubeType, 'id' | 'shortId' | 'name'> => ({
+  id: cube.id,
+  shortId: cube.shortId,
+  name: cube.name,
+});
+
 const getCubes = async (req: Request, callback: (cubes: CubeType[]) => void): Promise<void> => {
   if (!req.user) {
     callback([]);
@@ -68,12 +76,29 @@ const redirect = (req: Request, res: Response, to: string): void => {
 const getBundlesForPage = (page: string): string[] => {
   const manifest = loadManifest();
 
-  // Try to get hashed filenames from manifest, fall back to non-hashed
-  const vendors = manifest['vendors'] || `/js/vendors.bundle.js`;
-  const commons = manifest['commons'] || `/js/commons.bundle.js`;
-  const pageBundleName = manifest[page] || `/js/${page}.bundle.js`;
+  // Try to get hashed filenames from manifest, fall back to non-hashed.
+  // cdnUrl prepends CDN_BASE_URL when set (prod with CloudFront), otherwise
+  // returns the same-origin path that Express serves from public/.
+  const vendors = cdnUrl((manifest['vendors'] as string) || `/js/vendors.bundle.js`);
+  const commons = cdnUrl((manifest['commons'] as string) || `/js/commons.bundle.js`);
+  const pageBundleName = cdnUrl((manifest[page] as string) || `/js/${page}.bundle.js`);
 
   return [vendors, commons, pageBundleName];
+};
+
+const CSS_BUNDLE_NAMES = ['stylesheet', 'autocomplete', 'editcube', 'tags'] as const;
+type CssBundleName = (typeof CSS_BUNDLE_NAMES)[number];
+type CssBundles = Record<CssBundleName, string>;
+
+const getCssBundles = (): CssBundles => {
+  const manifest = loadManifest();
+  const cssMap = manifest.css || {};
+  return CSS_BUNDLE_NAMES.reduce((acc, name) => {
+    // In dev (no manifest), fall back to the un-hashed file with a commit
+    // query string so a browser refresh after a deploy picks up changes.
+    acc[name] = cdnUrl(cssMap[name] || `/css/${name}.css?v=${GIT_COMMIT}`);
+    return acc;
+  }, {} as CssBundles);
 };
 
 const sha256 = async (data: string): Promise<string> => {
@@ -106,8 +131,8 @@ interface ReactProps {
     theme?: string;
     hideFeatured?: boolean;
     hideTagColors?: boolean;
-    cubes: CubeType[];
-    collaboratingCubes?: CubeType[];
+    cubes: Pick<CubeType, 'id' | 'shortId' | 'name'>[];
+    collaboratingCubes?: Pick<CubeType, 'id' | 'shortId' | 'name'>[];
     notifications?: any[];
     defaultPrinting?: string;
     gridTightness?: string;
@@ -150,8 +175,8 @@ const render = (
         theme: req.user.theme,
         hideFeatured: req.user.hideFeatured,
         hideTagColors: req.user.hideTagColors,
-        cubes,
-        collaboratingCubes,
+        cubes: cubes.map(trimCube),
+        collaboratingCubes: collaboratingCubes.map(trimCube),
         notifications: notifications.items,
         defaultPrinting: req.user.defaultPrinting,
         gridTightness: req.user.gridTightness,
@@ -166,6 +191,7 @@ const render = (
 
     reactProps.nitroPayEnabled = process.env.NITROPAY_ENABLED === 'true';
     reactProps.baseUrl = getBaseUrl();
+    reactProps.cdnBaseUrl = process.env.CDN_BASE_URL || '';
     reactProps.captchaSiteKey = process.env.CAPTCHA_SITE_KEY;
     if (res.locals.csrfToken) {
       reactProps.csrfToken = res.locals.csrfToken;
@@ -174,11 +200,20 @@ const render = (
     if (!options.metadata) {
       options.metadata = [];
     }
-    if (!options.metadata.some((data) => data.property === 'og:image')) {
-      options.metadata.push({
-        property: 'og:image',
-        content: '/content/sticker.png',
-      });
+    // og:image must be an absolute URL for crawlers; baseUrl + cdnUrl handles
+    // both cases (CloudFront when CDN_BASE_URL is set, otherwise same-origin).
+    const stickerPath = cdnUrl('/content/sticker.png');
+    const fallbackImage = stickerPath.startsWith('http') ? stickerPath : `${getBaseUrl()}${stickerPath}`;
+    const existingOgImage = options.metadata.find((data) => data.property === 'og:image');
+    if (!existingOgImage) {
+      options.metadata.push({ property: 'og:image', content: fallbackImage });
+    } else if (!existingOgImage.content) {
+      existingOgImage.content = fallbackImage;
+    }
+    // Mirror the fallback onto twitter:image so both crawlers get a usable image.
+    const existingTwitterImage = options.metadata.find((data) => data.property === 'twitter:image');
+    if (existingTwitterImage && !existingTwitterImage.content) {
+      existingTwitterImage.content = fallbackImage;
     }
 
     try {
@@ -189,6 +224,7 @@ const render = (
         reactHTML: null, // TODO renable ReactDOMServer.renderToString(React.createElement(page, reactProps)),
         reactProps: serialize(reactProps),
         bundles: getBundlesForPage(page),
+        cssBundles: getCssBundles(),
         metadata: options.metadata,
         title: options.title ? `${options.title} - Cube Cobra` : 'Cube Cobra',
         patron: req.user && (req.user.roles || []).includes(UserRoles.PATRON),
@@ -196,7 +232,6 @@ const render = (
         theme,
         htmlClasses,
         noindex: options.noindex || false,
-        cssVersion: GIT_COMMIT,
       });
     } catch {
       res.status(500).send('Error rendering page');

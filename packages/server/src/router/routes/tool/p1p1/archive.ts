@@ -1,5 +1,5 @@
 import { cubeDao, dailyP1P1Dao, p1p1PackDao } from 'dynamo/daos';
-import { render } from 'serverutils/render';
+import { redirect, render } from 'serverutils/render';
 
 import { Request, Response } from '../../../../types/express';
 
@@ -43,7 +43,7 @@ export const getArchiveHandler = async (req: Request, res: Response) => {
     const error = err as Error;
     req.logger.error('Error loading daily P1P1 archive page:', error);
     req.flash('danger', 'Error loading daily P1P1 archive');
-    return render(req, res, 'ExplorePage', {}, { title: 'Explore' });
+    return redirect(req, res, '/');
   }
 };
 

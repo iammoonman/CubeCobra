@@ -1,4 +1,4 @@
-import { type GraphModel, loadGraphModel, tensor, tidy } from '@tensorflow/tfjs-node';
+import { concat, type GraphModel, loadGraphModel, tensor, tidy } from '@tensorflow/tfjs-node';
 import { readFileSync } from 'fs';
 import path from 'path';
 
@@ -15,6 +15,9 @@ let encoder: GraphModel;
 let recommendDecoder: GraphModel;
 let deckbuilderDecoder: GraphModel;
 let draftDecoder: GraphModel;
+let cubeContextEncoder: GraphModel;
+// draft_decoder takes pool[128] ⊕ cube_ctx_vec[32] = 160-dim.
+const CUBE_CONTEXT_DIM = 32;
 
 const errorHandler = (modelName: string, err: { message: any; stack: any }) => {
   if (process.env?.NODE_ENV === 'development') {
@@ -70,6 +73,15 @@ export async function initializeMl(rootDir: string = '.') {
       .catch((err: { message: any; stack: any }) => {
         errorHandler('draft_decoder', err);
       }),
+
+    loadGraphModel(`file://${path.join(rootDir, 'model', 'cube_context_encoder', 'model.json')}`)
+      .then((model) => {
+        cubeContextEncoder = model;
+        console.info('cube_context_encoder loaded');
+      })
+      .catch((err: { message: any; stack: any }) => {
+        errorHandler('cube_context_encoder', err);
+      }),
   ];
 
   await Promise.allSettled(modelPromises);
@@ -82,7 +94,7 @@ export async function initializeMl(rootDir: string = '.') {
 export const ensureModelsReady = (timeout = 30000): Promise<void> => {
   return new Promise((resolve, reject) => {
     const checkModels = () => {
-      return encoder && recommendDecoder && deckbuilderDecoder && draftDecoder;
+      return encoder && recommendDecoder && deckbuilderDecoder && draftDecoder && cubeContextEncoder;
     };
 
     if (checkModels()) {
@@ -137,6 +149,25 @@ export const encode = (oracles: string[]) => {
     const inputTensor = tensor(vector);
     const result = encoder.predict(inputTensor) as any;
     return result.dataSync();
+  });
+};
+
+export const encodeCubeContext = (oracles: string[]): number[] => {
+  if (!cubeContextEncoder) {
+    return new Array(CUBE_CONTEXT_DIM).fill(0);
+  }
+
+  const vector = [
+    encodeIndeces(
+      oracles.map((oracle) => oracleToIndex[oracle]).filter((index): index is number => index !== undefined),
+    ),
+  ];
+
+  return tidy(() => {
+    const inputTensor = tensor(vector);
+    const result = cubeContextEncoder.predict(inputTensor) as any;
+    const flat = result.dataSync();
+    return Array.from(flat) as number[];
   });
 };
 
@@ -283,10 +314,13 @@ export const build = (oracles: string[]) => {
   return res.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
 };
 
-export const draft = (pack: string[], pool: string[]) => {
+export const draft = (pack: string[], pool: string[], cubeContext?: number[]) => {
   if (!encoder || !draftDecoder) {
     return [];
   }
+
+  const cubeCtxVec =
+    cubeContext && cubeContext.length === CUBE_CONTEXT_DIM ? cubeContext : new Array(CUBE_CONTEXT_DIM).fill(0);
 
   const array = tidy(() => {
     const vector = [
@@ -296,7 +330,9 @@ export const draft = (pack: string[], pool: string[]) => {
     ];
     const inputTensor = tensor(vector);
     const encoded = encoder.predict(inputTensor) as any;
-    const result = draftDecoder.predict([encoded]) as any;
+    const cubeCtxTensor = tensor([cubeCtxVec]);
+    const combined = concat([encoded, cubeCtxTensor], -1);
+    const result = draftDecoder.predict([combined]) as any;
     return result.dataSync();
   });
   const allOracles = getAllOracleIds();
@@ -330,7 +366,9 @@ export const draft = (pack: string[], pool: string[]) => {
   return res.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
 };
 
-export const batchDraft = (inputs: { pack: string[]; pool: string[] }[]): { oracle: string; rating: number }[][] => {
+export const batchDraft = (
+  inputs: { pack: string[]; pool: string[]; cubeContext?: number[] }[],
+): { oracle: string; rating: number }[][] => {
   if (!encoder || !draftDecoder || inputs.length === 0) {
     return inputs.map(() => []);
   }
@@ -342,11 +380,19 @@ export const batchDraft = (inputs: { pack: string[]; pool: string[] }[]): { orac
     ),
   );
 
+  const cubeCtxVectors = inputs.map((input) =>
+    input.cubeContext && input.cubeContext.length === CUBE_CONTEXT_DIM
+      ? input.cubeContext
+      : new Array(CUBE_CONTEXT_DIM).fill(0),
+  );
+
   // Single forward pass through encoder + decoder for all inputs
   const batchedArray = tidy(() => {
     const inputTensor = tensor(vectors);
     const encoded = encoder.predict(inputTensor) as any;
-    const result = draftDecoder.predict([encoded]) as any;
+    const cubeCtxTensor = tensor(cubeCtxVectors);
+    const combined = concat([encoded, cubeCtxTensor], -1);
+    const result = draftDecoder.predict([combined]) as any;
     return result.arraySync();
   });
 

@@ -61,8 +61,6 @@ import {
   cardGamesEverAvailable,
   cardFirstPrintYear,
   cardKeywords,
-  cardOracleTags,
-  cardArtTags,
 } from '../../cardutil';
 %} # %}
 
@@ -121,8 +119,6 @@ condition -> (
   | gameCondition
   | firstYearCondition
   | keywordCondition
-  | otagCondition
-  | atagCondition
 ) {% ([[condition]]) => condition %}
 
 cmcCondition -> ("mv"i | "cmc"i) integerOpValue {% ([, valuePred]) => genericCondition('cmc', cardCmc, valuePred) %}
@@ -205,10 +201,6 @@ gameCondition -> "game"i gameOpValue {% ([, valuePred]) => genericCondition('gam
 firstYearCondition -> ("year"i | "firstyear"i | "fy"i) integerOpValue {% ([, valuePred]) => genericCondition('firstPrintYear', cardFirstPrintYear, valuePred) %}
 
 keywordCondition -> ("kw"i | "keyword"i | "keywords"i) stringSetElementOpValue {% ([, valuePred]) => genericCondition('keywords', cardKeywords, valuePred) %}
-
-otagCondition -> ("otag"i | "oracletag"i | "oracletags"i) stringSetElementOpValue {% ([, valuePred]) => genericCondition('otag', cardOracleTags, valuePred) %}
-
-atagCondition -> ("atag"i | "arttag"i | "arttags"i | "illustrationtag"i) stringSetElementOpValue {% ([, valuePred]) => genericCondition('atag', cardArtTags, valuePred) %}
 
 isCondition -> "is"i isOpValue {% ([, valuePred]) => genericCondition('details', ({ details }) => details, valuePred) %}
 
