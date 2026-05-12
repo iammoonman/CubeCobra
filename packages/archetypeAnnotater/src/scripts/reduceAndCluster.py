@@ -65,14 +65,18 @@ def run_umap(embeddings, n_components=2, n_neighbors=15, min_dist=0.1, metric='c
     return reduced
 
 
-def run_hdbscan(embeddings_for_cluster, min_cluster_size=50, min_samples=10):
+def run_hdbscan(embeddings_for_cluster, min_cluster_size=50, min_samples=10, cluster_selection_epsilon=0.0):
     """Run HDBSCAN clustering."""
-    print(f'Running HDBSCAN (min_cluster_size={min_cluster_size}, min_samples={min_samples})...')
+    print(
+        f'Running HDBSCAN (min_cluster_size={min_cluster_size}, min_samples={min_samples}, '
+        f'cluster_selection_epsilon={cluster_selection_epsilon})...'
+    )
     t0 = time.time()
     clusterer = hdbscan.HDBSCAN(
         min_cluster_size=min_cluster_size,
         min_samples=min_samples,
         cluster_selection_method='eom',
+        cluster_selection_epsilon=cluster_selection_epsilon,
         prediction_data=False,
     )
     labels = clusterer.fit_predict(embeddings_for_cluster)
@@ -129,10 +133,14 @@ def main():
                         help='Path to NDJSON file with {deckId, embedding} per line')
     parser.add_argument('--cluster-dims', type=int, default=6,
                         help='UMAP target dimension for clustering pass')
-    parser.add_argument('--n-neighbors', type=int, default=30,
+    parser.add_argument('--n-neighbors', type=int, default=50,
                         help='UMAP n_neighbors for the clustering pass')
-    parser.add_argument('--min-cluster-size', type=int, default=100)
-    parser.add_argument('--min-samples', type=int, default=15)
+    # Defaults tuned for ~2M decks targeting ~100 broad archetype clusters.
+    # Bump min-cluster-size up if you want fewer/broader buckets; drop it down for finer splits.
+    parser.add_argument('--min-cluster-size', type=int, default=10000)
+    parser.add_argument('--min-samples', type=int, default=100)
+    parser.add_argument('--cluster-selection-epsilon', type=float, default=0.0,
+                        help='Merge clusters whose mutual reachability distance is below this value')
     args = parser.parse_args()
 
     deck_ids, embeddings = load_embeddings(args.input)
@@ -143,7 +151,8 @@ def main():
 
     # Step 2: Cluster in N-D space
     labels = run_hdbscan(reduced_nd, min_cluster_size=args.min_cluster_size,
-                         min_samples=args.min_samples)
+                         min_samples=args.min_samples,
+                         cluster_selection_epsilon=args.cluster_selection_epsilon)
 
     # Step 3: UMAP to 2D for visualization
     reduced_2d = run_umap(embeddings, n_components=2, n_neighbors=args.n_neighbors,

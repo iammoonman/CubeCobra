@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 
 import 'dotenv/config';
 
+import { loadBasicLandIndices } from './loadBasicLandIndices.js';
+
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const TAGS_PATH = path.join(currentDir, '..', '..', 'data', 'tags', 'oracleTags.json');
 const EXPORTS_DIR = path.join(currentDir, '..', '..', 'data', 'exports');
@@ -11,6 +13,7 @@ const OUT_DIR = path.join(currentDir, '..', '..', 'data', 'tagVectors');
 const TAG_TO_INDEX_PATH = path.join(OUT_DIR, 'tagToIndex.json');
 const ORACLE_TO_TAGS_PATH = path.join(OUT_DIR, 'oracleToTagIndices.json');
 const VECTORS_PATH = path.join(OUT_DIR, 'tagVectors.ndjson');
+const MIN_DECK_SIZE = 20;
 
 interface ScryfallTag {
   id: string;
@@ -72,6 +75,9 @@ async function main() {
   const numCards = Object.keys(exportIndexToOracle).length;
   console.log(`  ${numCards} export card indices`);
 
+  const basicLandIndices = loadBasicLandIndices(exportIndexToOracle);
+  console.log(`  ${basicLandIndices.size} basic-land export indices will be filtered out`);
+
   // Pre-resolve each card index -> tag indices (avoids re-hashing per card per deck)
   const cardIndexToTags: (number[] | undefined)[] = new Array(numCards);
   let cardsWithTags = 0;
@@ -98,6 +104,7 @@ async function main() {
   const seenIds = new Set<string>();
   let written = 0;
   let skippedEmpty = 0;
+  let skippedTooSmall = 0;
   let totalDecks = 0;
 
   for (const file of deckFiles) {
@@ -110,6 +117,7 @@ async function main() {
       const counts = new Float32Array(numTags);
       let cardCount = 0;
       for (const cardIdx of deck.mainboard) {
+        if (basicLandIndices.has(cardIdx)) continue;
         const tagIdx = cardIndexToTags[cardIdx];
         cardCount += 1;
         if (!tagIdx) continue;
@@ -118,6 +126,11 @@ async function main() {
 
       if (cardCount === 0) {
         skippedEmpty += 1;
+        continue;
+      }
+
+      if (cardCount < MIN_DECK_SIZE) {
+        skippedTooSmall += 1;
         continue;
       }
 
@@ -144,7 +157,7 @@ async function main() {
 
   console.log(
     `Done. Processed ${totalDecks} deck rows, ${seenIds.size} unique decks; ` +
-      `wrote ${written}, skipped ${skippedEmpty} empty.`,
+      `wrote ${written}, skipped ${skippedEmpty} empty, ${skippedTooSmall} <${MIN_DECK_SIZE} non-basic cards.`,
   );
   console.log(`Output: ${VECTORS_PATH}`);
 }

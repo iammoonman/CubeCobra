@@ -16,8 +16,8 @@
     "reduce-and-cluster": ".venv/bin/python3 src/scripts/reduceAndCluster.py",
     "reduce-and-cluster-tags": ".venv/bin/python3 src/scripts/reduceAndCluster.py --input data/tagVectors/tagVectors.ndjson",
     "prepare-app": "tsx src/scripts/prepareAppData.ts",
-    "pipeline": "npm run download-exports && npm run compute-embeddings && npm run reduce-and-cluster && npm run prepare-app",
-    "pipeline-tags": "npm run download-exports && npm run download-tags && npm run compute-tag-vectors && npm run reduce-and-cluster-tags && npm run prepare-app"
+    "pipeline": "npm run compute-embeddings && npm run reduce-and-cluster && npm run prepare-app",
+    "pipeline-tags": "npm run compute-tag-vectors && npm run reduce-and-cluster-tags && npm run prepare-app"
   },
   "dependencies": {
     "react": "^18.3.1",
