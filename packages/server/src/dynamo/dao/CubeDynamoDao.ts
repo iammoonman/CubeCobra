@@ -109,6 +109,8 @@ export interface UnhydratedCube {
   collapseDuplicateCards?: boolean;
   formats: any[];
   likeCount?: number;
+  /** @deprecated retained on stored rows for the one-time migration to CUBE_LIKE hash rows. */
+  following?: string[];
   collaborators: string[]; // User IDs of users who can edit this cube (besides the owner)
   defaultStatus: CardStatus;
   defaultPrinting: string;

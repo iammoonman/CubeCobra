@@ -20,7 +20,9 @@
     "create-mock-files": "ts-node src/create_local_files.ts",
     "migrate-combos": "ts-node -r tsconfig-paths/register --project tsconfig.json src/migrateCombosToDb.ts",
     "transfer-ownership": "ts-node -r tsconfig-paths/register --project tsconfig.json src/transfer-ownership.ts",
-    "backfill-date-last-updated": "ts-node -r tsconfig-paths/register --project tsconfig.json src/dynamoMigrations/backfillDateLastUpdated.ts"
+    "backfill-date-last-updated": "ts-node -r tsconfig-paths/register --project tsconfig.json src/dynamoMigrations/backfillDateLastUpdated.ts",
+    "migrate-cube-likes": "ts-node -r tsconfig-paths/register --project tsconfig.json src/dynamoMigrations/migrateCubeLikes.ts",
+    "migrate-user-follows": "ts-node -r tsconfig-paths/register --project tsconfig.json src/dynamoMigrations/migrateUserFollows.ts"
   },
   "author": "",
   "license": "ISC",

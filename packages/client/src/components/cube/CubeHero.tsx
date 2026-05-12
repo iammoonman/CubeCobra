@@ -42,7 +42,6 @@ import { SafeMarkdown } from '../Markdown';
 import ArenaExportModal from '../modals/ArenaExportModal';
 import ConfirmActionModal from '../modals/ConfirmActionModal';
 import CubeCompareModal from '../modals/CubeCompareModal';
-import FollowersModal from '../modals/FollowersModal';
 import PrintAndPlayExportModal from '../modals/PrintAndPlayExportModal';
 import withModal from '../WithModal';
 
@@ -51,7 +50,6 @@ const PrintAndPlayExportModalItem = withModal('button', PrintAndPlayExportModal)
 const CompareModalButton = withModal('button', CubeCompareModal);
 const ShareCubeButton = withModal('button', CubeIdModal);
 const ReportCubeButton = withModal(Link, ConfirmActionModal);
-const FollowersModalLink = withModal(Link, FollowersModal);
 
 interface CubeHeroProps {
   cube: Cube;
@@ -872,13 +870,12 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                     <h1 className="text-white font-semibold text-3xl">{cube.name}</h1>
                     <Text md className="text-white/80 mt-1">
                       {getCubeCardCountSnippet(cube, unfilteredChangedCards)} Cube •{' '}
-                      <FollowersModalLink
-                        href="#"
-                        modalprops={{ id: cube.id, type: 'cube' }}
+                      <a
+                        href={`/cube/followers/${cube.id}`}
                         className="text-white/80 hover:text-white hover:underline"
                       >
                         {cube.likeCount ?? 0} {cube.likeCount === 1 ? 'follower' : 'followers'}
-                      </FollowersModalLink>
+                      </a>
                     </Text>
                   </div>
                   <Flexbox direction="row" gap="2" alignItems="center">

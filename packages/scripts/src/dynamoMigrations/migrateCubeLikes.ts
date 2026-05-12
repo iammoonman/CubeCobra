@@ -1,72 +1,190 @@
 /**
- * One-off migration: expands every user's deprecated `followedCubes: string[]`
- * field into per-relationship hash rows on the cube's hash partition, and
- * recomputes the denormalized counters (user.likedCubesCount, cube.likeCount).
+ * One-off migration: walks every cube via the sharded `GSI3`
+ * (`GSI3PK = CUBE#{0..9}`, all 10 shards in parallel) and:
  *
- * Run AFTER deploying the cube-like refactor code. After this is run, the legacy
- * `followedCubes` / `cube.following` arrays are no longer read from anywhere and
- * can be dropped in a follow-up cleanup.
+ *   1. Writes a LIKE hash row for each entry in the cube's legacy
+ *      `item.following` array (the list of users following the cube).
+ *   2. Sets `item.likeCount = following.length` on the cube row.
  *
- * Idempotent: rewriting a hash row with the same SK is a no-op; recomputing
- * counters from the source-of-truth (followedCubes / fresh COUNT) is deterministic.
+ * Per-user `User.likedCubesCount` is handled by `migrateUserFollows.ts`,
+ * which walks each user's own `followedCubes` legacy array.
+ *
+ * Resumable: per-shard `lastKey` is written to checkpoint after every Dynamo
+ * page. Delete `.migration-checkpoints/migrateCubeLikes.json` to start fresh.
+ *
+ * Idempotent enough for retries: PutItem on the LIKE row with the same SK
+ * overwrites, and SETting `likeCount` to the legacy array length each pass
+ * is deterministic.
  */
-import { cubeDao, userDao } from '@server/dynamo/daos';
+import { GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { cubeDao } from '@server/dynamo/daos';
 import documentClient from '@server/dynamo/documentClient';
 
 import 'dotenv/config';
-import { ScanCommand, UpdateCommand } from '../../../server/node_modules/@aws-sdk/lib-dynamodb';
+
+import { CheckpointManager } from './checkpointUtil';
+
+const DRY_RUN = process.argv.includes('--dry-run');
+const DRY_RUN_CUBE_ID = '5d39e7f38472c42aab0b73d6';
 
 interface Stats {
-  usersScanned: number;
-  usersWithLikes: number;
+  cubesScanned: number;
+  cubesWithLikes: number;
   likeRowsWritten: number;
-  cubesCountSet: number;
   errors: number;
 }
 
+interface CubeLikesCheckpoint {
+  shardLastKeys: Array<Record<string, any> | null | 'done'>;
+  stats: Stats;
+  timestamp: number;
+}
+
 const tableName = process.env.DYNAMO_TABLE!;
-
-const scanAllUsers = async function* (): AsyncGenerator<any> {
-  let lastKey: Record<string, any> | undefined;
-  do {
-    const result = await documentClient.send(
-      new ScanCommand({
-        TableName: tableName,
-        FilterExpression: '#sk = :sk',
-        ExpressionAttributeNames: { '#sk': 'SK' },
-        ExpressionAttributeValues: { ':sk': 'USER' },
-        ExclusiveStartKey: lastKey,
-      }),
-    );
-    for (const item of result.Items || []) {
-      yield item;
-    }
-    lastKey = result.LastEvaluatedKey;
-  } while (lastKey);
-};
-
-const setUserLikedCubesCount = async (userId: string, count: number): Promise<void> => {
-  await documentClient.send(
-    new UpdateCommand({
-      TableName: tableName,
-      Key: { PK: `USER#${userId}`, SK: 'USER' },
-      UpdateExpression: 'SET #item.#field = :v',
-      ExpressionAttributeNames: { '#item': 'item', '#field': 'likedCubesCount' },
-      ExpressionAttributeValues: { ':v': count },
-    }),
-  );
-};
+const SHARDS = 10;
+const PAGE_LOG_INTERVAL = 1;
+const ITEM_LOG_INTERVAL = 50;
 
 const setCubeLikeCount = async (cubeId: string, count: number): Promise<void> => {
   await documentClient.send(
     new UpdateCommand({
       TableName: tableName,
       Key: { PK: `CUBE#${cubeId}`, SK: 'CUBE' },
-      UpdateExpression: 'SET #item.#field = :v',
-      ExpressionAttributeNames: { '#item': 'item', '#field': 'likeCount' },
+      UpdateExpression: 'SET #item.#likeCount = :v',
+      ExpressionAttributeNames: { '#item': 'item', '#likeCount': 'likeCount' },
       ExpressionAttributeValues: { ':v': count },
     }),
   );
+};
+
+/**
+ * Migrates one cube row's legacy `following` array into LIKE hash rows + stamps
+ * `likeCount`. Shared between the sharded iteration and `--dry-run`.
+ */
+const processCubeRow = async (cubeBody: any, stats: Stats, now: number, logPrefix: string): Promise<void> => {
+  const cubeId: string | undefined = cubeBody?.id;
+  if (!cubeId) return;
+
+  const following: string[] = Array.isArray(cubeBody.following) ? cubeBody.following : [];
+
+  if (following.length > 0) {
+    stats.cubesWithLikes += 1;
+    for (const userId of following) {
+      try {
+        await cubeDao.writeLike(cubeId, userId, now);
+        stats.likeRowsWritten += 1;
+      } catch (err: any) {
+        stats.errors += 1;
+        console.error(`${logPrefix} writeLike(${cubeId}, ${userId}): ${err.message}`);
+      }
+    }
+  }
+
+  try {
+    await setCubeLikeCount(cubeId, following.length);
+  } catch (err: any) {
+    stats.errors += 1;
+    console.error(`${logPrefix} setCubeLikeCount(${cubeId}): ${err.message}`);
+  }
+};
+
+const processShard = async (
+  shard: number,
+  startKey: Record<string, any> | undefined,
+  stats: Stats,
+  now: number,
+  onCheckpoint: (shard: number, lastKey: Record<string, any> | null | 'done') => void,
+): Promise<void> => {
+  let lastKey: Record<string, any> | undefined = startKey;
+  let pageNum = 0;
+  console.log(`[shard ${shard}] starting${startKey ? ' (resuming from checkpoint)' : ''}…`);
+
+  do {
+    pageNum += 1;
+    const pageStart = Date.now();
+    const result = await documentClient.send(
+      new QueryCommand({
+        TableName: tableName,
+        IndexName: 'GSI3',
+        KeyConditionExpression: 'GSI3PK = :pk',
+        ExpressionAttributeValues: { ':pk': `CUBE#${shard}` },
+        ExclusiveStartKey: lastKey,
+      }),
+    );
+
+    const items = result.Items || [];
+    const pageDuration = ((Date.now() - pageStart) / 1000).toFixed(2);
+
+    if (pageNum % PAGE_LOG_INTERVAL === 0) {
+      console.log(
+        `[shard ${shard}] page ${pageNum}: ${items.length} cubes (${pageDuration}s). ` +
+          `Cumulative — scanned: ${stats.cubesScanned}, with-likes: ${stats.cubesWithLikes}, ` +
+          `rows: ${stats.likeRowsWritten}, errors: ${stats.errors}`,
+      );
+    }
+
+    for (const row of items) {
+      stats.cubesScanned += 1;
+      const cubeBody = row?.item || {};
+      await processCubeRow(cubeBody, stats, now, `[shard ${shard}]`);
+
+      if (stats.cubesScanned % ITEM_LOG_INTERVAL === 0) {
+        console.log(
+          `  […${stats.cubesScanned} cubes across all shards] with-likes: ${stats.cubesWithLikes}, ` +
+            `rows: ${stats.likeRowsWritten}, errors: ${stats.errors}`,
+        );
+      }
+    }
+
+    lastKey = result.LastEvaluatedKey;
+    onCheckpoint(shard, lastKey ?? 'done');
+  } while (lastKey);
+
+  console.log(`[shard ${shard}] complete.`);
+};
+
+const runDryRun = async (): Promise<void> => {
+  console.log(`--- DRY RUN: migrating only cube ${DRY_RUN_CUBE_ID} ---`);
+  const stats: Stats = { cubesScanned: 0, cubesWithLikes: 0, likeRowsWritten: 0, errors: 0 };
+
+  const result = await documentClient.send(
+    new GetCommand({
+      TableName: tableName,
+      Key: { PK: `CUBE#${DRY_RUN_CUBE_ID}`, SK: 'CUBE' },
+    }),
+  );
+
+  if (!result.Item) {
+    console.error(`Cube ${DRY_RUN_CUBE_ID} not found`);
+    process.exit(1);
+  }
+
+  const cubeBody = (result.Item as any).item || {};
+  const beforeFollowing = Array.isArray(cubeBody.following) ? cubeBody.following : [];
+  console.log(
+    `Before — likeCount: ${cubeBody.likeCount}, following.length: ${beforeFollowing.length}`,
+  );
+
+  stats.cubesScanned = 1;
+  await processCubeRow(cubeBody, stats, Date.now(), '[dry-run]');
+
+  // Re-read to confirm what we wrote.
+  const after = await documentClient.send(
+    new GetCommand({
+      TableName: tableName,
+      Key: { PK: `CUBE#${DRY_RUN_CUBE_ID}`, SK: 'CUBE' },
+    }),
+  );
+  const afterBody = (after.Item as any)?.item || {};
+  console.log(
+    `After  — likeCount: ${afterBody.likeCount}, following.length: ${
+      Array.isArray(afterBody.following) ? afterBody.following.length : 'absent'
+    }`,
+  );
+
+  console.log('\n=== Dry-Run Stats ===');
+  console.log(stats);
+  process.exit(stats.errors > 0 ? 1 : 0);
 };
 
 const main = async () => {
@@ -75,88 +193,67 @@ const main = async () => {
     process.exit(1);
   }
 
-  const stats: Stats = {
-    usersScanned: 0,
-    usersWithLikes: 0,
+  if (DRY_RUN) {
+    await runDryRun();
+    return;
+  }
+
+  const checkpoints = new CheckpointManager('migrateCubeLikes');
+  const saved = checkpoints.load() as CubeLikesCheckpoint | null;
+
+  const stats: Stats = saved?.stats ?? {
+    cubesScanned: 0,
+    cubesWithLikes: 0,
     likeRowsWritten: 0,
-    cubesCountSet: 0,
     errors: 0,
   };
+  const shardLastKeys: Array<Record<string, any> | null | 'done'> =
+    saved?.shardLastKeys ?? Array.from({ length: SHARDS }, () => null);
 
-  // Phase 1: expand each user's followedCubes into hash rows on the cube side,
-  // and stamp the user's likedCubesCount counter.
-  const touchedCubeIds = new Set<string>();
-
-  for await (const item of scanAllUsers()) {
-    stats.usersScanned += 1;
-    const userBody = item.item || {};
-    const userId = userBody.id;
-    const followedCubes: string[] = userBody.followedCubes || [];
-
-    if (!userId) continue;
-
-    if (followedCubes.length === 0) {
-      try {
-        await setUserLikedCubesCount(userId, 0);
-      } catch (err: any) {
-        stats.errors += 1;
-        console.error(`Failed to zero likedCubesCount for user ${userId}: ${err.message}`);
-      }
-      continue;
-    }
-
-    stats.usersWithLikes += 1;
-
-    // Use the cube's dateCreated as a stable timestamp when available, falling
-    // back to now (the actual like time isn't stored anywhere — best effort).
-    const now = Date.now();
-    for (const cubeId of followedCubes) {
-      try {
-        await cubeDao.writeLike(cubeId, userId, now);
-        stats.likeRowsWritten += 1;
-        touchedCubeIds.add(cubeId);
-      } catch (err: any) {
-        stats.errors += 1;
-        console.error(`Failed to write LIKE(${cubeId}, ${userId}): ${err.message}`);
-      }
-    }
-
-    try {
-      await setUserLikedCubesCount(userId, followedCubes.length);
-    } catch (err: any) {
-      stats.errors += 1;
-      console.error(`Failed to set likedCubesCount for ${userId}: ${err.message}`);
-    }
-
-    if (stats.usersScanned % 100 === 0) {
-      console.log(
-        `Users scanned: ${stats.usersScanned} (${stats.usersWithLikes} with likes), rows: ${stats.likeRowsWritten}`,
-      );
-    }
+  if (saved) {
+    const remaining = shardLastKeys.filter((k) => k !== 'done').length;
+    console.log(
+      `Resuming: ${remaining}/${SHARDS} shards still pending, ` +
+        `cubesScanned=${stats.cubesScanned}, rows=${stats.likeRowsWritten}.`,
+    );
+  } else {
+    console.log(`Starting fresh migration. ${SHARDS} shards in parallel via GSI3.`);
   }
 
-  // Phase 2: stamp cube.likeCount on every touched cube by counting its like rows.
-  console.log(`\nPhase 2: setting likeCount on ${touchedCubeIds.size} cubes…`);
-  for (const cubeId of touchedCubeIds) {
-    try {
-      const count = await cubeDao.countLikersOfCube(cubeId);
-      await setCubeLikeCount(cubeId, count);
-      stats.cubesCountSet += 1;
-      if (stats.cubesCountSet % 100 === 0) {
-        console.log(`  …${stats.cubesCountSet}/${touchedCubeIds.size} cubes stamped`);
+  const now = Date.now();
+
+  const persistCheckpoint = (shard: number, lastKey: Record<string, any> | null | 'done') => {
+    shardLastKeys[shard] = lastKey;
+    checkpoints.save({
+      shardLastKeys,
+      stats,
+      timestamp: Date.now(),
+    } as any);
+  };
+
+  await Promise.all(
+    Array.from({ length: SHARDS }, (_, shard) => {
+      const start = shardLastKeys[shard];
+      if (start === 'done') {
+        console.log(`[shard ${shard}] already complete from checkpoint, skipping.`);
+        return Promise.resolve();
       }
-    } catch (err: any) {
-      stats.errors += 1;
-      console.error(`Failed to set likeCount for cube ${cubeId}: ${err.message}`);
-    }
-  }
+      return processShard(shard, start ?? undefined, stats, now, persistCheckpoint);
+    }),
+  );
 
   console.log('\n=== Cube Like Migration Complete ===');
-  console.log(`Users scanned: ${stats.usersScanned}`);
-  console.log(`Users with likes: ${stats.usersWithLikes}`);
+  console.log(`Cubes scanned: ${stats.cubesScanned}`);
+  console.log(`Cubes with likes: ${stats.cubesWithLikes}`);
   console.log(`Like rows written: ${stats.likeRowsWritten}`);
-  console.log(`Cube likeCounts set: ${stats.cubesCountSet}`);
   console.log(`Errors: ${stats.errors}`);
+
+  if (stats.errors === 0) {
+    console.log('\nClearing checkpoint (clean finish).');
+    checkpoints.clear();
+  } else {
+    console.warn(`\nLeaving checkpoint in place due to ${stats.errors} error(s). Rerun to retry failed items.`);
+  }
 
   process.exit(stats.errors > 0 ? 1 : 0);
 };
