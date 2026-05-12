@@ -78,9 +78,9 @@ export const postHandler = async (req: Request, res: Response) => {
     const newUser = {
       email,
       username,
-      followedCubes: [],
-      followedUsers: [],
-      following: [],
+      followerCount: 0,
+      followingCount: 0,
+      likedCubesCount: 0,
       hideFeatured: false,
       hideTagColors: false,
       imageName: 'Ambush Viper',

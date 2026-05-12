@@ -75,7 +75,30 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
   const [isSortUsed, setIsSortUsed] = useState(true);
   const [isFilterUsed, setIsFilterUsed] = useState(true);
   const [exportAllBoards, setExportAllBoards] = useState(false);
-  const [followedState, setFollowedState] = useState(!!user && cube.following && cube.following.includes(user.id));
+  const [followedState, setFollowedState] = useState(!!user && !!cube.likedByCurrentUser);
+
+  // Server-rendered cube objects don't always carry `likedByCurrentUser`, so when
+  // the field is missing fall back to a single lightweight check. Bounded to one
+  // request per CubeHero mount.
+  React.useEffect(() => {
+    if (!user || typeof cube.likedByCurrentUser === 'boolean') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await csrfFetch(`/cube/isfollowed/${cube.id}`);
+        if (cancelled || !res.ok) return;
+        const json = await res.json();
+        if (typeof json.followed === 'boolean') {
+          setFollowedState(json.followed);
+        }
+      } catch {
+        // best-effort; default state is fine if this fails
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [csrfFetch, cube.id, cube.likedByCurrentUser, user]);
   const [maskGradient, setMaskGradient] = useState('linear-gradient(to left, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%)');
   const [mobileMaskGradient, setMobileMaskGradient] = useState(
     'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)',
@@ -854,7 +877,7 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                         modalprops={{ id: cube.id, type: 'cube' }}
                         className="text-white/80 hover:text-white hover:underline"
                       >
-                        {cube.following?.length || 0} {cube.following?.length === 1 ? 'follower' : 'followers'}
+                        {cube.likeCount ?? 0} {cube.likeCount === 1 ? 'follower' : 'followers'}
                       </FollowersModalLink>
                     </Text>
                   </div>

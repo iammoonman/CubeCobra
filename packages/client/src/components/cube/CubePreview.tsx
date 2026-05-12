@@ -12,7 +12,7 @@ interface CubePreviewProps {
 }
 
 const CubePreview: React.FC<CubePreviewProps> = ({ cube }) => {
-  const followers = cube.following?.length || 0;
+  const followers = cube.likeCount ?? 0;
 
   const categories = [
     ...(cube.categoryPrefixes || []),

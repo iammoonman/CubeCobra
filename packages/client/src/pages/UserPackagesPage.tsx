@@ -4,14 +4,11 @@ import CardPackageData from '@utils/datatypes/CardPackage';
 import User from '@utils/datatypes/User';
 
 import Button from 'components/base/Button';
-import { Card, CardBody, CardHeader } from 'components/base/Card';
-import { Col, Flexbox, Row } from 'components/base/Layout';
+import { Flexbox } from 'components/base/Layout';
 import Pagination from 'components/base/Pagination';
 import Text from 'components/base/Text';
 import CardPackage from 'components/card/CardPackage';
 import DynamicFlash from 'components/DynamicFlash';
-import { SafeMarkdown } from 'components/Markdown';
-import MtgImage from 'components/MtgImage';
 import RenderToRoot from 'components/RenderToRoot';
 import { CSRFContext } from 'contexts/CSRFContext';
 import UserContext from 'contexts/UserContext';
@@ -21,9 +18,13 @@ import UserLayout from 'layouts/UserLayout';
 interface UserPackagesPageProps {
   owner: User;
   followersCount: number;
+  followingCount: number;
   following: boolean;
   packages: CardPackageData[];
   lastKey?: any;
+  patronLevel?: number;
+  likedCubesCount?: number;
+  likedPackagesCount?: number;
 }
 
 const PAGE_SIZE = 36;
@@ -31,9 +32,13 @@ const PAGE_SIZE = 36;
 const UserPackagesPage: React.FC<UserPackagesPageProps> = ({
   owner,
   followersCount,
+  followingCount,
   following,
   packages: initialPackages,
   lastKey: initialLastKey,
+  patronLevel,
+  likedCubesCount,
+  likedPackagesCount,
 }) => {
   const user = useContext(UserContext);
   const { csrfFetch } = useContext(CSRFContext);
@@ -80,50 +85,41 @@ const UserPackagesPage: React.FC<UserPackagesPageProps> = ({
     />
   );
 
+  const isOwner = !!user && user.id === owner.id;
+
   return (
     <MainLayout>
-      <UserLayout user={owner} followersCount={followersCount} following={following} activeLink="packages">
+      <UserLayout
+        user={owner}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        following={following}
+        activeLink="packages"
+        patronLevel={patronLevel}
+        likedCubesCount={likedCubesCount}
+        likedPackagesCount={likedPackagesCount}
+      >
         <DynamicFlash />
-        <Flexbox direction="col" className="my-3" gap="2">
-          <Card>
-            <CardHeader>
-              <Text semibold lg>
-                About
-              </Text>
-            </CardHeader>
-            <CardBody>
-              <Row className="mb-3">
-                {owner.image && (
-                  <Col xs={4} lg={3}>
-                    <MtgImage image={owner.image} showArtist />
-                  </Col>
-                )}
-                <Col xs={owner.image ? 8 : 12} lg={owner.image ? 9 : 12}>
-                  <SafeMarkdown markdown={owner.about || '_This user has not yet filled out their about section._'} />
-                </Col>
-              </Row>
-              {user && user.id === owner.id && (
-                <Flexbox direction="row" gap="2">
-                  <Button type="link" color="accent" href="/user/account">
-                    Update Profile
-                  </Button>
+        <Flexbox direction="col" className="mt-3" gap="2">
+          <Flexbox direction="row" justify="between" alignItems="center" gap="2" wrap="wrap" className="w-full">
+            <Text lg semibold>
+              Packages ({items.length}
+              {hasMore ? '+' : ''})
+            </Text>
+            <Flexbox direction="row" gap="2" wrap="wrap" alignItems="center">
+              {isOwner && (
+                <>
                   <Button type="link" color="primary" href="/packages/create">
-                    Create New Package
+                    Create New
                   </Button>
-                </Flexbox>
+                  <Button type="link" color="secondary" href={`/packages/liked/${user.id}`}>
+                    Liked Packages
+                  </Button>
+                </>
               )}
-            </CardBody>
-          </Card>
-
-          {items.length > 0 && (
-            <Flexbox direction="row" justify="between" alignItems="center" className="w-full">
-              <Text lg semibold>
-                Packages ({items.length}
-                {hasMore ? '+' : ''})
-              </Text>
-              {pager}
+              {items.length > 0 && pager}
             </Flexbox>
-          )}
+          </Flexbox>
 
           {items.length > 0 ? (
             <Flexbox direction="col" gap="2">
@@ -135,11 +131,7 @@ const UserPackagesPage: React.FC<UserPackagesPageProps> = ({
               </Flexbox>
             </Flexbox>
           ) : (
-            <Card>
-              <CardBody>
-                <Text>This user has not created any packages yet.</Text>
-              </CardBody>
-            </Card>
+            <Text className="text-text-secondary">This user has not created any packages yet.</Text>
           )}
         </Flexbox>
       </UserLayout>

@@ -1,6 +1,6 @@
 import { CUBE_VISIBILITY } from '@utils/datatypes/Cube';
 import { FeedTypes } from '@utils/datatypes/Feed';
-import { blogDao, changelogDao, cubeDao, feedDao } from 'dynamo/daos';
+import { blogDao, changelogDao, cubeDao, feedDao, userDao } from 'dynamo/daos';
 import { isCubeEditable } from 'serverutils/cubefn';
 
 import { Request, Response } from '../../../../types/express';
@@ -123,7 +123,11 @@ export const commitHandler = async (req: Request, res: Response) => {
 
         // Only publish to follower feeds if the cube is public
         if (cube.visibility === CUBE_VISIBILITY.PUBLIC) {
-          const followers = [...new Set([...(req.user.following || []), ...cube.following])];
+          const [cubeLikers, userFollowers] = await Promise.all([
+            cubeDao.getAllLikers(cube.id),
+            userDao.getAllFollowers(req.user.id),
+          ]);
+          const followers = [...new Set([...userFollowers, ...cubeLikers])];
 
           const feedItems = followers.map((user) => ({
             id: blogId,

@@ -20,10 +20,12 @@ export const handler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    other.following = (other.following || []).filter((id) => user.id !== id);
-    user.followedUsers = (user.followedUsers || []).filter((id) => id !== req.params.id);
-
-    await userDao.batchPut([user, other]);
+    const stillFollowing = await userDao.getFollow(user.id, other.id);
+    if (stillFollowing) {
+      await userDao.deleteFollow(user.id, other.id);
+      await userDao.incrementFollowerCount(other.id, -1);
+      await userDao.incrementFollowingCount(user.id, -1);
+    }
 
     return redirect(req, res, `/user/view/${req.params.id}`);
   } catch (err) {

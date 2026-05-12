@@ -58,7 +58,10 @@
 
 import {
   BatchWriteCommand,
+  DeleteCommand,
   DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
   QueryCommand,
   QueryCommandInput,
   UpdateCommand,
@@ -105,7 +108,7 @@ export interface UnhydratedCube {
   showUnsorted?: boolean;
   collapseDuplicateCards?: boolean;
   formats: any[];
-  following: string[];
+  likeCount?: number;
   collaborators: string[]; // User IDs of users who can edit this cube (besides the owner)
   defaultStatus: CardStatus;
   defaultPrinting: string;
@@ -151,8 +154,9 @@ const createDeletedUserPlaceholder = (userId: string): User => {
     roles: [],
     theme: 'system',
     hideFeatured: false,
-    followedCubes: [],
-    followedUsers: [],
+    followerCount: 0,
+    followingCount: 0,
+    likedCubesCount: 0,
     notifications: [],
     imageName: 'default',
     patron: '',
@@ -238,7 +242,7 @@ export class CubeDynamoDao extends BaseDynamoDao<Cube, UnhydratedCube> {
       showUnsorted: item.showUnsorted,
       collapseDuplicateCards: item.collapseDuplicateCards,
       formats: item.formats,
-      following: item.following,
+      likeCount: item.likeCount,
       collaborators: item.collaborators ?? [],
       defaultStatus: item.defaultStatus,
       defaultPrinting: item.defaultPrinting,
@@ -941,10 +945,10 @@ export class CubeDynamoDao extends BaseDynamoDao<Cube, UnhydratedCube> {
     const hashesToDelete = oldHashes.filter((hash) => !newHashes.includes(hash));
     const hashesToAdd = newHashes.filter((hash) => !oldHashes.includes(hash));
 
-    // Check if GSI sort key data changed (follower count, name, card count)
+    // Check if GSI sort key data changed (like count, name, card count)
     // These affect the GSI sort keys but don't change which hashes exist
     const gsiDataChanged =
-      oldCube.following.length !== item.following.length ||
+      (oldCube.likeCount ?? 0) !== (item.likeCount ?? 0) ||
       oldCube.name !== item.name ||
       oldCube.cardCount !== item.cardCount ||
       (!options?.skipTimestampUpdate && oldCube.dateLastUpdated !== item.dateLastUpdated);
@@ -1020,11 +1024,12 @@ export class CubeDynamoDao extends BaseDynamoDao<Cube, UnhydratedCube> {
   protected async createHashRows(cube: Cube): Promise<any[]> {
     const hashStrings = await this.getHashStrings(cube);
 
+    const cubeLikes = cube.likeCount ?? 0;
     return hashStrings.map((hashString) => ({
       PK: `HASH#${this.partitionKey(cube)}`,
       SK: hashString,
       GSI1PK: hashString,
-      GSI1SK: `FOLLOWERS#${String(cube.following.length).padStart(10, '0')}`,
+      GSI1SK: `FOLLOWERS#${String(cubeLikes).padStart(10, '0')}`,
       GSI2PK: hashString,
       GSI2SK: `NAME#${cube.name.toLowerCase()}`,
       GSI3PK: hashString,
@@ -1033,7 +1038,7 @@ export class CubeDynamoDao extends BaseDynamoDao<Cube, UnhydratedCube> {
       GSI4SK: `DATE#${String(cube.dateLastUpdated).padStart(15, '0')}`,
       // Store metadata for quick access without needing to hydrate the full cube
       cubeName: cube.name,
-      cubeFollowers: cube.following.length,
+      cubeFollowers: cubeLikes,
       cubeCardCount: cube.cardCount,
     }));
   }
@@ -1191,7 +1196,7 @@ export class CubeDynamoDao extends BaseDynamoDao<Cube, UnhydratedCube> {
 
     // Safely access fields that might be undefined
     const cubeName = cube.name;
-    const cubeFollowers = cube.following.length;
+    const cubeFollowers = cube.likeCount ?? 0;
     const cubeCardCount = cube.cardCount || 0;
     const cubeDate = cube.dateLastUpdated || cube.date || Date.now();
 
@@ -1656,7 +1661,7 @@ export class CubeDynamoDao extends BaseDynamoDao<Cube, UnhydratedCube> {
     switch (sortBy) {
       case 'popularity':
         sorted.sort((a, b) => {
-          const diff = a.following.length - b.following.length;
+          const diff = (a.likeCount ?? 0) - (b.likeCount ?? 0);
           return ascending ? diff : -diff;
         });
         break;
@@ -2121,5 +2126,209 @@ export class CubeDynamoDao extends BaseDynamoDao<Cube, UnhydratedCube> {
         }),
       );
     }
+  }
+
+  // ---------- Cube Like relationships ----------
+  // A user liking a cube is stored as a single row on the cube's hash partition:
+  //   PK = HASH#CUBE#{cubeId}
+  //   SK = LIKE#{userId}
+  //   GSI1PK = LIKE-BY#{userId}   (for "what cubes does this user like" via GSI)
+  //   GSI1SK = DATE#{timestamp}   (for sorting)
+  // Counters on Cube.likeCount and User.likedCubesCount are kept in sync by callers.
+
+  private likeSK(userId: string): string {
+    return `LIKE#${userId}`;
+  }
+
+  private likeByGSI1PK(userId: string): string {
+    return `LIKE-BY#${userId}`;
+  }
+
+  /**
+   * Writes a like row for (cubeId, userId). Idempotent (overwrites if exists).
+   */
+  public async writeLike(cubeId: string, userId: string, timestamp: number = Date.now()): Promise<void> {
+    await this.dynamoClient.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          PK: `HASH#${this.typedKey(cubeId)}`,
+          SK: this.likeSK(userId),
+          GSI1PK: this.likeByGSI1PK(userId),
+          GSI1SK: `DATE#${String(timestamp).padStart(15, '0')}`,
+          userId,
+          cubeId,
+          likedAt: timestamp,
+        },
+      }),
+    );
+  }
+
+  /**
+   * Deletes a like row for (cubeId, userId). Idempotent.
+   */
+  public async deleteLike(cubeId: string, userId: string): Promise<void> {
+    await this.dynamoClient.send(
+      new DeleteCommand({
+        TableName: this.tableName,
+        Key: {
+          PK: `HASH#${this.typedKey(cubeId)}`,
+          SK: this.likeSK(userId),
+        },
+      }),
+    );
+  }
+
+  /**
+   * Returns true if the user currently likes the cube.
+   */
+  public async getLike(cubeId: string, userId: string): Promise<boolean> {
+    const result = await this.dynamoClient.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: {
+          PK: `HASH#${this.typedKey(cubeId)}`,
+          SK: this.likeSK(userId),
+        },
+      }),
+    );
+    return !!result.Item;
+  }
+
+  /**
+   * Lists user IDs that like the given cube, paginated by most recent.
+   */
+  public async queryLikersOfCube(
+    cubeId: string,
+    lastKey?: Record<string, any>,
+    limit: number = 36,
+  ): Promise<{ userIds: string[]; lastKey?: Record<string, any> }> {
+    const params: QueryCommandInput = {
+      TableName: this.tableName,
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :prefix)',
+      ExpressionAttributeValues: {
+        ':pk': `HASH#${this.typedKey(cubeId)}`,
+        ':prefix': 'LIKE#',
+      },
+      ScanIndexForward: false,
+      ExclusiveStartKey: lastKey,
+      Limit: limit,
+    };
+
+    const result = await this.dynamoClient.send(new QueryCommand(params));
+    const userIds = (result.Items || []).map((item: any) => item.userId).filter(Boolean);
+    return { userIds, lastKey: result.LastEvaluatedKey };
+  }
+
+  /**
+   * Counts users that like the cube.
+   */
+  public async countLikersOfCube(cubeId: string): Promise<number> {
+    let total = 0;
+    let lastKey: Record<string, any> | undefined;
+    do {
+      const result = await this.dynamoClient.send(
+        new QueryCommand({
+          TableName: this.tableName,
+          KeyConditionExpression: 'PK = :pk AND begins_with(SK, :prefix)',
+          ExpressionAttributeValues: {
+            ':pk': `HASH#${this.typedKey(cubeId)}`,
+            ':prefix': 'LIKE#',
+          },
+          Select: 'COUNT',
+          ExclusiveStartKey: lastKey,
+        }),
+      );
+      total += result.Count || 0;
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+    return total;
+  }
+
+  /**
+   * Lists cube IDs that the user likes, paginated by most recent.
+   */
+  public async queryCubesLikedBy(
+    userId: string,
+    lastKey?: Record<string, any>,
+    limit: number = 36,
+  ): Promise<{ cubeIds: string[]; lastKey?: Record<string, any> }> {
+    const params: QueryCommandInput = {
+      TableName: this.tableName,
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'GSI1PK = :pk',
+      ExpressionAttributeValues: {
+        ':pk': this.likeByGSI1PK(userId),
+      },
+      ScanIndexForward: false,
+      ExclusiveStartKey: lastKey,
+      Limit: limit,
+    };
+
+    const result = await this.dynamoClient.send(new QueryCommand(params));
+    const cubeIds = (result.Items || []).map((item: any) => item.cubeId).filter(Boolean);
+    return { cubeIds, lastKey: result.LastEvaluatedKey };
+  }
+
+  /**
+   * Counts cubes a user likes.
+   */
+  public async countCubesLikedBy(userId: string): Promise<number> {
+    let total = 0;
+    let lastKey: Record<string, any> | undefined;
+    do {
+      const result = await this.dynamoClient.send(
+        new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :pk',
+          ExpressionAttributeValues: {
+            ':pk': this.likeByGSI1PK(userId),
+          },
+          Select: 'COUNT',
+          ExclusiveStartKey: lastKey,
+        }),
+      );
+      total += result.Count || 0;
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+    return total;
+  }
+
+  /**
+   * Enumerates all user IDs that like a cube. Pages through internally — fine for
+   * notification fanouts where the count is bounded; avoid on truly massive cubes.
+   */
+  public async getAllLikers(cubeId: string): Promise<string[]> {
+    const ids: string[] = [];
+    let lastKey: Record<string, any> | undefined;
+    do {
+      const page = await this.queryLikersOfCube(cubeId, lastKey, 200);
+      ids.push(...page.userIds);
+      lastKey = page.lastKey;
+    } while (lastKey);
+    return ids;
+  }
+
+  /**
+   * Increments cube.likeCount atomically (allows ± deltas).
+   */
+  public async incrementLikeCount(cubeId: string, delta: number): Promise<number> {
+    const result = await this.dynamoClient.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: { PK: this.typedKey(cubeId), SK: this.itemType() },
+        UpdateExpression: 'ADD #item.#likeCount :delta',
+        ExpressionAttributeNames: {
+          '#item': 'item',
+          '#likeCount': 'likeCount',
+        },
+        ExpressionAttributeValues: {
+          ':delta': delta,
+        },
+        ReturnValues: 'UPDATED_NEW',
+      }),
+    );
+    return result.Attributes?.item?.likeCount ?? 0;
   }
 }

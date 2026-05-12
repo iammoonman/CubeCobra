@@ -8,10 +8,12 @@ import { call, middleware } from './test-utils/transport';
 jest.mock('../src/dynamo/daos', () => ({
   cubeDao: {
     getById: jest.fn(),
+    getAllLikers: jest.fn(),
   },
   userDao: {
     getById: jest.fn(),
     batchGet: jest.fn(),
+    getAllFollowers: jest.fn(),
   },
 }));
 jest.mock('serverutils/cubefn');
@@ -24,8 +26,9 @@ describe('Followers API', () => {
   });
 
   it('should get followers for a user', async () => {
-    const mockUser = createUser({ following: ['user1', 'user2'] });
+    const mockUser = createUser({ id: '123' });
     (userDao.getById as jest.Mock).mockResolvedValue(mockUser);
+    (userDao.getAllFollowers as jest.Mock).mockResolvedValue(['user1', 'user2']);
     const users = [createUser({ id: 'user1' }), createUser({ id: 'user2' })];
     (userDao.batchGet as jest.Mock).mockResolvedValue(users);
 
@@ -42,8 +45,9 @@ describe('Followers API', () => {
   });
 
   it('should get followers for a cube', async () => {
-    const mockCube = createCube({ following: ['user1', 'user2', 'user3'] });
+    const mockCube = createCube({ id: '123' });
     (cubeDao.getById as jest.Mock).mockResolvedValue(mockCube);
+    (cubeDao.getAllLikers as jest.Mock).mockResolvedValue(['user1', 'user2', 'user3']);
     const users = [createUser({ id: 'user1' }), createUser({ id: 'user2' })];
     (userDao.batchGet as jest.Mock).mockResolvedValue(users);
 

@@ -16,14 +16,28 @@ import UserLayout from 'layouts/UserLayout';
 interface UserBlogPageProps {
   owner: User;
   followersCount: number;
+  followingCount: number;
   following: boolean;
   posts: BlogPostType[];
   lastKey?: string;
+  patronLevel?: number;
+  likedCubesCount?: number;
+  likedPackagesCount?: number;
 }
 
 const PAGE_SIZE = 10;
 
-const UserBlogPage: React.FC<UserBlogPageProps> = ({ followersCount, following, posts, owner, lastKey }) => {
+const UserBlogPage: React.FC<UserBlogPageProps> = ({
+  followersCount,
+  followingCount,
+  following,
+  posts,
+  owner,
+  lastKey,
+  patronLevel,
+  likedCubesCount,
+  likedPackagesCount,
+}) => {
   const [items, setItems] = useState(posts);
   const { csrfFetch } = useContext(CSRFContext);
   const [currentLastKey, setLastKey] = useState(lastKey);
@@ -65,7 +79,6 @@ const UserBlogPage: React.FC<UserBlogPageProps> = ({ followersCount, following, 
       active={page}
       hasMore={hasMore}
       onClick={async (newPage) => {
-        console.log(newPage, pageCount);
         if (newPage >= pageCount) {
           await fetchMoreData();
         } else {
@@ -78,27 +91,38 @@ const UserBlogPage: React.FC<UserBlogPageProps> = ({ followersCount, following, 
 
   return (
     <MainLayout>
-      <UserLayout user={owner} followersCount={followersCount} following={following} activeLink="blog">
+      <UserLayout
+        user={owner}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        following={following}
+        activeLink="blog"
+        patronLevel={patronLevel}
+        likedCubesCount={likedCubesCount}
+        likedPackagesCount={likedPackagesCount}
+      >
         <DynamicFlash />
-        {items.length > 0 ? (
-          <Flexbox direction="col" gap="2" className="w-full my-3">
-            <Flexbox direction="row" justify="between" alignItems="center" className="w-full">
-              <Text lg semibold>
-                Blog Posts ({items.length}
-                {hasMore ? '+' : ''})
-              </Text>
-              {pager}
-            </Flexbox>
-            {items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((post) => (
-              <BlogPost key={post.id} post={post} />
-            ))}
-            <Flexbox direction="row" justify="end" alignItems="center" className="w-full">
-              {pager}
-            </Flexbox>
+        <Flexbox direction="col" gap="2" className="w-full mt-3">
+          <Flexbox direction="row" justify="between" alignItems="center" className="w-full">
+            <Text lg semibold>
+              Blog Posts ({items.length}
+              {hasMore ? '+' : ''})
+            </Text>
+            {items.length > 0 && pager}
           </Flexbox>
-        ) : (
-          <p className="my-3">This user has no blog posts!</p>
-        )}
+          {items.length > 0 ? (
+            <>
+              {items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((post) => (
+                <BlogPost key={post.id} post={post} />
+              ))}
+              <Flexbox direction="row" justify="end" alignItems="center" className="w-full">
+                {pager}
+              </Flexbox>
+            </>
+          ) : (
+            <Text className="text-text-secondary">This user has not posted any blogs yet.</Text>
+          )}
+        </Flexbox>
       </UserLayout>
     </MainLayout>
   );

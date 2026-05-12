@@ -187,6 +187,7 @@ export class PackageDynamoDao extends BaseDynamoDao<CardPackage, UnhydratedCardP
    * Creates hashes for:
    * - Global 'package:all' hash for querying all packages
    * - User (owner)
+   * - Each voter (so we can query "packages I have liked")
    * - Each card in the package (by scryfall_id)
    * - Each card's oracle_id
    * - Title keywords (monograms, bigrams, trigrams)
@@ -201,6 +202,13 @@ export class PackageDynamoDao extends BaseDynamoDao<CardPackage, UnhydratedCardP
     const ownerId = typeof pkg.owner === 'string' ? pkg.owner : pkg.owner?.id;
     if (ownerId) {
       hashes.push(await this.hash({ type: 'user', value: ownerId }));
+    }
+
+    // Voter hashes (reverse index for "packages I have liked")
+    for (const voterId of pkg.voters ?? []) {
+      if (voterId) {
+        hashes.push(await this.hash({ type: 'voter', value: voterId }));
+      }
     }
 
     // Card hashes (by scryfall_id) and oracle hashes
@@ -345,6 +353,51 @@ export class PackageDynamoDao extends BaseDynamoDao<CardPackage, UnhydratedCardP
 
     const hashString = await this.hash({ type: 'keywords', value: normalizedKeyword });
     return this.queryByHashWithSort(hashString, sortBy, ascending, lastKey, limit);
+  }
+
+  /**
+   * Queries packages liked (voted on) by a user.
+   */
+  public async queryByVoter(
+    voterId: string,
+    sortBy: SortOrder = 'date',
+    ascending: boolean = false,
+    lastKey?: Record<string, any>,
+    limit: number = 36,
+  ): Promise<{
+    items: CardPackage[];
+    lastKey?: Record<string, any>;
+  }> {
+    const hashString = await this.hash({ type: 'voter', value: voterId });
+    return this.queryByHashWithSort(hashString, sortBy, ascending, lastKey, limit);
+  }
+
+  /**
+   * Counts packages liked by a user without hydrating them. Uses Select=COUNT so
+   * DynamoDB returns only counts per page, paged until exhausted.
+   */
+  public async countByVoter(voterId: string): Promise<number> {
+    const hashString = await this.hash({ type: 'voter', value: voterId });
+
+    let total = 0;
+    let lastKey: Record<string, any> | undefined;
+
+    do {
+      const params: QueryCommandInput = {
+        TableName: this.tableName,
+        IndexName: 'GSI1',
+        KeyConditionExpression: 'GSI1PK = :hash',
+        ExpressionAttributeValues: { ':hash': hashString },
+        Select: 'COUNT',
+        ExclusiveStartKey: lastKey,
+      };
+
+      const result = await this.dynamoClient.send(new QueryCommand(params));
+      total += result.Count || 0;
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+
+    return total;
   }
 
   /**
@@ -685,8 +738,9 @@ export class PackageDynamoDao extends BaseDynamoDao<CardPackage, UnhydratedCardP
   /**
    * Repairs hash rows for a package by comparing current vs expected hashes.
    * Only writes the delta (new hashes and deletes old hashes).
+   * Returns counts of changes applied.
    */
-  public async repairHashes(packageId: string): Promise<void> {
+  public async repairHashes(packageId: string): Promise<{ added: number; removed: number; unchanged: number }> {
     // Get the package
     const pkg = await this.getById(packageId);
     if (!pkg) {
@@ -706,6 +760,8 @@ export class PackageDynamoDao extends BaseDynamoDao<CardPackage, UnhydratedCardP
 
     // Find hashes to delete (in current but not in expected)
     const hashesToDelete = currentHashesResult.hashes.filter((h) => !expectedHashes.has(h.SK));
+
+    const unchanged = expectedHashRows.length - hashesToAdd.length;
 
     // Batch write the changes
     if (hashesToAdd.length > 0 || hashesToDelete.length > 0) {
@@ -737,6 +793,12 @@ export class PackageDynamoDao extends BaseDynamoDao<CardPackage, UnhydratedCardP
         );
       }
     }
+
+    return {
+      added: hashesToAdd.length,
+      removed: hashesToDelete.length,
+      unchanged,
+    };
   }
 
   /**
@@ -918,11 +980,10 @@ export class PackageDynamoDao extends BaseDynamoDao<CardPackage, UnhydratedCardP
       await this.writeHashes(this.partitionKey(itemWithVoteCount), hashesToAdd);
     }
 
-    // If GSI data changed, we need to update ALL existing hash rows with new sort keys
-    // This happens when vote count, title, or date changes
-    if (gsiDataChanged && hashesToDelete.length === 0 && hashesToAdd.length === 0) {
-      // The set of hashes didn't change, but the GSI keys need updating
-      // We can just rewrite all existing hashes with the new package data
+    // If GSI data changed (vote count, title, or date), rewrite the unchanged hash rows
+    // so their GSI1SK/GSI2SK reflect the new sort keys. writeHashes always rewrites the
+    // full row, so this is safe to do alongside add/delete in the same update.
+    if (gsiDataChanged) {
       const unchangedHashes = oldHashes.filter((hash) => newHashes.includes(hash));
       if (unchangedHashes.length > 0) {
         await this.writeHashes(this.partitionKey(itemWithVoteCount), unchangedHashes);

@@ -299,7 +299,7 @@ export const createCube = (overrides?: Partial<Cube>): Cube => ({
   dateLastUpdated: Date.now(),
   defaultSorts: [],
   formats: [],
-  following: [],
+  likeCount: 0,
   collaborators: [],
   defaultStatus: 'Not Owned',
   defaultPrinting: '',

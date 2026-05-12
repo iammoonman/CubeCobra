@@ -28,9 +28,16 @@ export interface UnhydratedUser {
   cubes?: string[];
   about?: string;
   hideTagColors?: boolean;
+  /** Denormalized counts. Source of truth lives in relationship hash rows. */
+  followerCount?: number; // users following this user
+  followingCount?: number; // users this user follows
+  likedCubesCount?: number; // cubes this user likes
+  /** @deprecated retained on stored rows for the one-time migration to user-follow hash rows. */
+  following?: string[];
+  /** @deprecated retained on stored rows for the one-time migration to user-follow hash rows. */
+  followedUsers?: string[];
+  /** @deprecated retained on stored rows for the one-time migration to CUBE_LIKE hash rows. */
   followedCubes?: string[];
-  followedUsers?: string[]; //Who this user is following
-  following?: string[]; //Who is following this user
   imageName?: string;
   roles?: UserRoles[];
   theme?: string;

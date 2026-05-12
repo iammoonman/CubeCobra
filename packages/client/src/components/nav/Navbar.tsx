@@ -184,6 +184,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
       <CardFooter>
         <Flexbox direction="col" gap="2">
           {(user.cubes || []).length > 2 && <NavLink href={`/user/view/${user.id}`}>View All</NavLink>}
+          <NavLink href={`/cube/liked/${user.id}`}>Liked Cubes</NavLink>
           <CreateCubeButton>Create A New Cube</CreateCubeButton>
         </Flexbox>
       </CardFooter>
@@ -204,6 +205,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
     >
       <Flexbox direction="col" gap="2" className="p-3">
         <NavLink href={`/user/packages/${user.id}`}>View All My Packages</NavLink>
+        <NavLink href={`/packages/liked/${user.id}`}>Liked Packages</NavLink>
         <NavLink href="/packages/create">Create A New Package</NavLink>
       </Flexbox>
     </NavMenu>
@@ -266,6 +268,9 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                 View all my cubes
               </a>
             )}
+            <a href={`/cube/liked/${user.id}`} className="text-sm text-text-secondary hover:text-text cursor-pointer">
+              Liked cubes
+            </a>
             <CreateCubeButton>
               <span className="text-sm text-text-secondary hover:text-text">Create a new cube</span>
             </CreateCubeButton>
@@ -274,6 +279,12 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
               className="text-sm text-text-secondary hover:text-text cursor-pointer"
             >
               View all my packages
+            </a>
+            <a
+              href={`/packages/liked/${user.id}`}
+              className="text-sm text-text-secondary hover:text-text cursor-pointer"
+            >
+              Liked packages
             </a>
             <a href="/packages/create" className="text-sm text-text-secondary hover:text-text cursor-pointer">
               Create a new package
@@ -287,13 +298,12 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   const userMenu = user && (
     <NavMenu label={<span className="whitespace-nowrap">{user.username}</span>} navBar transparent={transparent}>
       <Flexbox direction="col" gap="2" className="p-3">
-        <NavLink href={`/user/view/${user.id}`}>Your Profile</NavLink>
+        <NavLink href={`/user/view/${user.id}`}>Profile</NavLink>
         {user.roles && user.roles.includes(UserRoles.ADMIN) && <NavLink href="/admin/dashboard">Admin Page</NavLink>}
         {user.roles && user.roles.includes(UserRoles.CONTENT_CREATOR) && (
           <NavLink href="/content/creators">Content Creator Dashboard</NavLink>
         )}
-        <NavLink href="/user/social">Followed and Followers</NavLink>
-        <NavLink href="/user/account">Account Information</NavLink>
+        <NavLink href="/user/account">Settings</NavLink>
         <NavLink href="/user/logout">Logout</NavLink>
       </Flexbox>
     </NavMenu>
@@ -546,6 +556,12 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                       View all my cubes
                     </a>
                   )}
+                  <a
+                    href={`/cube/liked/${user.id}`}
+                    className="text-sm text-text-secondary hover:text-text cursor-pointer"
+                  >
+                    Liked cubes
+                  </a>
                   <CreateCubeButton>
                     <span className="text-sm text-text-secondary hover:text-text">Create a new cube</span>
                   </CreateCubeButton>
@@ -554,6 +570,12 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                     className="text-sm text-text-secondary hover:text-text cursor-pointer"
                   >
                     View all my packages
+                  </a>
+                  <a
+                    href={`/packages/liked/${user.id}`}
+                    className="text-sm text-text-secondary hover:text-text cursor-pointer"
+                  >
+                    Liked packages
                   </a>
                   <a href="/packages/create" className="text-sm text-text-secondary hover:text-text cursor-pointer">
                     Create a new package
@@ -571,15 +593,14 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
             )}
           >
             <Flexbox direction="col" gap="2">
-              <NavLink href={`/user/view/${user.id}`}>Your Profile</NavLink>
+              <NavLink href={`/user/view/${user.id}`}>Profile</NavLink>
               {user.roles && user.roles.includes(UserRoles.ADMIN) && (
                 <NavLink href="/admin/dashboard">Admin Page</NavLink>
               )}
               {user.roles && user.roles.includes(UserRoles.CONTENT_CREATOR) && (
                 <NavLink href="/content/creators">Content Creator Dashboard</NavLink>
               )}
-              <NavLink href="/user/social">Followed and Followers</NavLink>
-              <NavLink href="/user/account">Account Information</NavLink>
+              <NavLink href="/user/account">Settings</NavLink>
               <NavLink href="/user/logout">Logout</NavLink>
             </Flexbox>
           </div>

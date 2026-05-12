@@ -82,7 +82,7 @@ export const quickAddHandler = async (req: Request, res: Response) => {
       showUnsorted: false,
       collapseDuplicateCards: false,
       formats: [],
-      following: [],
+      likeCount: 0,
       collaborators: [],
       defaultStatus: 'Not Owned',
       defaultPrinting: 'recent',

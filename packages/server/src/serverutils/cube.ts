@@ -3,7 +3,7 @@ import Card, { BoardChanges, Changes } from '@utils/datatypes/Card';
 import { boardNameToKey, CubeCards } from '@utils/datatypes/Cube';
 import { CUBE_VISIBILITY } from '@utils/datatypes/Cube';
 import { FeedTypes } from '@utils/datatypes/Feed';
-import { blogDao, changelogDao, cubeDao, feedDao } from 'dynamo/daos';
+import { blogDao, changelogDao, cubeDao, feedDao, userDao } from 'dynamo/daos';
 
 import { Request, Response } from '../types/express';
 import { cardFromId, getIdsFromName, getMostReasonable } from './carddb';
@@ -21,7 +21,7 @@ interface Cube {
   shortId?: string;
   defaultPrinting?: string;
   defaultStatus?: string;
-  following: string[];
+  likeCount?: number;
   visibility: string;
 }
 
@@ -106,7 +106,11 @@ async function updateCubeAndBlog(
 
         // Only publish to follower feeds if the cube is public
         if (cube.visibility === CUBE_VISIBILITY.PUBLIC) {
-          const followers = [...new Set([...(req.user!.following || []), ...cube.following])];
+          const [cubeLikers, userFollowers] = await Promise.all([
+            cubeDao.getAllLikers(cube.id),
+            userDao.getAllFollowers(req.user!.id),
+          ]);
+          const followers = [...new Set([...userFollowers, ...cubeLikers])];
 
           const feedItems = followers.map((user) => ({
             id,

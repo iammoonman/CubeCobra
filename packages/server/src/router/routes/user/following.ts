@@ -1,7 +1,6 @@
 import { PatronStatuses } from '@utils/datatypes/Patron';
-import { cubeDao, packageDao, patronDao, userDao } from 'dynamo/daos';
-import { isCubeListed } from 'serverutils/cubefn';
-import { getCubesSortValues, handleRouteError, redirect, render } from 'serverutils/render';
+import { packageDao, patronDao, userDao } from 'dynamo/daos';
+import { handleRouteError, redirect, render } from 'serverutils/render';
 
 import { Request, Response } from '../../../types/express';
 
@@ -19,11 +18,8 @@ export const handler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    const { sort, ascending } = getCubesSortValues(user);
-
-    const result = await cubeDao.queryByOwner(user.id, sort, ascending, undefined, 36);
-    const cubes = result.items.filter((cube: any) => isCubeListed(cube, req.user));
-
+    const followingPage = await userDao.queryFollowingOf(user.id, undefined, 200);
+    const followedUsers = await userDao.batchGet(followingPage.userIds);
     const following = !!req.user && (await userDao.getFollow(req.user.id, user.id));
 
     const patron = await patronDao.getById(user.id);
@@ -33,19 +29,24 @@ export const handler = async (req: Request, res: Response) => {
     const likedCubesCount = user.likedCubesCount ?? 0;
     const likedPackagesCount = await packageDao.countByVoter(user.id);
 
-    return render(req, res, 'UserCubePage', {
-      owner: user,
-      cubes,
-      lastKey: result.lastKey,
-      followersCount: user.followerCount ?? 0,
-      followingCount: user.followingCount ?? 0,
-      following,
-      patronLevel,
-      likedCubesCount,
-      likedPackagesCount,
-    });
+    return render(
+      req,
+      res,
+      'UserFollowingPage',
+      {
+        owner: user,
+        followedUsers,
+        followersCount: user.followerCount ?? 0,
+        followingCount: user.followingCount ?? 0,
+        following,
+        patronLevel,
+        likedCubesCount,
+        likedPackagesCount,
+      },
+      { title: `${user.username} is following` },
+    );
   } catch (err) {
-    return handleRouteError(req, res, err, '/404');
+    return handleRouteError(req, res, err as Error, '/404');
   }
 };
 

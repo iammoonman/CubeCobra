@@ -21,7 +21,8 @@ export const aboutHandler = async (req: Request, res: Response) => {
     const cards = await cubeDao.getCards(cube.id);
     const { mainboard } = cards;
 
-    const followersCount = cube.following?.length || 0;
+    const followersCount = cube.likeCount ?? 0;
+    const followed = !!req.user && (await cubeDao.getLike(cube.id, req.user.id));
 
     const isInQueue = await isInFeaturedQueue(cube);
 
@@ -86,7 +87,7 @@ export const aboutHandler = async (req: Request, res: Response) => {
       {
         cube: { ...cube, isInFeaturedQueue: !!isInQueue },
         cards,
-        followed: req.user && cube.following && cube.following.some((id: string) => req.user!.id === id),
+        followed,
         followersCount,
         priceOwned: cube.priceVisibility === PRICE_VISIBILITY.PUBLIC ? totalPriceOwned : null,
         pricePurchase: cube.priceVisibility === PRICE_VISIBILITY.PUBLIC ? totalPricePurchase : null,

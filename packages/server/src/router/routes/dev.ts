@@ -1,6 +1,6 @@
 import { FeedTypes } from '@utils/datatypes/Feed';
 import { UserRoles } from '@utils/datatypes/User';
-import { blogDao, feedDao } from 'dynamo/daos';
+import { blogDao, feedDao, userDao } from 'dynamo/daos';
 import { csrfProtection, ensureRole } from 'router/middleware';
 import { render } from 'serverutils/render';
 
@@ -37,14 +37,15 @@ export const blogPostHandler = async (req: Request, res: Response) => {
 
     const id = await blogDao.createBlog(blogpost);
 
-    const feedItems = req.user!.following?.map((user) => ({
+    const userFollowers = await userDao.getAllFollowers(req.user!.id);
+    const feedItems = userFollowers.map((follower) => ({
       id,
-      to: user,
+      to: follower,
       date: Date.now().valueOf(),
       type: FeedTypes.BLOG,
     }));
 
-    if (feedItems && feedItems.length > 0) {
+    if (feedItems.length > 0) {
       await feedDao.batchPutUnhydrated(feedItems);
     }
 

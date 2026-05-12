@@ -1,7 +1,8 @@
 import { PrintingPreference } from '@utils/datatypes/Card';
 import CardPackage from '@utils/datatypes/CardPackage';
+import { PatronStatuses } from '@utils/datatypes/Patron';
 import { UserRoles } from '@utils/datatypes/User';
-import { packageDao, userDao } from 'dynamo/daos';
+import { packageDao, patronDao, userDao } from 'dynamo/daos';
 import { csrfProtection, ensureAuth, ensureRole } from 'router/middleware';
 import { cardFromId, getMostReasonable } from 'serverutils/carddb';
 import { handleRouteError, redirect, render } from 'serverutils/render';
@@ -566,6 +567,83 @@ export const removeHandler = async (req: Request, res: Response) => {
   }
 };
 
+export const getLikedHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.params.userid) {
+      req.flash('danger', 'User ID required');
+      return redirect(req, res, '/404');
+    }
+
+    const owner = await userDao.getByIdOrUsername(req.params.userid);
+    if (!owner) {
+      req.flash('danger', 'User not found');
+      return redirect(req, res, '/404');
+    }
+
+    const sort = ((req.query.s as string) || 'date') as SortOrder;
+    const ascending = req.query.a === 'true';
+
+    const result = await packageDao.queryByVoter(owner.id, sort, ascending, undefined, 36);
+
+    const following = !!req.user && (await userDao.getFollow(req.user.id, owner.id));
+
+    const patron = await patronDao.getById(owner.id);
+    const patronLevel =
+      patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
+
+    const likedCubesCount = owner.likedCubesCount ?? 0;
+    const likedPackagesCount = await packageDao.countByVoter(owner.id);
+
+    return render(
+      req,
+      res,
+      'LikedPackagesPage',
+      {
+        owner,
+        items: result.items || [],
+        lastKey: result.lastKey,
+        sort,
+        ascending,
+        followersCount: owner.followerCount ?? 0,
+        followingCount: owner.followingCount ?? 0,
+        following,
+        patronLevel,
+        likedCubesCount,
+        likedPackagesCount,
+      },
+      { title: `${owner.username}'s Liked Packages` },
+    );
+  } catch (err) {
+    return handleRouteError(req, res, err, '/404');
+  }
+};
+
+export const getMoreLikedHandler = async (req: Request, res: Response) => {
+  try {
+    const ownerId = req.body.owner || req.user?.id;
+    if (!ownerId) {
+      return res.status(400).send({ success: 'false', message: 'owner required' });
+    }
+
+    const sort = (req.body.sort || 'date') as SortOrder;
+    const ascending = req.body.ascending === 'true';
+    const lastKey = req.body.lastKey;
+
+    const requested = typeof req.body.limit === 'number' ? req.body.limit : 36;
+    const clamped = Math.max(1, Math.min(100, requested));
+
+    const result = await packageDao.queryByVoter(ownerId, sort, ascending, lastKey || undefined, clamped);
+
+    return res.status(200).send({
+      success: 'true',
+      packages: result.items || [],
+      lastKey: result.lastKey,
+    });
+  } catch (err) {
+    return handleRouteError(req, res, err, '/404');
+  }
+};
+
 export const getPackageHandler = async (req: Request, res: Response) => {
   try {
     if (!req.params.id) {
@@ -623,6 +701,16 @@ export const routes = [
     path: '/remove/:id',
     method: 'get',
     handler: [ensureRole(UserRoles.ADMIN), csrfProtection, removeHandler],
+  },
+  {
+    path: '/liked/getmore',
+    method: 'post',
+    handler: [csrfProtection, getMoreLikedHandler],
+  },
+  {
+    path: '/liked/:userid',
+    method: 'get',
+    handler: [csrfProtection, getLikedHandler],
   },
   {
     path: '/:id',

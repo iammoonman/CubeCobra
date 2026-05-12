@@ -2,7 +2,7 @@ import Card from '@utils/datatypes/Card';
 import { boardNameToKey, getBoardDefinitions } from '@utils/datatypes/Cube';
 import { CUBE_VISIBILITY } from '@utils/datatypes/Cube';
 import { FeedTypes } from '@utils/datatypes/Feed';
-import { blogDao, changelogDao, cubeDao, feedDao, packageDao } from 'dynamo/daos';
+import { blogDao, changelogDao, cubeDao, feedDao, packageDao, userDao } from 'dynamo/daos';
 import { ensureAuth } from 'router/middleware';
 import { cardFromId } from 'serverutils/carddb';
 import { isCubeEditable, isCubeViewable } from 'serverutils/cubefn';
@@ -169,7 +169,11 @@ export const addtocubeHandler = async (req: Request, res: Response) => {
 
       // Only publish to follower feeds if the cube is public
       if (cube.visibility === CUBE_VISIBILITY.PUBLIC) {
-        const followers = [...new Set([...(req.user.following || []), ...cube.following])];
+        const [cubeLikers, userFollowers] = await Promise.all([
+          cubeDao.getAllLikers(cube.id),
+          userDao.getAllFollowers(req.user.id),
+        ]);
+        const followers = [...new Set([...userFollowers, ...cubeLikers])];
 
         const feedItems = followers.map((user) => ({
           id,

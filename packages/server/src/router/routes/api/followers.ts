@@ -32,7 +32,7 @@ export const getFollowers = async (req: Request, res: Response) => {
     const limit = parseInt((req.query?.limit || '100') as string, 10);
     const skip = parseInt((req.query?.skip || '0') as string, 10);
 
-    let followerIds = [];
+    let followerIds: string[] = [];
     if (type === 'user') {
       if (!id) {
         res.status(400).send({ error: 'Invalid user ID' });
@@ -40,11 +40,14 @@ export const getFollowers = async (req: Request, res: Response) => {
       }
 
       const user = await userDao.getById(id);
-      followerIds = user?.following || [];
+      followerIds = user ? await userDao.getAllFollowers(user.id) : [];
     } else if (type === 'cube') {
-      followerIds = res.locals.cube?.following || [];
+      const cube = res.locals.cube;
       //Cleanup after we are done with the cube
       delete res.locals.cube;
+      if (cube?.id) {
+        followerIds = await cubeDao.getAllLikers(cube.id);
+      }
     } else {
       res.status(400).send({ error: 'Unknown follower type' });
       return;

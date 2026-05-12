@@ -43,6 +43,14 @@ Since 1.6.0
 - Redesigned the Cube Search, Card Search, and Packages pages with the same hero treatment as Landing / Dashboard, and consolidated Top Cards into Search Cards with a toggle between **Card Images** and **Info Rows** (sortable table with Cost, Type, Elo, Total Picks, Cube Count)
 - Packages are now created on a dedicated page (with a clear warning that contents are locked once submitted), users get a Packages tab on their profile, and the navbar gains a `+` quick-create dropdown and a Your Packages menu
 - New Help hub at `/help` and a shared Help layout — Filter Syntax, Markdown Guide, API Docs, Card Updates, Contact, and Donate all share a year_of_snake hero with a sticky pill nav on the left to jump between them
+- Liked Packages: upvoting a package now also recorded as a "like" so you can browse Packages You've Liked. The cube edit sidebar gains an "Add Package" button under Import that opens a modal with two dropdowns — your packages and your liked packages — and adds the chosen package's cards to your current changelist
+- Liked Cubes page — a dedicated browsable list of cubes you've followed (also viewable for any other user)
+- Followers and Following pages — each has its own page with the new profile layout, replacing the old combined /user/social page
+- Redesigned user profile pages — a side card on the left with the user's avatar, name, supporter badges, follower / following / liked-cubes / liked-packages counts as inline links, an Edit Profile button (or Follow / Report), and the markdown bio. To the right, floating tabs (Cubes / Packages / Drafts / Blog) — no more page-wide nav bar — apply to every profile sub-page including the new Liked and Followers/Following pages. The "Decks" tab is now labelled "Drafts"
+- Supporter badges — active Patreon supporters get an animated "Patron" pill on their profile, and tiered supporters (Cobra Hatchling, Coiling Oracle, Lotus Cobra) get an additional tier-coloured pill that shimmers on hover
+- Settings page restyled like the Help hub — the page root shows a grid of section tiles (Profile, Change Password, Update Email, Display Preferences, Patreon Integration, Delete Account); picking one collapses the tiles into pill buttons on the left while the selected section's content opens on the right
+- New navbar shortcuts — your Cubes and Packages dropdowns each gain a "Liked" link, and the combined mobile/lower-breakpoint menu mirrors them
+- Username menu cleanup — "Your Profile" is now just **Profile**, "Account Information" is now **Settings**, and the redundant "Followed and Followers" link is gone (its content moved to the new Followers / Following pages linked from the profile card)
 
 # Bug Fixes
 
@@ -81,6 +89,7 @@ Since 1.6.0
 - Fixed Top Cards deduping rows by card name — different cards that happen to share a name (e.g. Everythingamajig) now appear as separate rows, and alternate-name printings of the same card (e.g. omenpath cards) are correctly collapsed into one
 - Fixed Card Search showing an infinite spinner on first load with no filter
 - Fixed search/result counts showing a stale "0 results" while a fetch was in flight — now shows "Searching…"
+- Fixed open dropdown nav menus going white-on-white in light mode on hero pages with a transparent navbar — the trigger's open-state text now picks up the theme text color instead of the override meant for the dark dropdown panel
 
 # Technical Changes
 
@@ -93,3 +102,9 @@ Since 1.6.0
 - New server routes: `/packages/create` (page), `/user/packages/:userid` (list), `/user/getmorepackages` (paginated fetch)
 - `Footer` now renders inside `Container xxxl` so its content max-width matches the rest of the layout
 - `NavMenu` gained `transparent`, `noPadding`, and tighter responsive label handling so the nav can baseline-align icon and label triggers and inherit the navbar's translucent backdrop on hero pages
+- Replaced the sprawling `Cube.following: string[]` and `User.followedCubes: string[]` arrays with a per-relationship hash-row model. Each cube-like is one row on the cube's hash partition (`PK=HASH#CUBE#{id}`, `SK=LIKE#{userId}`, plus a `LIKE-BY#{userId}` GSI1) so both "who liked this cube" and "what cubes did this user like" paginate cleanly. Denormalized `Cube.likeCount` and `User.likedCubesCount` counters keep the cheap displays cheap; the legacy arrays are no longer read and a one-shot migration backfills hash rows + counters from existing data
+- Same treatment for User-to-User follows. `User.following` (followers) and `User.followedUsers` (who you follow) replaced with FOLLOWER rows on the followed user's partition + a `FOLLOWING-BY#{userId}` GSI; counters live on `User.followerCount` / `User.followingCount`. Notification fanout (blog posts, commits, package adds, bulk imports, devblog) now pages through hash rows instead of iterating arrays
+- `PackageDynamoDao` gained `countByVoter` (Select=COUNT), used by profile pages to show the Liked Packages count without hydrating items
+- New endpoints: `GET /cube/isfollowed/:id` (small JSON probe so the cube hero can render its follow state without threading the flag through every cube page route), `GET /cube/liked/:userid` and `GET /packages/liked/:userid` (public, per-user; the param-less versions were removed), `GET /user/followers/:id`, `GET /user/following/:id`
+- Two new migration scripts in `packages/scripts/src/dynamoMigrations`: `migrateCubeLikes.ts` and `migrateUserFollows.ts`. Each scans the user table, expands the deprecated arrays into the new hash rows, and stamps the counters. Idempotent
+- `repairPackageHashes.ts` job — the equivalent of `repairCubeHashes` for the package hash table; useful after any change to package hash row schema (such as the new `voter:` hash type that powers Liked Packages)

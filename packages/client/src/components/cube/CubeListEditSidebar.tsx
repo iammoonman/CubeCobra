@@ -19,6 +19,7 @@ import Text from 'components/base/Text';
 import Tooltip from 'components/base/Tooltip';
 import Changelist from 'components/Changelist';
 import LoadingButton from 'components/LoadingButton';
+import AddPackageModal from 'components/modals/AddPackageModal';
 import PasteBulkModal from 'components/modals/PasteBulkModal';
 import UploadBulkModal from 'components/modals/UploadBulkModal';
 import UploadBulkReplaceModal from 'components/modals/UploadBulkReplaceModal';
@@ -35,6 +36,7 @@ const DEFAULT_BLOG_TITLE = 'Cube Updated – Automatic Post';
 const PasteBulkButton = withModal(Button, PasteBulkModal);
 const UploadBulkButton = withModal(Button, UploadBulkModal);
 const UploadBulkReplaceButton = withModal(Button, UploadBulkReplaceModal);
+const AddPackageButton = withModal(Button, AddPackageModal);
 
 interface CubeListEditSidebarProps {
   isHorizontal?: boolean;
@@ -239,6 +241,9 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
                 </UploadBulkReplaceButton>
               </Flexbox>
             </Dropdown>
+            <AddPackageButton color="secondary" block modalprops={{ boardToEdit }}>
+              Add Package
+            </AddPackageButton>
           </Flexbox>
 
           <Select
@@ -507,6 +512,9 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
                   </UploadBulkReplaceButton>
                 </Flexbox>
               </Dropdown>
+              <AddPackageButton color="secondary" block modalprops={{ boardToEdit }}>
+                Add Package
+              </AddPackageButton>
             </div>
           </div>
 
