@@ -53,7 +53,7 @@ const HelpLayout: React.FC<HelpLayoutProps> = ({ activeHref, children }) => {
             className="absolute inset-0 w-full h-full object-cover object-left-top md:object-top select-none"
           />
           <div className="absolute inset-0 bg-bg-secondary/80" />
-          <div className="absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
+          <div className="splash-taper absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
         </div>
 
         <a

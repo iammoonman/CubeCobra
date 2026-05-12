@@ -91,7 +91,7 @@ const NavMenu: React.FC<NavMenuProps> = ({
       <div
         className={classNames('absolute shadow-lg rounded-md z-10 border border-border transition-all duration-300', {
           'bg-bg': !transparent,
-          'bg-bg-secondary/40 backdrop-blur-sm text-button-text': transparent,
+          'bg-bg-secondary/80 backdrop-blur-sm text-button-text': transparent,
           'mt-2': !noGap && !noPadding,
           'mt-3.5': !noGap && noPadding,
           'mt-0': noGap,

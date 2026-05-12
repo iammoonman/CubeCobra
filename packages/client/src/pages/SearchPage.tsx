@@ -125,7 +125,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ cubes, lastKey, parsedQuery, qu
     setLoading(false);
   }, [csrfFetch, currentAscending, currentLastKey, currentOrder, currentQuery, items, page]);
 
-  const pager = (
+  const renderPager = (inverted: boolean) => (
     <Pagination
       count={pageCount}
       active={page}
@@ -138,6 +138,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ cubes, lastKey, parsedQuery, qu
         }
       }}
       loading={loading}
+      inverted={inverted}
     />
   );
 
@@ -157,7 +158,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ cubes, lastKey, parsedQuery, qu
           <div className="absolute inset-0 bg-bg-secondary/80" />
 
           {/* Soft taper at the very bottom of the image so the border into bg isn't harsh */}
-          <div className="absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
+          <div className="splash-taper absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
         </div>
 
         <a
@@ -248,7 +249,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ cubes, lastKey, parsedQuery, qu
                         </Text>
                       )}
                     </Flexbox>
-                    {items.length > 0 && pager}
+                    {items.length > 0 && renderPager(true)}
                   </Flexbox>
                 </Flexbox>
                 <DynamicFlash />
@@ -258,13 +259,13 @@ const SearchPage: React.FC<SearchPageProps> = ({ cubes, lastKey, parsedQuery, qu
                     <Flexbox direction="col" gap="2">
                       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5">
                         {items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((cube) => (
-                          <div key={cube.id} className="opacity-60 hover:opacity-100 transition-opacity duration-200">
+                          <div key={cube.id} className="opacity-90 hover:opacity-100 transition-opacity duration-200">
                             <CubePreview cube={cube} />
                           </div>
                         ))}
                       </div>
                       <Flexbox direction="row" justify="center" alignItems="center" className="w-full px-2">
-                        {pager}
+                        {renderPager(false)}
                       </Flexbox>
                     </Flexbox>
                   ) : (

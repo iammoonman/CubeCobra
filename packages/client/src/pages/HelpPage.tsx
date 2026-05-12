@@ -4,13 +4,8 @@ import type { Icon as OcticonIcon } from '@primer/octicons-react';
 import { CodeIcon, FilterIcon, HeartIcon, MailIcon, MarkdownIcon, SyncIcon } from '@primer/octicons-react';
 import { cdnUrl } from '@utils/cdnUrl';
 
-import Banner from 'components/Banner';
-import Container from 'components/base/Container';
-import { Flexbox } from 'components/base/Layout';
-import ResponsiveDiv from 'components/base/ResponsiveDiv';
 import Text from 'components/base/Text';
 import RenderToRoot from 'components/RenderToRoot';
-import SideBanner from 'components/SideBanner';
 import MainLayout from 'layouts/MainLayout';
 
 interface HelpLink {
@@ -110,8 +105,6 @@ const HelpPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg pointer-events-none" />
-
         <a
           href="https://gracelwyart.myportfolio.com/"
           target="_blank"
@@ -121,20 +114,6 @@ const HelpPage: React.FC = () => {
           Art by Grace Lam
         </a>
       </div>
-
-      <Container xxxl>
-        <Flexbox direction="row" gap="4">
-          <ResponsiveDiv xxl className="pl-2 py-2 min-w-fit">
-            <SideBanner placementId="left-rail" />
-          </ResponsiveDiv>
-          <div className="flex-grow px-2 py-6 max-w-full min-w-0">
-            <Banner />
-          </div>
-          <ResponsiveDiv lg className="pr-2 py-2 min-w-fit">
-            <SideBanner placementId="right-rail" />
-          </ResponsiveDiv>
-        </Flexbox>
-      </Container>
     </MainLayout>
   );
 };

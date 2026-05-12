@@ -253,7 +253,12 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
           )}
         </Flexbox>
 
-        <div className="bg-bg-active border-t border-border px-3 py-3 rounded-b-md">
+        <div
+          className={classNames(
+            'border-t border-border px-3 py-3 rounded-b-md',
+            transparent ? 'bg-black/20' : 'bg-bg-active',
+          )}
+        >
           <Flexbox direction="col" gap="2">
             <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Actions</div>
             {(user.cubes || []).length > 2 && (
@@ -396,7 +401,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
     <div
       className={classNames(
         'px-6 py-2',
-        transparent ? 'nav-transparent bg-bg-secondary/40 backdrop-blur-sm' : 'bg-bg-secondary',
+        transparent ? 'nav-transparent bg-bg-secondary/80 backdrop-blur-sm' : 'bg-bg-secondary',
       )}
     >
       <ResponsiveDiv baseVisible md className="w-full max-w-full">
@@ -438,7 +443,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
           <div
             className={classNames(
               'mt-3 p-4 rounded',
-              transparent ? 'bg-bg-secondary/40 backdrop-blur-sm text-button-text' : 'bg-bg-active',
+              transparent ? 'bg-bg-secondary/80 backdrop-blur-sm text-button-text' : 'bg-bg-active',
             )}
           >
             <Flexbox direction="col" gap="3">
@@ -459,7 +464,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
           <div
             className={classNames(
               'mt-3 rounded',
-              transparent ? 'bg-bg-secondary/40 backdrop-blur-sm text-button-text' : 'bg-bg-active',
+              transparent ? 'bg-bg-secondary/80 backdrop-blur-sm text-button-text' : 'bg-bg-active',
             )}
           >
             <Flexbox direction="col">
@@ -498,7 +503,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
           <div
             className={classNames(
               'mt-3 rounded overflow-hidden',
-              transparent ? 'bg-bg-secondary/40 backdrop-blur-sm text-button-text' : 'bg-bg-active',
+              transparent ? 'bg-bg-secondary/80 backdrop-blur-sm text-button-text' : 'bg-bg-active',
             )}
           >
             <Flexbox direction="col">
@@ -530,7 +535,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                 )}
               </Flexbox>
 
-              <div className="bg-bg border-t border-border px-4 py-3">
+              <div className={classNames('border-t border-border px-4 py-3', transparent ? 'bg-black/20' : 'bg-bg')}>
                 <Flexbox direction="col" gap="2">
                   <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Actions</div>
                   {(user.cubes || []).length > 2 && (
@@ -562,7 +567,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
           <div
             className={classNames(
               'mt-3 p-4 rounded',
-              transparent ? 'bg-bg-secondary/40 backdrop-blur-sm text-button-text' : 'bg-bg-active',
+              transparent ? 'bg-bg-secondary/80 backdrop-blur-sm text-button-text' : 'bg-bg-active',
             )}
           >
             <Flexbox direction="col" gap="2">

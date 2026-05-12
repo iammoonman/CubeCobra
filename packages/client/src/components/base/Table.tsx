@@ -52,26 +52,28 @@ const Table: React.FC<TableProps> = ({ headers, rows, hideOnMobile }) => {
   }
 
   return (
-    <table className="border border-border w-full">
-      <tbody>
-        {rows.map((row, rowIndex) => (
-          <tr
-            className={classNames({
-              'bg-bg-accent/80': rowIndex % 2 === 0,
-              'bg-bg-active/80': rowIndex % 2 === 1,
-              'border-t border-border': rowIndex > 0,
-            })}
-            key={rowIndex}
-          >
-            {Object.values(row).map((value, index) => (
-              <td className="whitespace-nowrap p-1" key={index}>
-                <Text sm>{value}</Text>
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="overflow-x-auto max-w-full">
+      <table className="border border-border w-full">
+        <tbody>
+          {rows.map((row, rowIndex) => (
+            <tr
+              className={classNames({
+                'bg-bg-accent/80': rowIndex % 2 === 0,
+                'bg-bg-active/80': rowIndex % 2 === 1,
+                'border-t border-border': rowIndex > 0,
+              })}
+              key={rowIndex}
+            >
+              {Object.values(row).map((value, index) => (
+                <td className="whitespace-nowrap p-1" key={index}>
+                  <Text sm>{value}</Text>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 

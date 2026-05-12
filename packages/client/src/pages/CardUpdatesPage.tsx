@@ -36,13 +36,6 @@ const CardUpdatesPage: React.FC<CardUpdatesPageProps> = ({
 }) => (
   <HelpLayout activeHref="/tool/cardupdates">
     <Flexbox direction="col" gap="3">
-      <Text semibold xxl className="text-center mb-2">
-        Card Database Status
-      </Text>
-      <Text md className="text-text-secondary text-center mb-4">
-        Last successful updates from our automated maintenance tasks
-      </Text>
-
       {/* Card Database Update */}
       <Card>
         <CardHeader>

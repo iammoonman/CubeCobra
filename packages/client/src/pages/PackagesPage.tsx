@@ -112,7 +112,7 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
     [getData, setQuery, setSort, setAscending],
   );
 
-  const pager = (
+  const renderPager = (inverted: boolean) => (
     <Pagination
       count={pageCount}
       active={page}
@@ -125,6 +125,7 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
         }
       }}
       loading={loading}
+      inverted={inverted}
     />
   );
 
@@ -140,7 +141,7 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
             className="absolute inset-0 w-full h-full object-cover object-top select-none"
           />
           <div className="absolute inset-0 bg-bg-secondary/80" />
-          <div className="absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
+          <div className="splash-taper absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
         </div>
 
         <a
@@ -228,7 +229,7 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
                         </Text>
                       )}
                     </Flexbox>
-                    {packages.length > 0 && pager}
+                    {packages.length > 0 && renderPager(true)}
                   </Flexbox>
                 </Flexbox>
                 <DynamicFlash />
@@ -240,7 +241,7 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
                         <CardPackage key={pack.id} cardPackage={pack} />
                       ))}
                       <Flexbox direction="row" justify="center" alignItems="center" className="w-full px-2">
-                        {pager}
+                        {renderPager(false)}
                       </Flexbox>
                     </Flexbox>
                   ) : (

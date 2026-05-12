@@ -1546,6 +1546,9 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 .resize {
   resize: both;
 }
+.scroll-mt-24 {
+  scroll-margin-top: 6rem;
+}
 .list-inside {
   list-style-position: inside;
 }
@@ -1761,6 +1764,12 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 }
 .gap-96 {
   gap: 24rem;
+}
+.gap-x-4 {
+  column-gap: 1rem;
+}
+.gap-y-1 {
+  row-gap: 0.25rem;
 }
 .space-x-2 > :not([hidden]) ~ :not([hidden]) {
   --tw-space-x-reverse: 0;
@@ -2084,6 +2093,9 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 .bg-black {
   --tw-bg-opacity: 1;
   background-color: rgb(0 0 0 / var(--tw-bg-opacity, 1));
+}
+.bg-black\/20 {
+  background-color: rgb(0 0 0 / 0.2);
 }
 .bg-blue-100 {
   --tw-bg-opacity: 1;
@@ -2845,6 +2857,9 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 .opacity-75 {
   opacity: 0.75;
 }
+.opacity-90 {
+  opacity: 0.9;
+}
 .shadow {
   --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
@@ -3084,6 +3099,31 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 }
 .nav-transparent .hover\:text-text-secondary-active:hover {
   color: rgb(255 255 255);
+}
+/* Dropdown content inside a transparent navbar sits on a dark translucent panel,
+   so override theme-default text colors that would otherwise be unreadable. */
+.nav-transparent .text-text,
+.nav-transparent .text-link {
+  color: rgb(255 255 255);
+}
+.nav-transparent .hover\:text-text:hover,
+.nav-transparent .hover\:text-link-active:hover {
+  color: rgb(255 255 255 / 0.8);
+}
+
+/* Splash-image bottom gradient that fades into the page background.
+   Only shown when the dark theme is active — the light page background is
+   the same color as the splash overlay, so the taper would just blur the edge. */
+.splash-taper {
+  display: none;
+}
+:root[class~='dark'] .splash-taper {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :root[class~='system'] .splash-taper {
+    display: block;
+  }
 }
 
 .dropdown-toggle::after {

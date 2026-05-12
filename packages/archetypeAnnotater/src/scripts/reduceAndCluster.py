@@ -1,11 +1,18 @@
 """
-Reduce 128-dim embeddings to 2D via UMAP (cosine metric) and cluster with HDBSCAN.
+Reduce vector embeddings to 2D via UMAP (cosine metric) and cluster with HDBSCAN.
 
-Reads:  data/embeddings/embeddings.ndjson
+Default input: data/embeddings/embeddings.ndjson (128-dim card-presence encoder vectors)
+Override with --input <path> to cluster a different vector source, e.g.
+    --input data/tagVectors/tagVectors.ndjson
+
+Each input line must be a JSON object with at least:
+    {"deckId": "...", "embedding": [float, ...]}
+
 Writes: data/reduced/reduced.ndjson
         data/clusters/clusters.ndjson
 """
 
+import argparse
 import json
 import os
 import sys
@@ -17,17 +24,17 @@ import umap
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(SCRIPT_DIR, '..', '..', 'data')
-EMBEDDINGS_PATH = os.path.join(DATA_DIR, 'embeddings', 'embeddings.ndjson')
+DEFAULT_EMBEDDINGS_PATH = os.path.join(DATA_DIR, 'embeddings', 'embeddings.ndjson')
 REDUCED_DIR = os.path.join(DATA_DIR, 'reduced')
 CLUSTERS_DIR = os.path.join(DATA_DIR, 'clusters')
 
 
-def load_embeddings():
+def load_embeddings(path):
     """Stream-load NDJSON embeddings into numpy arrays."""
-    print('Loading embeddings...')
+    print(f'Loading embeddings from {path}...')
     deck_ids = []
     embeddings = []
-    with open(EMBEDDINGS_PATH, 'r') as f:
+    with open(path, 'r') as f:
         for i, line in enumerate(f):
             line = line.strip()
             if not line:
@@ -117,16 +124,30 @@ def write_clusters(deck_ids, labels):
 
 
 def main():
-    deck_ids, embeddings = load_embeddings()
+    parser = argparse.ArgumentParser(description='UMAP + HDBSCAN over deck vectors.')
+    parser.add_argument('--input', default=DEFAULT_EMBEDDINGS_PATH,
+                        help='Path to NDJSON file with {deckId, embedding} per line')
+    parser.add_argument('--cluster-dims', type=int, default=6,
+                        help='UMAP target dimension for clustering pass')
+    parser.add_argument('--n-neighbors', type=int, default=30,
+                        help='UMAP n_neighbors for the clustering pass')
+    parser.add_argument('--min-cluster-size', type=int, default=100)
+    parser.add_argument('--min-samples', type=int, default=15)
+    args = parser.parse_args()
 
-    # Step 1: UMAP to 6D for clustering (better than 2D per Lucky Paper approach)
-    reduced_6d = run_umap(embeddings, n_components=6, n_neighbors=30, min_dist=0.0, metric='cosine')
+    deck_ids, embeddings = load_embeddings(args.input)
 
-    # Step 2: Cluster in 6D space
-    labels = run_hdbscan(reduced_6d, min_cluster_size=100, min_samples=15)
+    # Step 1: UMAP to N-D for clustering (better than 2D per Lucky Paper approach)
+    reduced_nd = run_umap(embeddings, n_components=args.cluster_dims,
+                          n_neighbors=args.n_neighbors, min_dist=0.0, metric='cosine')
+
+    # Step 2: Cluster in N-D space
+    labels = run_hdbscan(reduced_nd, min_cluster_size=args.min_cluster_size,
+                         min_samples=args.min_samples)
 
     # Step 3: UMAP to 2D for visualization
-    reduced_2d = run_umap(embeddings, n_components=2, n_neighbors=30, min_dist=0.1, metric='cosine')
+    reduced_2d = run_umap(embeddings, n_components=2, n_neighbors=args.n_neighbors,
+                          min_dist=0.1, metric='cosine')
 
     # Write outputs
     write_reduced(deck_ids, reduced_2d)

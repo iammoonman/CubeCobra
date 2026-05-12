@@ -69,20 +69,30 @@ const tocSections: TocEntry[] = [
 const TableOfContents: React.FC = () => (
   <Card>
     <CardHeader>
-      <Text semibold lg>
-        Table of Contents
+      <Text semibold xxl className="text-center mb-1">
+        API Documentation
       </Text>
     </CardHeader>
     <CardBody>
-      <ol className="list-decimal list-inside space-y-1 text-text-secondary">
-        {tocSections.map((s) => (
-          <li key={s.id}>
-            <a href={`#${s.id}`} className="text-link hover:underline">
-              {s.label}
-            </a>
-          </li>
-        ))}
-      </ol>
+      <Flexbox direction="col">
+        <Text md className="mb-2">
+          Public endpoints for programmatic access to CubeCobra data. All endpoints are relative to{' '}
+          <InlineCode>https://cubecobra.com</InlineCode>.
+        </Text>
+
+        <Text semibold lg>
+          Table of Contents
+        </Text>
+        <ol className="list-decimal list-inside space-y-1 text-text-secondary">
+          {tocSections.map((s) => (
+            <li key={s.id}>
+              <a href={`#${s.id}`} className="text-link hover:underline">
+                {s.label}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </Flexbox>
     </CardBody>
   </Card>
 );
@@ -189,13 +199,6 @@ const ApiDocsPage: React.FC = () => (
   <HelpLayout activeHref="/apidocs">
     <Flexbox direction="col" gap="4">
       {/* Header */}
-      <Text semibold xxl className="text-center mb-1">
-        API Documentation
-      </Text>
-      <Text md className="text-text-secondary text-center mb-2">
-        Public endpoints for programmatic access to CubeCobra data. All endpoints are relative to{' '}
-        <InlineCode>https://cubecobra.com</InlineCode>.
-      </Text>
 
       <TableOfContents />
 

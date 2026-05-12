@@ -128,7 +128,7 @@ const HeroSection: React.FC<{ icon: OcticonIcon; title: string; links: HeroLink[
   cols,
 }) => (
   <div className="w-full">
-    <Flexbox direction="row" alignItems="center" justify="center" gap="2" className="mb-3">
+    <Flexbox direction="row" alignItems="center" justify="center" gap="2" className="mb-3 text-button-text/80">
       <Icon size={16} />
       <Text sm semibold className="uppercase tracking-widest text-button-text/80">
         {title}
@@ -229,7 +229,7 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ podcasts }) => {
           </div>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg pointer-events-none" />
+        <div className="splash-taper absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg pointer-events-none" />
 
         <button
           type="button"
