@@ -496,10 +496,13 @@ video {
 [hidden]:where(:not([hidden='until-found'])) {
   display: none;
 }
-/* Prevent text overflow from causing horizontal scroll on mobile */
+/* Prevent text overflow from causing horizontal scroll on mobile.
+     Use `clip` rather than `hidden` so the body doesn't become a scroll container —
+     `overflow-x: hidden` forces the computed `overflow-y` to `auto`, which breaks
+     `position: sticky` on descendants and traps fixed-positioned rail ads. */
 html,
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 * {
