@@ -27,8 +27,7 @@ export const handler = async (req: Request, res: Response) => {
     const following = !!req.user && (await userDao.getFollow(req.user.id, user.id));
 
     const patron = await patronDao.getById(user.id);
-    const patronLevel =
-      patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
+    const patronLevel = patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
 
     const likedCubesCount = user.likedCubesCount ?? 0;
     const likedPackagesCount = await packageDao.countByVoter(user.id);

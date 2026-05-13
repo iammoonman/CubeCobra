@@ -135,7 +135,7 @@ const HeroSearch: React.FC<HeroSearchProps> = ({ featured = [], showExploreMore 
           </div>
         </div>
         {carouselCubes.length > 0 && (
-          <div className="mb-44 md:mb-14 pointer-events-none [@media(max-height:700px)]:hidden">
+          <div className="mb-16 md:mb-14 pointer-events-none [@media(max-height:800px)]:hidden">
             <div className="text-center mb-2">
               <a
                 href="/queue"
@@ -172,7 +172,7 @@ const HeroSearch: React.FC<HeroSearchProps> = ({ featured = [], showExploreMore 
         <button
           type="button"
           onClick={scrollToContent}
-          className="absolute bottom-28 md:bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center text-button-text focus:outline-none"
+          className="absolute bottom-4 md:bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center text-button-text focus:outline-none"
           aria-label="Scroll to content"
         >
           <span className="text-xs font-semibold">EXPLORE MORE</span>

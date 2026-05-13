@@ -53,11 +53,7 @@ const UserLayout: React.FC<UserLayoutProps> = ({
     <Flexbox direction="col" gap="3" className="bg-bg-accent border border-border rounded-md overflow-hidden">
       {user.image && (
         <div className="relative">
-          <img
-            className="w-full aspect-square object-cover"
-            alt={`Art by ${user.image.artist}`}
-            src={user.image.uri}
-          />
+          <img className="w-full aspect-square object-cover" alt={`Art by ${user.image.artist}`} src={user.image.uri} />
           {user.image.artist && (
             <em className="absolute bottom-1 right-2 text-[10px] text-white/90 text-shadow">
               Art by {user.image.artist}

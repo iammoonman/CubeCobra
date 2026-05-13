@@ -95,10 +95,7 @@ interface UserFollowsRecountCheckpoint {
 }
 
 const tableName = process.env.DYNAMO_TABLE!;
-const SEGMENTS = Math.max(
-  1,
-  Math.min(parseInt(process.env.MIGRATE_USER_FOLLOWS_SEGMENTS || '10', 10), 32),
-);
+const SEGMENTS = Math.max(1, Math.min(parseInt(process.env.MIGRATE_USER_FOLLOWS_SEGMENTS || '10', 10), 32));
 const PAGE_LOG_INTERVAL = 1;
 const ITEM_LOG_INTERVAL = 50;
 
@@ -229,8 +226,7 @@ const recountUserRow = async (userBody: any, stats: RecountStats, logPrefix: str
       new UpdateCommand({
         TableName: tableName,
         Key: { PK: `USER#${userId}`, SK: 'USER' },
-        UpdateExpression:
-          'SET #item.#followerCount = :fc, #item.#followingCount = :fwc, #item.#likedCubesCount = :lcc',
+        UpdateExpression: 'SET #item.#followerCount = :fc, #item.#followingCount = :fwc, #item.#likedCubesCount = :lcc',
         ExpressionAttributeNames: {
           '#item': 'item',
           '#followerCount': 'followerCount',
@@ -245,11 +241,7 @@ const recountUserRow = async (userBody: any, stats: RecountStats, logPrefix: str
       }),
     );
     stats.usersUpdated += 1;
-    if (
-      prevFollower !== followerCount ||
-      prevFollowing !== followingCount ||
-      prevLiked !== likedCubesCount
-    ) {
+    if (prevFollower !== followerCount || prevFollowing !== followingCount || prevLiked !== likedCubesCount) {
       stats.usersChanged += 1;
     }
   } catch (err: any) {
@@ -620,8 +612,7 @@ const main = async () => {
     segmentLastKeys = saved.segmentLastKeys;
     const remaining = segmentLastKeys.filter((k) => k !== 'done').length;
     console.log(
-      `Resuming: ${totalSegments} segment(s), ${remaining} not yet finished. ` +
-        `usersScanned=${stats.usersScanned}.`,
+      `Resuming: ${totalSegments} segment(s), ${remaining} not yet finished. ` + `usersScanned=${stats.usersScanned}.`,
     );
   } else {
     segmentLastKeys = Array.from({ length: totalSegments }, () => null);

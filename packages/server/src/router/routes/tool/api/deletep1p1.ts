@@ -1,5 +1,6 @@
 import { commentDao, cubeDao, p1p1PackDao } from 'dynamo/daos';
 import { csrfProtection, ensureAuth } from 'router/middleware';
+import { isAdmin } from 'serverutils/util';
 import { isValidUUID } from 'serverutils/validation';
 
 import { Request, Response } from '../../../../types/express';
@@ -33,12 +34,12 @@ export const deleteP1P1Handler = async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Cannot delete official daily P1P1 packs' });
     }
 
-    // Check if user has permission to delete (cube owner or pack creator)
+    // Check if user has permission to delete (cube owner, pack creator, or admin)
     const cube = await cubeDao.getById(pack.cubeId);
     const isCubeOwner = cube && cube.owner && cube.owner.id === user.id;
     const isPackCreator = pack.createdBy === user.id;
 
-    if (!isCubeOwner && !isPackCreator) {
+    if (!isCubeOwner && !isPackCreator && !isAdmin(user)) {
       return res.status(403).json({ error: 'Permission denied' });
     }
 

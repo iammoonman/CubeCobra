@@ -1,7 +1,5 @@
-import { ContentStatus } from '@utils/datatypes/Content';
 import { CUBE_VISIBILITY } from '@utils/datatypes/Cube';
-import { collaboratorIndexDao, cubeDao, feedDao } from 'dynamo/daos';
-import { articleDao, draftDao, episodeDao, videoDao } from 'dynamo/daos';
+import { collaboratorIndexDao, cubeDao, draftDao, feedDao } from 'dynamo/daos';
 import { getDailyP1P1 } from 'serverutils/dailyP1P1';
 import { getFeaturedCubes } from 'serverutils/featuredQueue';
 import { getCubesSortValues, handleRouteError, redirect, render } from 'serverutils/render';
@@ -32,27 +30,7 @@ const dashboardHandler = async (req: Request, res: Response) => {
       return redirect(req, res, '/landing');
     }
 
-    const posts = await feedDao.getByTo(req.user.id);
-
-    // Filter out blog posts from private cubes that the user doesn't own
-    const filteredPosts = filterFeedItemsByPrivacy(posts.items || []);
-
     const featured = await getFeaturedCubes(8);
-
-    // Query all content types in parallel (excluding podcasts, only episodes)
-    const [articlesResult, videosResult, episodesResult] = await Promise.all([
-      articleDao.queryByStatus(ContentStatus.PUBLISHED, undefined, 36),
-      videoDao.queryByStatus(ContentStatus.PUBLISHED, undefined, 36),
-      episodeDao.queryByStatus(ContentStatus.PUBLISHED, undefined, 36),
-    ]);
-
-    // Merge and sort by date descending
-    const content = [...(articlesResult.items || []), ...(videosResult.items || []), ...(episodesResult.items || [])]
-      .sort((a, b) => b.date - a.date)
-      .slice(0, 36);
-
-    // Use unhydrated query to avoid loading cards/seats from S3 for better performance
-    const decks = await draftDao.queryByCubeOwnerUnhydrated(req.user.id);
 
     // Get daily P1P1
     const dailyP1P1 = await getDailyP1P1(req.logger);
@@ -65,11 +43,6 @@ const dashboardHandler = async (req: Request, res: Response) => {
     const userCubes = await cubeDao.queryByOwner(req.user.id, sort, ascending, undefined, 36);
 
     return render(req, res, 'DashboardPage', {
-      posts: filteredPosts.map((item: any) => item.document),
-      lastKey: posts.lastKey,
-      decks: decks.items,
-      lastDeckKey: decks.lastKey,
-      content,
       featured,
       dailyP1P1,
       collaboratingCubes,
@@ -77,6 +50,30 @@ const dashboardHandler = async (req: Request, res: Response) => {
     });
   } catch (err) {
     return handleRouteError(req, res, err, '/landing');
+  }
+};
+
+const userCubeDraftsHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return redirect(req, res, '/landing');
+    }
+
+    // Use unhydrated query to avoid loading cards/seats from S3 for better performance
+    const decks = await draftDao.queryByCubeOwnerUnhydrated(req.user.id);
+
+    return render(
+      req,
+      res,
+      'UserCubeDraftsPage',
+      {
+        decks: decks.items,
+        lastKey: decks.lastKey,
+      },
+      { title: 'Drafts of Your Cubes' },
+    );
+  } catch (err) {
+    return handleRouteError(req, res, err, '/dashboard');
   }
 };
 
@@ -88,7 +85,7 @@ const getMoreFeedItemsHandler = async (req: Request, res: Response) => {
   const { lastKey } = req.body;
   const { user } = req;
 
-  const result = await feedDao.getByTo(user.id, lastKey);
+  const result = await feedDao.getByTo(user.id, lastKey ?? undefined);
 
   // Filter out blog posts from private cubes that the user doesn't own
   const filteredItems = filterFeedItemsByPrivacy(result.items || []);
@@ -108,7 +105,7 @@ const getMoreDecksHandler = async (req: Request, res: Response) => {
   const { lastKey } = req.body;
 
   // Use unhydrated query to avoid loading cards/seats from S3 for better performance
-  const result = await draftDao.queryByCubeOwnerUnhydrated(req.user.id, lastKey);
+  const result = await draftDao.queryByCubeOwnerUnhydrated(req.user.id, lastKey ?? undefined);
 
   return res.status(200).send({
     success: 'true',
@@ -122,6 +119,11 @@ export const routes = [
     path: '',
     method: 'get',
     handler: [csrfProtection, ensureAuth, dashboardHandler],
+  },
+  {
+    path: '/drafts',
+    method: 'get',
+    handler: [csrfProtection, ensureAuth, userCubeDraftsHandler],
   },
   {
     path: '/getmorefeeditems',

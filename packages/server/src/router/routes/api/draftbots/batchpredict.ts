@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { getOracleForMl } from 'serverutils/carddb';
 import { batchDraft } from 'serverutils/ml';
 
 import { NextFunction, Request, Response } from '../../../../types/express';
@@ -60,11 +61,41 @@ const handler = async (req: Request, res: Response) => {
       }
     }
 
+    // Map oracle IDs to ML-known oracles per seat, mirroring predict.ts. Cards in the
+    // training vocab pass through unchanged; unknown cards fall back to a mostSimilar.
+    const seatMaps = inputs.map((input) => {
+      const toMl: Record<string, string> = {};
+      const fromMl: Record<string, string[]> = {};
+      for (const oracle of [...input.pack, ...input.picks]) {
+        if (toMl[oracle] !== undefined) continue;
+        const mlOracle = getOracleForMl(oracle, null);
+        toMl[oracle] = mlOracle;
+        if (!fromMl[mlOracle]) fromMl[mlOracle] = [];
+        fromMl[mlOracle].push(oracle);
+      }
+      return { toMl, fromMl };
+    });
+
     // Single batched ML call — the model processes all inputs in one tensor forward pass.
     // All inputs in a batch represent seats of a single draft and share the same cube context.
-    const prediction = await batchDraft(
-      inputs.map((input) => ({ pack: input.pack, pool: input.picks, cubeContext: predictBody.cubeContext })),
+    const mlPrediction = await batchDraft(
+      inputs.map((input, i) => ({
+        pack: input.pack.map((o) => seatMaps[i]!.toMl[o] ?? o),
+        pool: input.picks.map((o) => seatMaps[i]!.toMl[o] ?? o),
+        cubeContext: predictBody.cubeContext,
+      })),
     );
+
+    // Map ML oracles back to ALL original oracle IDs that mapped to them, per seat.
+    const prediction = mlPrediction.map((seatResult, i) => {
+      const { fromMl } = seatMaps[i]!;
+      return seatResult.flatMap((item) =>
+        (fromMl[item.oracle] ?? [item.oracle]).map((oracle) => ({
+          oracle,
+          rating: item.rating,
+        })),
+      );
+    });
 
     const result: PredictResponse = {
       prediction,

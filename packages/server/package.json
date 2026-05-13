@@ -8,7 +8,7 @@
     "copy-client": "npm run copy-prod-client && npm run copy-dev-client",
     "copy-public": "copyfiles -u 0 -a 'public/**' dist/server/",
     "fix-external-paths": "npx resolve-tspaths && node scripts/fixExternalPaths.js",
-    "build": "npm run write-git-info && npx tsc && npm run fix-external-paths && npm run copy-client && copyfiles -u 1 'src/**/*.pug' dist/server/src && npm run copy-public && copyfiles -u 2 'src/emails/**/*' dist/server/src/emails",
+    "build": "npm run write-git-info && npx tsc && npm run fix-external-paths && npm run copy-client && copyfiles -u 1 'src/**/*.pug' dist/server/src && npm run copy-public && copyfiles -u 2 'src/emails/**/*' dist/server/src/emails && copyfiles -u 1 'src/static/**' dist/server/src",
     "type-check": "npx tsc --noEmit",
     "start": "node server.js",
     "dev": "npm run write-git-info && nodemon -r tsconfig-paths/register src/index.ts",

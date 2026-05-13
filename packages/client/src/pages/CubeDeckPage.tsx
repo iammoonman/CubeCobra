@@ -63,8 +63,8 @@ const CubeDeckPage: React.FC<CubeDeckPageProps> = ({ cube, draft }) => {
                       This draft has no data.
                     </Text>
                     <Text className="text-text-secondary">
-                      The seats and cards for this draft are missing. This usually means the draft was never finished
-                      or its data was lost.
+                      The seats and cards for this draft are missing. This usually means the draft was never finished or
+                      its data was lost.
                     </Text>
                   </CardBody>
                 </Card>

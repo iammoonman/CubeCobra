@@ -568,11 +568,7 @@ export class UserDynamoDao extends BaseDynamoDao<UserWithBaseFields, StoredUserW
     return `FOLLOWING-BY#${followerId}`;
   }
 
-  public async writeFollow(
-    followerId: string,
-    followedId: string,
-    timestamp: number = Date.now(),
-  ): Promise<void> {
+  public async writeFollow(followerId: string, followedId: string, timestamp: number = Date.now()): Promise<void> {
     await this.dynamoClient.send(
       new PutCommand({
         TableName: this.tableName,

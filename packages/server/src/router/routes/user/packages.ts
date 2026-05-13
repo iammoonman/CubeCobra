@@ -22,8 +22,7 @@ export const handler = async (req: Request, res: Response) => {
     const result = await packageDao.queryByOwner(userid, 'date', false, undefined, 36);
 
     const patron = await patronDao.getById(user.id);
-    const patronLevel =
-      patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
+    const patronLevel = patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
 
     const likedCubesCount = user.likedCubesCount ?? 0;
     const likedPackagesCount = await packageDao.countByVoter(user.id);

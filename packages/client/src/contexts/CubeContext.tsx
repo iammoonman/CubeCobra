@@ -21,6 +21,7 @@ import Card, {
 } from '@utils/datatypes/Card';
 import { CardDetails } from '@utils/datatypes/Card';
 import Cube, { CubeCards, getViewByName, getViewDefinitions, TagColor } from '@utils/datatypes/Cube';
+import { UserRoles } from '@utils/datatypes/User';
 import { getCubeSorts } from '@utils/sorting/Sort';
 import { deepCopy, isCubeOwner } from '@utils/Util';
 
@@ -1400,7 +1401,9 @@ export function CubeContextProvider({
     [changes, setChanges, csrfFetch],
   );
 
-  const isOwner = isCubeOwner(cube, user);
+  const isAdmin = !!user && Array.isArray(user.roles) && user.roles.includes(UserRoles.ADMIN);
+  // Admins are treated as owners across the cube UI so they have full edit access to any cube.
+  const isOwner = isCubeOwner(cube, user) || isAdmin;
   const canEdit = isOwner || (!!user && (cube.collaborators ?? []).includes(user.id));
 
   const hasCustomImages = useMemo(

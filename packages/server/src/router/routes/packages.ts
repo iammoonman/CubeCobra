@@ -588,8 +588,7 @@ export const getLikedHandler = async (req: Request, res: Response) => {
     const following = !!req.user && (await userDao.getFollow(req.user.id, owner.id));
 
     const patron = await patronDao.getById(owner.id);
-    const patronLevel =
-      patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
+    const patronLevel = patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
 
     const likedCubesCount = owner.likedCubesCount ?? 0;
     const likedPackagesCount = await packageDao.countByVoter(owner.id);

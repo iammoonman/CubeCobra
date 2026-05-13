@@ -30,9 +30,9 @@
  *   --concurrency N Max drafts to process in parallel (default 10).
  *   --apply         Actually perform the writes. Default is dry-run.
  */
-import 'dotenv/config';
-
 import { NativeAttributeValue } from '@aws-sdk/lib-dynamodb';
+
+import 'dotenv/config';
 
 import { cubeDao, draftDao, userDao } from '../../server/src/dynamo/daos';
 import {
@@ -62,24 +62,28 @@ function parseArgs(argv: string[]): Args {
   let owner: string | null = null;
   let concurrency = 10;
   let apply = false;
-  for (let i = 0; i < argv.length; i++) {
+  for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--id' && argv[i + 1]) {
       ids.push(argv[i + 1]!);
-      i++;
+      i += 1;
     } else if (arg === '--ids' && argv[i + 1]) {
-      ids.push(...argv[i + 1]!.split(',').map((s) => s.trim()).filter(Boolean));
-      i++;
+      ids.push(
+        ...argv[i + 1]!.split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      );
+      i += 1;
     } else if (arg === '--cube' && argv[i + 1]) {
       cube = argv[i + 1]!;
-      i++;
+      i += 1;
     } else if (arg === '--owner' && argv[i + 1]) {
       owner = argv[i + 1]!;
-      i++;
+      i += 1;
     } else if (arg === '--concurrency' && argv[i + 1]) {
       const n = parseInt(argv[i + 1]!, 10);
       if (Number.isFinite(n) && n > 0) concurrency = n;
-      i++;
+      i += 1;
     } else if (arg === '--apply') {
       apply = true;
     } else if (arg === '--dry-run') {
@@ -160,7 +164,8 @@ async function pMap<I, O>(inputs: I[], concurrency: number, fn: (input: I, index
   let cursor = 0;
   const workers = Array.from({ length: Math.min(concurrency, inputs.length) }, async () => {
     while (true) {
-      const i = cursor++;
+      const i = cursor;
+      cursor += 1;
       if (i >= inputs.length) return;
       results[i] = await fn(inputs[i]!, i);
     }
@@ -204,7 +209,9 @@ async function resolveDraftIdsForOwner(ownerArg: string): Promise<string[]> {
     for (const d of page.items) ids.push(d.id);
     lastKey = page.lastKey;
     pages += 1;
-    console.log(`  page ${pages}: +${page.items.length} (running total ${ids.length}${lastKey ? ', more…' : ', done'})`);
+    console.log(
+      `  page ${pages}: +${page.items.length} (running total ${ids.length}${lastKey ? ', more…' : ', done'})`,
+    );
   } while (lastKey);
   console.log(`Owner ${user.id} (${user.username}): found ${ids.length} draft(s) across their cubes`);
   return ids;

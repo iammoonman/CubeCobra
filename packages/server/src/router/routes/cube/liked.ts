@@ -20,15 +20,12 @@ export const handler = async (req: Request, res: Response) => {
     }
 
     const likedIds = await cubeDao.queryCubesLikedBy(owner.id, undefined, 200);
-    const followedCubes = (await cubeDao.batchGet(likedIds.cubeIds)).filter(
-      (cube: any) => cube.visibility !== 'pr',
-    );
+    const followedCubes = (await cubeDao.batchGet(likedIds.cubeIds)).filter((cube: any) => cube.visibility !== 'pr');
 
     const following = !!req.user && (await userDao.getFollow(req.user.id, owner.id));
 
     const patron = await patronDao.getById(owner.id);
-    const patronLevel =
-      patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
+    const patronLevel = patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
 
     const likedCubesCount = owner.likedCubesCount ?? followedCubes.length;
     const likedPackagesCount = await packageDao.countByVoter(owner.id);

@@ -11,6 +11,7 @@ import {
   TrophyIcon,
 } from '@primer/octicons-react';
 import Cube, { getViewDefinitions, viewNameToKey } from '@utils/datatypes/Cube';
+import { UserRoles } from '@utils/datatypes/User';
 import { getCubeId } from '@utils/Util';
 import classNames from 'classnames';
 
@@ -142,7 +143,8 @@ const CubeSidebar: React.FC<CubeSidebarProps> = ({ cube: _cubeProp, activeLink, 
   // Use cube from context to pick up live updates (e.g., when views are modified)
   const { cube, canEdit } = React.useContext(CubeContext);
   const user = React.useContext(UserContext);
-  const isCubeOwner = !!user && cube.owner?.id === user.id;
+  const isAdmin = !!user && Array.isArray(user.roles) && user.roles.includes(UserRoles.ADMIN);
+  const isCubeOwner = (!!user && cube.owner?.id === user.id) || isAdmin;
   const navigationItems = React.useMemo(
     () => getNavigationItems(cube, isCubeOwner, canEdit),
     [cube, isCubeOwner, canEdit],

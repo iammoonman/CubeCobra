@@ -854,6 +854,9 @@ a:not(.block):not([class*='block']):not(.flex):not([class*='flex']) {
 .bottom-28 {
   bottom: 7rem;
 }
+.bottom-4 {
+  bottom: 1rem;
+}
 .bottom-\[5\%\] {
   bottom: 5%;
 }
@@ -5031,6 +5034,12 @@ img.mana-symbol-sm {
 
 @media (max-height: 700px) {
   .\[\@media\(max-height\:700px\)\]\:hidden {
+    display: none;
+  }
+}
+
+@media (max-height: 800px) {
+  .\[\@media\(max-height\:800px\)\]\:hidden {
     display: none;
   }
 }

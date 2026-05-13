@@ -304,6 +304,12 @@ export function getRelatedCards(
 
 // if the oracle id is not in the training data, we will use the similar card in the metadata dict
 export function getOracleForMl(oracleId: string, printingPreference: PrintingPreference | null): string {
+  // The model already knows this oracle — substitution would be a dangling mitigation reference
+  // (the mostSimilar pointer was written when this card was outside the training set).
+  if (catalog.oracleToIndex[oracleId] !== undefined) {
+    return oracleId;
+  }
+
   const related = catalog.metadatadict[oracleId];
 
   if (!related || related.mostSimilar === undefined) {

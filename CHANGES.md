@@ -36,7 +36,7 @@ Since 1.6.0
 - New help blurbs at the bottom of the display and edit sidebars — the display sidebar links to the Boards and Views settings, and the edit sidebar links to Smart Search
 - The edit sidebar's Board dropdown now defaults to the first board in the view you're looking at (and follows you when you switch views), instead of always starting on Mainboard
 - Richer link previews for shared blog posts and comments — comment links now show the comment text and the poster's avatar, and blog post links show an excerpt of the post plus a summary of the changelist with the cube's image
-- Redesigned landing page and dashboard with a new hero — unified search across cubes, cards, and packages with curated suggestion chips, and a marquee carousel of Featured Cubes underneath. The landing page is now hero-only; the dashboard keeps Your Cubes, Daily P1P1, recent drafts, and the activity feed below the hero (the standalone "Latest Content" and "Featured Cubes" cards were removed since featured cubes now live in the hero)
+- Redesigned landing page and dashboard with a new hero — unified search across cubes, cards, and packages with curated suggestion chips, and a marquee carousel of Featured Cubes underneath. The landing page is now hero-only; the dashboard sits below the hero with Daily P1P1 and Your Cubes split 50/50, the activity feed flowing under Daily P1P1 in the same column (the standalone "Latest Content" and "Featured Cubes" cards were removed since featured cubes now live in the hero)
 - Redesigned cube preview tiles — the cover image fills the tile, with the cube name, category tags, follower count, card count, and owner overlaid on a dark gradient at the bottom
 - New Resources page at `/resources`, linked from the top nav — gathers community tools, the content archive (articles, videos, podcasts), cube communities, the Hedron Network for cube tournaments, the Cube Map, and a list of the latest podcasts
 - Restructured the top nav and footer — Home is now a top-level link, Explore is a richer sectioned dropdown that now includes a Search Cubes shortcut, a new top-level Resources entry sits alongside it, logged-out users see separate Login and Register entries, the navbar cube search and the Explore Cubes page were removed, and footer columns were reorganized with new Popular / Recently Updated / Recently Drafted Cubes links
@@ -49,8 +49,12 @@ Since 1.6.0
 - Redesigned user profile pages — a side card on the left with the user's avatar, name, supporter badges, follower / following / liked-cubes / liked-packages counts as inline links, an Edit Profile button (or Follow / Report), and the markdown bio. To the right, floating tabs (Cubes / Packages / Drafts / Blog) — no more page-wide nav bar — apply to every profile sub-page including the new Liked and Followers/Following pages. The "Decks" tab is now labelled "Drafts"
 - Supporter badges — active Patreon supporters get an animated "Patron" pill on their profile, and tiered supporters (Cobra Hatchling, Coiling Oracle, Lotus Cobra) get an additional tier-coloured pill that shimmers on hover
 - Settings page restyled like the Help hub — the page root shows a grid of section tiles (Profile, Change Password, Update Email, Display Preferences, Patreon Integration, Delete Account); picking one collapses the tiles into pill buttons on the left while the selected section's content opens on the right
-- New navbar shortcuts — your Cubes and Packages dropdowns each gain a "Liked" link, and the combined mobile/lower-breakpoint menu mirrors them
+- Your Cubes and Packages navbar dropdowns each gain a "Liked" link
 - Username menu cleanup — "Your Profile" is now just **Profile**, "Account Information" is now **Settings**, and the redundant "Followed and Followers" link is gone (its content moved to the new Followers / Following pages linked from the profile card)
+- Drafts of your cubes now live on their own full-width page (linked from the Your Cubes dropdown) with a responsive grid that scales up to 6 drafts per row on the largest screens
+- Dashboard activity Feed now loads asynchronously after the rest of the page so it no longer holds up page load, uses a "Show More" button at the end instead of pagination, and the empty state's "like some cubes" links to Popular Cubes. For non-supporters, a banner ad is injected after every 10 posts.
+- Reorganized the consolidated "Your Stuff" / mobile cubes dropdown into three sections — Your Cubes (with the highlighted background), Actions (Create a new cube / package), and More (View all, Liked, Drafts of your cubes, View all packages, Liked packages)
+- Featured Cubes carousel on the hero hides at smaller viewport heights to keep the search front and centre, and on mobile sits closer to the bottom of the screen alongside the "Explore More" chevron
 
 # Bug Fixes
 
@@ -72,9 +76,7 @@ Since 1.6.0
 - Fixed Cube card count not updating in the hero as mainboard changes were saved
 - Fixed problem selecting cards with accented charcters (eg Lórien) when adding to a draft record for cards in the cube
 - Fixed deckbuild land count and non-land count settings not being saved
-- Added a loading indicator when a draft finishes while bot decks are being built
 - Moved bot deckbuilding to the client side with a progress bar — instead of one long server request that could time out, the client now makes ~31 small incremental ML calls (1 batch build + ~30 draft steps), showing a live percentage and step counter during the process
-- Fixed draft finish returning HTTP 400 when unknown cards produced empty oracle IDs in iterative bot deckbuilding — empty/invalid oracle IDs are now filtered before building and submitting bot decks
 - Improved draft naming durability for unknown or malformed cards — cluster/archetype naming now skips missing card references instead of throwing during finish/update flows
 - Fixed invalid-card image fallback pointing to an unreachable external URL — placeholder cards now use the local default card image path
 - Fixed pick-by-pick breakdown collapsing duplicate cards in packs when "collapse duplicates" is enabled for the cube
@@ -90,6 +92,8 @@ Since 1.6.0
 - Fixed Card Search showing an infinite spinner on first load with no filter
 - Fixed search/result counts showing a stale "0 results" while a fetch was in flight — now shows "Searching…"
 - Fixed open dropdown nav menus going white-on-white in light mode on hero pages with a transparent navbar — the trigger's open-state text now picks up the theme text color instead of the override meant for the dark dropdown panel
+- Fixed automatic deck archetype names not being applied in production — the cluster-center and annotation data files were missing from production deploys, so bot decks and unnamed user decks fell back to a blank/null archetype
+- Fixed draft bots making noticeably worse picks than the pick-by-pick breakdown suggested for the same state — the live bot path was sending raw oracle IDs to the ML model while the breakdown was sending normalized ones, so bots received lower-quality ratings for cards the model had since learned. Card-substitution fallbacks (used for cards outside the training set) are now skipped whenever the card is already known to the model, fixing stale substitution pointers left over from the previous model.
 
 # Technical Changes
 
@@ -109,3 +113,8 @@ Since 1.6.0
 - One-shot `migrateCubeLikes.ts` in `packages/scripts/src/dynamoMigrations` — iterates every cube via the existing sharded `GSI3` (`GSI3PK = CUBE#{0..9}`) so it never scans the base table. Reads the legacy `cube.following[]` off the raw item, writes a LIKE hash row per follower, stamps `Cube.likeCount`, and accumulates per-user counts in memory. The user counter pass at the end touches only users that actually liked something, by direct primary key — no user-table scan. Idempotent
 - One-shot `migrateUserFollows.ts` — users don't have a sharded enumeration index, so this one is a scan, but it's a tightly-filtered one: `FilterExpression: SK = USER AND begins_with(PK, USER#)` drops non-user rows server-side, and parallel scan segments are configurable via `MIGRATE_USER_FOLLOWS_SEGMENTS`. For each user it expands the legacy `following` / `followedUsers` arrays into FOLLOWER hash rows, then issues a single `UpdateCommand` that stamps `followerCount` / `followingCount` and `REMOVE`s both legacy attributes — guarded by `ConditionExpression: attribute_exists(item.following) OR attribute_exists(item.followedUsers)` so already-migrated rows no-op cleanly on rerun
 - `repairPackageHashes.ts` job — the equivalent of `repairCubeHashes` for the package hash table; useful after any change to package hash row schema (such as the new `voter:` hash type that powers Liked Packages)
+
+# TODO
+
+- update user preview component
+- update comment thread component

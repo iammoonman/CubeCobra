@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useMemo, useRef } from 'react';
 
 import Card from '@utils/datatypes/Card';
 import Cube, { getViewByName, getViewDefinitions } from '@utils/datatypes/Cube';
+import { UserRoles } from '@utils/datatypes/User';
 
 import Container from 'components/base/Container';
 import { Flexbox } from 'components/base/Layout';
@@ -265,7 +266,8 @@ const CubeListPageRaw: React.FC = () => {
 const CubeListPage: React.FC<CubeListPageProps> = ({ cube, cards }) => {
   const defaultView = getViewDefinitions(cube)[0]?.name || 'Mainboard';
   const user = useContext(UserContext);
-  const isOwner = !!user && cube.owner?.id === user.id;
+  const isAdmin = !!user && Array.isArray(user.roles) && user.roles.includes(UserRoles.ADMIN);
+  const isOwner = (!!user && cube.owner?.id === user.id) || isAdmin;
 
   return (
     <MainLayout useContainer={false}>

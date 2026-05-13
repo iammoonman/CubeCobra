@@ -59,7 +59,7 @@ export default (passport: PassportStatic): void => {
       // session references a user that no longer exists (deleted account, table
       // reset, stale cookie, etc.).
       done(null, user ?? false);
-    } catch (err) {
+    } catch (_err) {
       done(null, false);
     }
   });

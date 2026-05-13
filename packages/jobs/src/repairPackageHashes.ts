@@ -29,7 +29,9 @@ const repairPackage = async (pkg: CardPackage, stats: RepairStats): Promise<void
 
     if (result.added > 0 || result.removed > 0) {
       stats.packagesWithChanges += 1;
-      console.log(`Repaired package ${pkg.id} (${pkg.title}): +${result.added} -${result.removed} =${result.unchanged}`);
+      console.log(
+        `Repaired package ${pkg.id} (${pkg.title}): +${result.added} -${result.removed} =${result.unchanged}`,
+      );
     }
 
     stats.totalAdded += result.added;

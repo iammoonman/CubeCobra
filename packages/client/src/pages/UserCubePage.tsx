@@ -130,9 +130,7 @@ const UserCubePage: React.FC<UserCubePageProps> = ({
               />
             </Flexbox>
           )}
-          {items.length === 0 && (
-            <Text className="text-text-secondary">This user has not created any cubes yet.</Text>
-          )}
+          {items.length === 0 && <Text className="text-text-secondary">This user has not created any cubes yet.</Text>}
         </Flexbox>
       </UserLayout>
     </MainLayout>

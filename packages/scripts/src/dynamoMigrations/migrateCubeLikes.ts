@@ -270,9 +270,7 @@ const runDryRun = async (): Promise<void> => {
 
   const cubeBody = (result.Item as any).item || {};
   const beforeFollowing = Array.isArray(cubeBody.following) ? cubeBody.following : [];
-  console.log(
-    `Before — likeCount: ${cubeBody.likeCount}, following.length: ${beforeFollowing.length}`,
-  );
+  console.log(`Before — likeCount: ${cubeBody.likeCount}, following.length: ${beforeFollowing.length}`);
 
   stats.cubesScanned = 1;
   await processCubeRow(cubeBody, stats, Date.now(), '[dry-run]');

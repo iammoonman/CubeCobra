@@ -185,6 +185,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
         <Flexbox direction="col" gap="2">
           {(user.cubes || []).length > 2 && <NavLink href={`/user/view/${user.id}`}>View All</NavLink>}
           <NavLink href={`/cube/liked/${user.id}`}>Liked Cubes</NavLink>
+          <NavLink href="/dashboard/drafts">Drafts of Your Cubes</NavLink>
           <CreateCubeButton>Create A New Cube</CreateCubeButton>
         </Flexbox>
       </CardFooter>
@@ -233,36 +234,50 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   const yourStuffMenu = user && (
     <NavMenu label="Your Stuff" navBar icon={<PackageIcon size={24} />} wide noChevron noGap transparent={transparent}>
       <Flexbox direction="col">
-        <Flexbox direction="col" gap="3" className="p-3">
-          <Flexbox direction="col" gap="2">
-            <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Your Cubes</div>
-            {(user.cubes || []).slice(0, 10).map((item) => (
-              <NavLink key={`combined_cube_${item.name}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
-                {item.name}
-              </NavLink>
-            ))}
-          </Flexbox>
-
-          {(user.collaboratingCubes || []).length > 0 && (
+        <div
+          className={classNames(
+            'border-b border-border px-3 py-3 rounded-t-md',
+            transparent ? 'bg-black/20' : 'bg-bg-active',
+          )}
+        >
+          <Flexbox direction="col" gap="3">
             <Flexbox direction="col" gap="2">
-              <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Collaborating</div>
-              {(user.collaboratingCubes || []).slice(0, 12).map((item) => (
-                <NavLink key={`combined_collab_${item.id}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
+              <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Your Cubes</div>
+              {(user.cubes || []).slice(0, 10).map((item) => (
+                <NavLink key={`combined_cube_${item.name}`} href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}>
                   {item.name}
                 </NavLink>
               ))}
             </Flexbox>
-          )}
-        </Flexbox>
 
-        <div
-          className={classNames(
-            'border-t border-border px-3 py-3 rounded-b-md',
-            transparent ? 'bg-black/20' : 'bg-bg-active',
-          )}
-        >
+            {(user.collaboratingCubes || []).length > 0 && (
+              <Flexbox direction="col" gap="2">
+                <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Collaborating</div>
+                {(user.collaboratingCubes || []).slice(0, 12).map((item) => (
+                  <NavLink
+                    key={`combined_collab_${item.id}`}
+                    href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}
+                  >
+                    {item.name}
+                  </NavLink>
+                ))}
+              </Flexbox>
+            )}
+          </Flexbox>
+        </div>
+
+        <Flexbox direction="col" gap="3" className="p-3">
           <Flexbox direction="col" gap="2">
             <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Actions</div>
+            <CreateCubeButton>
+              <span className="text-sm text-text-secondary hover:text-text">Create a new cube</span>
+            </CreateCubeButton>
+            <a href="/packages/create" className="text-sm text-text-secondary hover:text-text cursor-pointer">
+              Create a new package
+            </a>
+          </Flexbox>
+          <Flexbox direction="col" gap="2">
+            <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">More</div>
             {(user.cubes || []).length > 2 && (
               <a href={`/user/view/${user.id}`} className="text-sm text-text-secondary hover:text-text cursor-pointer">
                 View all my cubes
@@ -271,9 +286,9 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
             <a href={`/cube/liked/${user.id}`} className="text-sm text-text-secondary hover:text-text cursor-pointer">
               Liked cubes
             </a>
-            <CreateCubeButton>
-              <span className="text-sm text-text-secondary hover:text-text">Create a new cube</span>
-            </CreateCubeButton>
+            <a href="/dashboard/drafts" className="text-sm text-text-secondary hover:text-text cursor-pointer">
+              Drafts of your cubes
+            </a>
             <a
               href={`/user/packages/${user.id}`}
               className="text-sm text-text-secondary hover:text-text cursor-pointer"
@@ -286,11 +301,8 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
             >
               Liked packages
             </a>
-            <a href="/packages/create" className="text-sm text-text-secondary hover:text-text cursor-pointer">
-              Create a new package
-            </a>
           </Flexbox>
-        </div>
+        </Flexbox>
       </Flexbox>
     </NavMenu>
   );
@@ -517,37 +529,48 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
             )}
           >
             <Flexbox direction="col">
-              <Flexbox direction="col" gap="3" className="p-4">
-                <Flexbox direction="col" gap="2">
-                  <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Your Cubes</div>
-                  {(user.cubes || []).slice(0, 10).map((item) => (
-                    <NavLink
-                      key={`mobile_cube_${item.name}`}
-                      href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}
-                    >
-                      {item.name}
-                    </NavLink>
-                  ))}
-                </Flexbox>
-
-                {(user.collaboratingCubes || []).length > 0 && (
+              <div className={classNames('border-b border-border px-4 py-3', transparent ? 'bg-black/20' : 'bg-bg')}>
+                <Flexbox direction="col" gap="3">
                   <Flexbox direction="col" gap="2">
-                    <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Collaborating</div>
-                    {(user.collaboratingCubes || []).slice(0, 12).map((item) => (
+                    <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Your Cubes</div>
+                    {(user.cubes || []).slice(0, 10).map((item) => (
                       <NavLink
-                        key={`mobile_collab_${item.id}`}
+                        key={`mobile_cube_${item.name}`}
                         href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}
                       >
                         {item.name}
                       </NavLink>
                     ))}
                   </Flexbox>
-                )}
-              </Flexbox>
 
-              <div className={classNames('border-t border-border px-4 py-3', transparent ? 'bg-black/20' : 'bg-bg')}>
+                  {(user.collaboratingCubes || []).length > 0 && (
+                    <Flexbox direction="col" gap="2">
+                      <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Collaborating</div>
+                      {(user.collaboratingCubes || []).slice(0, 12).map((item) => (
+                        <NavLink
+                          key={`mobile_collab_${item.id}`}
+                          href={`/cube/list/${encodeURIComponent(getCubeId(item))}`}
+                        >
+                          {item.name}
+                        </NavLink>
+                      ))}
+                    </Flexbox>
+                  )}
+                </Flexbox>
+              </div>
+
+              <Flexbox direction="col" gap="3" className="p-4">
                 <Flexbox direction="col" gap="2">
                   <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">Actions</div>
+                  <CreateCubeButton>
+                    <span className="text-sm text-text-secondary hover:text-text">Create a new cube</span>
+                  </CreateCubeButton>
+                  <a href="/packages/create" className="text-sm text-text-secondary hover:text-text cursor-pointer">
+                    Create a new package
+                  </a>
+                </Flexbox>
+                <Flexbox direction="col" gap="2">
+                  <div className="text-xs uppercase font-bold text-text-secondary tracking-wide">More</div>
                   {(user.cubes || []).length > 2 && (
                     <a
                       href={`/user/view/${user.id}`}
@@ -562,9 +585,9 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                   >
                     Liked cubes
                   </a>
-                  <CreateCubeButton>
-                    <span className="text-sm text-text-secondary hover:text-text">Create a new cube</span>
-                  </CreateCubeButton>
+                  <a href="/dashboard/drafts" className="text-sm text-text-secondary hover:text-text cursor-pointer">
+                    Drafts of your cubes
+                  </a>
                   <a
                     href={`/user/packages/${user.id}`}
                     className="text-sm text-text-secondary hover:text-text cursor-pointer"
@@ -577,11 +600,8 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                   >
                     Liked packages
                   </a>
-                  <a href="/packages/create" className="text-sm text-text-secondary hover:text-text cursor-pointer">
-                    Create a new package
-                  </a>
                 </Flexbox>
-              </div>
+              </Flexbox>
             </Flexbox>
           </div>
         )}

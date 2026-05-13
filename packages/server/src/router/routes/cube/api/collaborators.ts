@@ -2,7 +2,7 @@ import { getCubeId, isCubeOwner } from '@utils/Util';
 import { collaboratorIndexDao, cubeDao, userDao } from 'dynamo/daos';
 import { ensureAuth } from 'router/middleware';
 import { isCubeViewable } from 'serverutils/cubefn';
-import { addNotification } from 'serverutils/util';
+import { addNotification, isAdmin } from 'serverutils/util';
 
 import { Request, Response } from '../../../../types/express';
 
@@ -53,8 +53,8 @@ export const addCollaboratorHandler = async (req: Request, res: Response) => {
       return res.status(404).json({ success: 'false', message: 'Cube not found' });
     }
 
-    // Only the owner can add collaborators
-    if (!isCubeOwner(cube, req.user)) {
+    // Only the owner (or admins) can add collaborators
+    if (!isCubeOwner(cube, req.user) && !isAdmin(req.user!)) {
       return res.status(403).json({ success: 'false', message: 'Only the cube owner can manage collaborators' });
     }
 
@@ -121,10 +121,10 @@ export const removeCollaboratorHandler = async (req: Request, res: Response) => 
     }
 
     const userId = req.params.userId ?? '';
-    const isOwner = isCubeOwner(cube, req.user);
+    const isOwner = isCubeOwner(cube, req.user) || isAdmin(req.user!);
     const isSelf = req.user && req.user.id === userId;
 
-    // Owner can remove anyone; a collaborator can only remove themselves
+    // Owner (or admin) can remove anyone; a collaborator can only remove themselves
     if (!isOwner && !isSelf) {
       return res.status(403).json({ success: 'false', message: 'Only the cube owner can remove other collaborators' });
     }

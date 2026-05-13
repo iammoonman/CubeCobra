@@ -47,9 +47,7 @@ const followerSK = (followerId: string) => `FOLLOWER#${followerId}`;
 const userHashPK = (userId: string) => `HASH#USER#${userId}`;
 
 const getUser = async (userId: string): Promise<any | null> => {
-  const result = await documentClient.send(
-    new GetCommand({ TableName: tableName, Key: userKey(userId) }),
-  );
+  const result = await documentClient.send(new GetCommand({ TableName: tableName, Key: userKey(userId) }));
   return result.Item ?? null;
 };
 

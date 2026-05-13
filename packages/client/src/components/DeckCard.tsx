@@ -58,7 +58,7 @@ interface DeckCardProps {
 
 const DeckCard: React.FC<DeckCardProps> = ({ seat, draft, view = 'draft', seatIndex, hideComments = false }) => {
   const hasSeat = !!seat;
-  const mainboard = seat?.mainboard ?? [];
+  const mainboard = useMemo(() => seat?.mainboard ?? [], [seat]);
   const sideboard = seat?.sideboard ?? [];
   const stackedDeck = mainboard.slice();
   const stackedSideboard = sideboard.slice();

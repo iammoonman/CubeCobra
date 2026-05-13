@@ -90,7 +90,7 @@ export const removeHandler = async (req: Request, res: Response) => {
       req.flash('danger', 'Cube not found');
       return redirect(req, res, '/cube/list/404');
     }
-    if (!cube || cube.owner.id !== req.user!.id) {
+    if (!cube || (cube.owner.id !== req.user!.id && !isAdmin(req.user!))) {
       req.flash('danger', 'Not Authorized');
       return redirect(req, res, `/cube/list/${encodeURIComponent(cubeId)}`);
     }
