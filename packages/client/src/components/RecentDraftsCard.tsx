@@ -108,11 +108,11 @@ const RecentDraftsCard: React.FC<CubesCardProps> = ({ decks, lastKey, pageSize =
         </Flexbox>
       </CardHeader>
       {decks.length > 0 ? (
-        <>
+        <div className="grid grid-cols-1 sm:grid-cols-2">
           {items.slice(page * pageSize, (page + 1) * pageSize).map((deck) => (
-            <DeckPreview key={deck.id} deck={deck} nextURL="/dashboard" />
+            <DeckPreview key={deck.id} deck={deck} />
           ))}
-        </>
+        </div>
       ) : (
         <CardBody>
           <Text>

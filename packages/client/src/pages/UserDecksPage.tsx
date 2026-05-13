@@ -112,9 +112,11 @@ const UserDecksPage: React.FC<UserDecksPageProps> = ({
 
           {items.length > 0 ? (
             <>
-              {items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((deck) => (
-                <DeckPreview key={deck.id} deck={deck} />
-              ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 5xl:grid-cols-6">
+                {items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((deck) => (
+                  <DeckPreview key={deck.id} deck={deck} />
+                ))}
+              </div>
               <Flexbox direction="row" justify="end" alignItems="center" className="w-full mt-3">
                 {pager}
               </Flexbox>

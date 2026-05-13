@@ -78,7 +78,7 @@ const getNavigationItems = (cube: Cube, isCubeOwner: boolean, canEdit: boolean):
       subItems: [
         { label: 'Practice Draft', key: 'practice-draft' },
         { label: 'Sample Pack', key: 'sample-pack' },
-        { label: 'Decks', key: 'decks' },
+        { label: 'Drafts', key: 'decks' },
       ],
     },
     {
