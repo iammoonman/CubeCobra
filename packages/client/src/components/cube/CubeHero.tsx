@@ -562,11 +562,11 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                     <button
                       onClick={handleFollowToggle}
                       className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors whitespace-nowrap"
-                      aria-label={followedState ? 'Unfollow cube' : 'Follow cube'}
+                      aria-label={followedState ? 'Unlike cube' : 'Like cube'}
                     >
                       {followedState ? <HeartFillIcon size={20} className="text-red-500" /> : <HeartIcon size={20} />}
                       <Text sm className="text-white">
-                        {followedState ? 'Followed' : 'Follow'}
+                        {followedState ? 'Liked' : 'Like'}
                       </Text>
                     </button>
                   )}
@@ -673,11 +673,11 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                     <button
                       onClick={handleFollowToggle}
                       className="flex items-center gap-1 text-white hover:text-gray-300 transition-colors whitespace-nowrap"
-                      aria-label={followedState ? 'Unfollow cube' : 'Follow cube'}
+                      aria-label={followedState ? 'Unlike cube' : 'Like cube'}
                     >
                       {followedState ? <HeartFillIcon size={20} className="text-red-500" /> : <HeartIcon size={20} />}
                       <Text xs className="text-white">
-                        {followedState ? 'Followed' : 'Follow'}
+                        {followedState ? 'Liked' : 'Like'}
                       </Text>
                     </button>
                   )}
@@ -874,7 +874,7 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                         href={`/cube/followers/${cube.id}`}
                         className="text-white/80 hover:text-white hover:underline"
                       >
-                        {cube.likeCount ?? 0} {cube.likeCount === 1 ? 'follower' : 'followers'}
+                        {cube.likeCount ?? 0} {cube.likeCount === 1 ? 'like' : 'likes'}
                       </a>
                     </Text>
                   </div>
@@ -942,11 +942,11 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                 <button
                   onClick={handleFollowToggle}
                   className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors whitespace-nowrap"
-                  aria-label={followedState ? 'Unfollow cube' : 'Follow cube'}
+                  aria-label={followedState ? 'Unlike cube' : 'Like cube'}
                 >
                   {followedState ? <HeartFillIcon size={20} className="text-red-500" /> : <HeartIcon size={20} />}
                   <Text sm className="text-white">
-                    {followedState ? 'Followed' : 'Follow'}
+                    {followedState ? 'Liked' : 'Like'}
                   </Text>
                 </button>
               )}
@@ -1053,11 +1053,11 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                 <button
                   onClick={handleFollowToggle}
                   className="flex items-center gap-1 text-white hover:text-gray-300 transition-colors whitespace-nowrap"
-                  aria-label={followedState ? 'Unfollow cube' : 'Follow cube'}
+                  aria-label={followedState ? 'Unlike cube' : 'Like cube'}
                 >
                   {followedState ? <HeartFillIcon size={20} className="text-red-500" /> : <HeartIcon size={20} />}
                   <Text xs className="text-white">
-                    {followedState ? 'Followed' : 'Follow'}
+                    {followedState ? 'Liked' : 'Like'}
                   </Text>
                 </button>
               )}

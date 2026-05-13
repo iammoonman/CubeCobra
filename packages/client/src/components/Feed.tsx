@@ -24,7 +24,7 @@ const Feed: React.FC<FeedProps> = ({ items, lastKey = null }) => {
       header="Feed"
       fetchMoreRoute={`/getmorefeeditems`}
       renderItem={(item) => <BlogPost key={item.id} post={item} />}
-      noneMessage="No feed items found, go follow some cubes!"
+      noneMessage="No feed items found, go like some cubes!"
       xs={12}
     />
   );

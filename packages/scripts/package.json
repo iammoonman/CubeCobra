@@ -23,7 +23,8 @@
     "restore-corrupted-drafts": "ts-node -r tsconfig-paths/register --project tsconfig.json src/restore-corrupted-drafts.ts",
     "backfill-date-last-updated": "ts-node -r tsconfig-paths/register --project tsconfig.json src/dynamoMigrations/backfillDateLastUpdated.ts",
     "migrate-cube-likes": "ts-node -r tsconfig-paths/register --project tsconfig.json src/dynamoMigrations/migrateCubeLikes.ts",
-    "migrate-user-follows": "ts-node -r tsconfig-paths/register --project tsconfig.json src/dynamoMigrations/migrateUserFollows.ts"
+    "migrate-user-follows": "ts-node -r tsconfig-paths/register --project tsconfig.json src/dynamoMigrations/migrateUserFollows.ts",
+    "transfer-followers": "ts-node -r tsconfig-paths/register --project tsconfig.json src/dynamoMigrations/transferFollowers.ts"
   },
   "author": "",
   "license": "ISC",

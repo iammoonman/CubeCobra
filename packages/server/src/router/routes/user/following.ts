@@ -4,6 +4,8 @@ import { handleRouteError, redirect, render } from 'serverutils/render';
 
 import { Request, Response } from '../../../types/express';
 
+const PAGE_SIZE = 36;
+
 export const handler = async (req: Request, res: Response) => {
   try {
     if (!req.params.id) {
@@ -18,7 +20,7 @@ export const handler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    const followingPage = await userDao.queryFollowingOf(user.id, undefined, 200);
+    const followingPage = await userDao.queryFollowingOf(user.id, undefined, PAGE_SIZE);
     const followedUsers = await userDao.batchGet(followingPage.userIds);
     const following = !!req.user && (await userDao.getFollow(req.user.id, user.id));
 
@@ -36,6 +38,7 @@ export const handler = async (req: Request, res: Response) => {
       {
         owner: user,
         followedUsers,
+        lastKey: followingPage.lastKey,
         followersCount: user.followerCount ?? 0,
         followingCount: user.followingCount ?? 0,
         following,
@@ -50,10 +53,41 @@ export const handler = async (req: Request, res: Response) => {
   }
 };
 
+export const getMoreFollowingHandler = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const lastKey = req.body?.lastKey;
+    if (!id) {
+      return res.status(400).send({ success: 'false', message: 'user id required' });
+    }
+
+    const user = await userDao.getById(id);
+    if (!user) {
+      return res.status(404).send({ success: 'false', message: 'User not found' });
+    }
+
+    const page = await userDao.queryFollowingOf(user.id, lastKey || undefined, PAGE_SIZE);
+    const followedUsers = await userDao.batchGet(page.userIds);
+
+    return res.status(200).send({
+      success: 'true',
+      followedUsers,
+      lastKey: page.lastKey,
+    });
+  } catch (err) {
+    return handleRouteError(req, res, err as Error, '/404');
+  }
+};
+
 export const routes = [
   {
     path: '/:id',
     method: 'get',
     handler: [handler],
+  },
+  {
+    path: '/getmore/:id',
+    method: 'post',
+    handler: [getMoreFollowingHandler],
   },
 ];

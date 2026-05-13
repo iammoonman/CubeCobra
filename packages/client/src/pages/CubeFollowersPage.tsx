@@ -39,30 +39,30 @@ const CubeFollowersPage: React.FC<CubeFollowersPageProps> = ({
   const pageCount = Math.ceil(items.length / PAGE_SIZE);
   const hasMore = !!currentLastKey;
 
-  const fetchMore = useCallback(async () => {
-    setLoading(true);
-    const response = await csrfFetch(`/cube/followers/getmore/${cube.id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lastKey: currentLastKey }),
-    });
+  const fetchMore = useCallback(
+    async (targetPage: number) => {
+      setLoading(true);
+      const response = await csrfFetch(`/cube/followers/getmore/${cube.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lastKey: currentLastKey }),
+      });
 
-    if (response.ok) {
-      const json = await response.json();
-      if (json.success === 'true') {
-        const newItems = [...items, ...(json.followers || [])];
-        setItems(newItems);
-        setLastKey(json.lastKey);
+      if (response.ok) {
+        const json = await response.json();
+        if (json.success === 'true') {
+          const newItems = [...items, ...(json.followers || [])];
+          setItems(newItems);
+          setLastKey(json.lastKey);
 
-        const numItemsOnLastPage = items.length % PAGE_SIZE;
-        const newItemsOnLastPage = newItems.length % PAGE_SIZE;
-        if (numItemsOnLastPage === 0 && newItemsOnLastPage > 0) {
-          setPage(page + 1);
+          const newPageCount = Math.max(1, Math.ceil(newItems.length / PAGE_SIZE));
+          setPage(Math.max(0, Math.min(targetPage, newPageCount - 1)));
         }
       }
-    }
-    setLoading(false);
-  }, [csrfFetch, cube.id, currentLastKey, items, page]);
+      setLoading(false);
+    },
+    [csrfFetch, cube.id, currentLastKey, items],
+  );
 
   const pager = (
     <Pagination
@@ -71,7 +71,7 @@ const CubeFollowersPage: React.FC<CubeFollowersPageProps> = ({
       hasMore={hasMore}
       onClick={async (newPage) => {
         if (newPage >= pageCount) {
-          await fetchMore();
+          await fetchMore(newPage);
         } else {
           setPage(newPage);
         }
@@ -84,14 +84,14 @@ const CubeFollowersPage: React.FC<CubeFollowersPageProps> = ({
   const headerCount = cube.likeCount ?? totalShown;
 
   return (
-    <MainLayout>
+    <MainLayout useContainer={false}>
       <CubeLayout cube={cube} cards={cards} activeLink="followers">
         <DynamicFlash />
         <BaseCard className="my-3">
           <CardHeader>
             <Flexbox direction="row" justify="between" alignItems="center" wrap="wrap" gap="2">
               <Text lg semibold>
-                Followers ({headerCount})
+                Likes ({headerCount})
               </Text>
               {totalShown > 0 && pager}
             </Flexbox>
@@ -108,7 +108,7 @@ const CubeFollowersPage: React.FC<CubeFollowersPageProps> = ({
             </CardBody>
           ) : (
             <CardBody>
-              <Text className="text-text-secondary">No followers yet.</Text>
+              <Text className="text-text-secondary">No likes yet.</Text>
             </CardBody>
           )}
           {totalShown > 0 && (
