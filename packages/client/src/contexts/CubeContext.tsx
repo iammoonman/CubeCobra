@@ -32,6 +32,7 @@ import GroupModal from '../components/GroupModal';
 import useLocalStorage from '../hooks/useLocalStorage';
 import useMount from '../hooks/UseMount';
 import useQueryParam from '../hooks/useQueryParam';
+import { getCardDetail, getCardDetails } from '../utils/cardDetailsCache';
 import ChangesContext from './ChangesContext';
 import { CSRFContext } from './CSRFContext';
 import DisplayContext from './DisplayContext';
@@ -100,6 +101,7 @@ export interface CubeContextValue {
   alerts: UncontrolledAlertProps[];
   setAlerts: Dispatch<SetStateAction<UncontrolledAlertProps[]>>;
   loading: boolean;
+  cardsLoading: boolean;
   setShowUnsorted: (value: boolean) => Promise<void>;
   setCollapseDuplicateCards: (value: boolean) => Promise<void>;
   saveSorts: () => Promise<void>;
@@ -161,6 +163,7 @@ const CubeContext = createContext<CubeContextValue>({
   alerts: [],
   setAlerts: defaultFn,
   loading: false,
+  cardsLoading: false,
   setShowUnsorted: defaultFn,
   setCollapseDuplicateCards: defaultFn,
   saveSorts: defaultFn,
@@ -195,19 +198,7 @@ export const TAG_COLORS: [string, string][] = [
   ['Pink', 'pink'],
 ];
 
-const getDetails = async (csrfFetch: any, cardId: string): Promise<CardDetails | null> => {
-  const response = await csrfFetch(`/cube/api/getcardfromid/${cardId}`, {
-    method: 'GET',
-  });
-  if (!response.ok) {
-    return null;
-  }
-  const json = await response.json();
-  if (json.success !== 'true' || !json.card) {
-    return null;
-  }
-  return json.card;
-};
+const getDetails = (cardId: string): Promise<CardDetails | null> => getCardDetail(cardId);
 
 const ensureBoardChanges = (changes: Changes, board: BoardType): BoardChanges => {
   if (!changes[board] || typeof changes[board] !== 'object') {
@@ -235,10 +226,74 @@ export function CubeContextProvider({
   const { filterInput, cardFilter } = useContext(FilterContext)!;
 
   const { setOpenCollapse, activeView, useBaseCardData } = useContext(DisplayContext);
+
+  // Cube card payloads now ship without `details` populated (the server has the
+  // catalog in memory but doesn't include it in the cube response). Hydrate
+  // them client-side from the IndexedDB-backed cardDetailsCache so the wire
+  // payload stays tiny and returning users see cached details instantly.
+  const needsHydration = useMemo(
+    () => Object.values(cards).some((list) => Array.isArray(list) && list.some((card) => card && !card.details)),
+    [cards],
+  );
+
+  const hydratedCards = useMemo(() => {
+    if (!needsHydration) return cards;
+    const next: Record<string, Card[]> = {};
+    for (const [board, list] of Object.entries(cards)) {
+      next[board] = Array.isArray(list) ? list.map((card) => ({ ...card })) : list;
+    }
+    return next;
+  }, [cards, needsHydration]);
+
   const [cube, setCube] = useState<CubeWithCards>({
     ...initialCube,
-    cards,
+    cards: hydratedCards,
   });
+  const [cardsLoading, setCardsLoading] = useState(needsHydration);
+
+  useEffect(() => {
+    if (!needsHydration) {
+      setCardsLoading(false);
+      return;
+    }
+    const allIds: string[] = [];
+    for (const list of Object.values(hydratedCards)) {
+      if (!Array.isArray(list)) continue;
+      for (const card of list) {
+        if (card && !card.details && card.cardID) allIds.push(card.cardID);
+      }
+    }
+    if (allIds.length === 0) {
+      setCardsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    getCardDetails(allIds).then((detailsById) => {
+      if (cancelled) return;
+      setCube((prev) => {
+        const nextCards: Record<string, Card[]> = {};
+        for (const [board, list] of Object.entries(prev.cards)) {
+          if (!Array.isArray(list)) {
+            nextCards[board] = list;
+            continue;
+          }
+          nextCards[board] = list.map((card) => {
+            if (card?.details || !card?.cardID) return card;
+            const details = detailsById[card.cardID];
+            return details ? { ...card, details } : card;
+          });
+        }
+        return { ...prev, cards: nextCards };
+      });
+      setCardsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally only depend on whether hydration is needed; the cube/cards
+    // captured at provider construction is the input we want to hydrate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsHydration]);
   const defaultSorts = useMemo(() => {
     const currentView = getViewByName(cube, activeView);
     if (currentView?.defaultSorts && currentView.defaultSorts.length === 4) {
@@ -351,7 +406,7 @@ export function CubeContextProvider({
           (modalSelection as any).addIndex
         ];
         if (card) {
-          getDetails(csrfFetch, card.cardID).then((details) => {
+          getDetails(card.cardID).then((details) => {
             setAddedCardDetails(details);
           });
         }
@@ -363,7 +418,7 @@ export function CubeContextProvider({
           (modalSelection as any).swapIndex
         ]?.card;
         if (card) {
-          getDetails(csrfFetch, card.cardID).then((details) => {
+          getDetails(card.cardID).then((details) => {
             setAddedCardDetails(details);
           });
         }
@@ -661,7 +716,7 @@ export function CubeContextProvider({
 
       // If the cardID changed, fetch new details
       if (originalCard.cardID !== newCardData.cardID && newCardData.cardID) {
-        const newDetails = await getDetails(csrfFetch, newCardData.cardID);
+        const newDetails = await getDetails(newCardData.cardID);
         if (newDetails) {
           newCardData.details = newDetails;
         }
@@ -678,7 +733,7 @@ export function CubeContextProvider({
       setChanges(newChanges);
       console.log('Changes set, new adds array:', boardChanges.adds);
     },
-    [changes, setChanges, csrfFetch],
+    [changes, setChanges],
   );
 
   const editSwappedCard = useCallback(
@@ -700,7 +755,7 @@ export function CubeContextProvider({
 
       // If the cardID changed, fetch new details
       if (originalCard.cardID !== newCardData.cardID && newCardData.cardID) {
-        const newDetails = await getDetails(csrfFetch, newCardData.cardID);
+        const newDetails = await getDetails(newCardData.cardID);
         if (newDetails) {
           newCardData.details = newDetails;
         }
@@ -717,7 +772,7 @@ export function CubeContextProvider({
       setChanges(newChanges);
       console.log('Changes set, new swaps array:', boardChanges.swaps);
     },
-    [changes, setChanges, csrfFetch],
+    [changes, setChanges],
   );
 
   const moveCard = useCallback(
@@ -1122,17 +1177,9 @@ export function CubeContextProvider({
           const detailsMap: Record<string, CardDetails> = {};
           if (cardIdsToFetch.size > 0) {
             try {
-              const detailsResponse = await csrfFetch(`/cube/api/getdetailsforcards`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cards: [...cardIdsToFetch] }),
-              });
-              const detailsJson = await detailsResponse.json();
-              if (detailsJson.success === 'true' && detailsJson.details) {
-                const ids = [...cardIdsToFetch];
-                for (let i = 0; i < ids.length; i++) {
-                  detailsMap[ids[i]] = detailsJson.details[i];
-                }
+              const fetched = await getCardDetails([...cardIdsToFetch]);
+              for (const [id, value] of Object.entries(fetched)) {
+                if (value) detailsMap[id] = value;
               }
             } catch {
               // If batch fetch fails, cards will just lack details until next page load
@@ -1345,7 +1392,7 @@ export function CubeContextProvider({
 
             // If the cardID changed, fetch new details
             if (originalCard.cardID !== newCardData.cardID && newCardData.cardID) {
-              const newDetails = await getDetails(csrfFetch, newCardData.cardID);
+              const newDetails = await getDetails(newCardData.cardID);
               if (newDetails) {
                 newCardData.details = newDetails;
               }
@@ -1372,7 +1419,7 @@ export function CubeContextProvider({
 
             // If the cardID changed, fetch new details
             if (originalCard.cardID !== newCardData.cardID && newCardData.cardID) {
-              const newDetails = await getDetails(csrfFetch, newCardData.cardID);
+              const newDetails = await getDetails(newCardData.cardID);
               if (newDetails) {
                 newCardData.details = newDetails;
               }
@@ -1398,7 +1445,7 @@ export function CubeContextProvider({
       console.log('Setting all changes at once');
       setChanges(newChanges);
     },
-    [changes, setChanges, csrfFetch],
+    [changes, setChanges],
   );
 
   const isAdmin = !!user && Array.isArray(user.roles) && user.roles.includes(UserRoles.ADMIN);
@@ -1542,6 +1589,7 @@ export function CubeContextProvider({
       alerts,
       setAlerts,
       loading,
+      cardsLoading,
       setShowUnsorted,
       setCollapseDuplicateCards,
       saveSorts,
@@ -1598,6 +1646,7 @@ export function CubeContextProvider({
       alerts,
       setAlerts,
       loading,
+      cardsLoading,
       setShowUnsorted,
       setCollapseDuplicateCards,
       saveSorts,

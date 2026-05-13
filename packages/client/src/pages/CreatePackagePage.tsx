@@ -14,6 +14,7 @@ import DynamicFlash from 'components/DynamicFlash';
 import LoadingButton from 'components/LoadingButton';
 import RenderToRoot from 'components/RenderToRoot';
 import { CSRFContext } from 'contexts/CSRFContext';
+import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 import MainLayout from 'layouts/MainLayout';
 
 const CreatePackagePage: React.FC = () => {
@@ -22,19 +23,16 @@ const CreatePackagePage: React.FC = () => {
   const [cardName, setCardName] = useState<string>('');
   const [packageName, setPackageName] = useState<string>('');
   const [imageDict, setImageDict] = useState<{ [key: string]: { id: string } }>({});
-  const [fetched, setFetched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const imageDictUrl = useCardCatalogUrl('imagedict.json');
+  const fullNamesUrl = useCardCatalogUrl('full_names.json');
 
   useEffect(() => {
-    if (!fetched) {
-      fetch('/cube/api/imagedict')
-        .then((response) => response.json())
-        .then((json) => {
-          setImageDict(json.dict);
-          setFetched(true);
-        });
-    }
-  }, [fetched]);
+    if (!imageDictUrl) return;
+    fetch(imageDictUrl)
+      .then((response) => response.json())
+      .then((json) => setImageDict(json));
+  }, [imageDictUrl]);
 
   const submitCard = () => {
     if (imageDict) {
@@ -109,7 +107,7 @@ const CreatePackagePage: React.FC = () => {
                 />
 
                 <AutocompleteInput
-                  treeUrl="/cube/api/fullnames"
+                  treeUrl={fullNamesUrl ?? ''}
                   treePath="cardnames"
                   type="text"
                   className="me-2"

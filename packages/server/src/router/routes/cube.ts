@@ -144,7 +144,7 @@ export const listHandler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    const cards = await cubeDao.getCards(cube.id, cube);
+    const cards = await cubeDao.getCards(cube.id, cube, { populate: false });
 
     const baseUrl = getBaseUrl();
     return render(

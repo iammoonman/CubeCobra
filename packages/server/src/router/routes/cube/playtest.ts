@@ -16,7 +16,7 @@ export const playtestHandler = async (req: Request, res: Response) => {
     }
 
     // Load cards to get board definitions for draft format options
-    const cards = await cubeDao.getCards(cube.id, cube);
+    const cards = await cubeDao.getCards(cube.id, cube, { populate: false });
 
     // Use unhydrated query to avoid loading draft cards/seats from S3 for better performance
     const decks = await draftDao.queryByCubeUnhydrated(cube.id);

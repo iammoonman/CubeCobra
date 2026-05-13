@@ -2,9 +2,9 @@ import React, { useCallback, useContext, useEffect, useState } from 'react';
 
 import { BoardType } from '@utils/datatypes/Card';
 
-import { CSRFContext } from 'contexts/CSRFContext';
 import CubeContext from 'contexts/CubeContext';
 import DisplayContext from 'contexts/DisplayContext';
+import { getCardDetail } from 'utils/cardDetailsCache';
 
 import { Flexbox } from '../base/Layout';
 import Text from '../base/Text';
@@ -45,7 +45,6 @@ const ScryfallDragDropOverlay: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isValidDrag, setIsValidDrag] = useState(false);
   const [isDraggingFromWindow, setIsDraggingFromWindow] = useState(false);
-  const { csrfFetch } = useContext(CSRFContext);
   const { addCard, cube, setAlerts } = useContext(CubeContext);
   const { setRightSidebarMode, showMaybeboard } = useContext(DisplayContext);
   const activeBoard: BoardType = showMaybeboard ? 'maybeboard' : 'mainboard';
@@ -123,23 +122,8 @@ const ScryfallDragDropOverlay: React.FC = () => {
       }
 
       try {
-        // Fetch the card details using the Scryfall ID
-        const response = await csrfFetch(`/cube/api/getcardfromid/${scryfallId}`, {
-          method: 'GET',
-        });
-
-        if (!response.ok) {
-          setAlerts((prev) => [...prev, { color: 'danger', message: `Failed to fetch card: ${response.status}` }]);
-
-          // Auto-dismiss error alert after 5 seconds
-          setTimeout(() => {
-            setAlerts((prev) => prev.slice(1));
-          }, 5000);
-          return;
-        }
-
-        const json = await response.json();
-        if (json.success !== 'true' || !json.card) {
+        const card = await getCardDetail(scryfallId);
+        if (!card) {
           setAlerts((prev) => [...prev, { color: 'danger', message: 'Card not found.' }]);
 
           // Auto-dismiss error alert after 5 seconds
@@ -164,7 +148,7 @@ const ScryfallDragDropOverlay: React.FC = () => {
           setRightSidebarMode('edit');
         }
 
-        setAlerts((prev) => [...prev, { color: 'success', message: `Added ${json.card.name} to ${activeBoard}.` }]);
+        setAlerts((prev) => [...prev, { color: 'success', message: `Added ${card.name} to ${activeBoard}.` }]);
 
         // Auto-dismiss success alert after 5 seconds
         setTimeout(() => {
@@ -180,7 +164,7 @@ const ScryfallDragDropOverlay: React.FC = () => {
         }, 5000);
       }
     },
-    [activeBoard, addCard, cube.defaultStatus, csrfFetch, isDraggingFromWindow, setAlerts, setRightSidebarMode],
+    [activeBoard, addCard, cube.defaultStatus, isDraggingFromWindow, setAlerts, setRightSidebarMode],
   );
 
   useEffect(() => {

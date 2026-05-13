@@ -22,7 +22,7 @@ export const recordsPageHandler = async (req: Request, res: Response) => {
 
     const result = await recordDao.getByCube(cube.id, 20);
     const analytics = await recordDao.getAnalytics(cube.id);
-    const cards = await cubeDao.getCards(cube.id);
+    const cards = await cubeDao.getCards(cube.id, undefined, { populate: false });
 
     const baseUrl = getBaseUrl();
     return render(

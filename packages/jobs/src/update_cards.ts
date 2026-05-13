@@ -21,6 +21,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import stream, { pipeline } from 'stream';
 
+import { mirrorCatalogToCdn } from './utils/mirrorCatalogToCdn';
 import { downloadJson, uploadFile } from './utils/s3';
 import {
   convertName,
@@ -1167,6 +1168,15 @@ const uploadCardDb = async (scryfallMetadata: { updatedAt: string; fileSize: num
     await uploadLargeObjectToS3(`${PRIVATE_DIR}/${file}`, `cards/${file}`);
 
     console.log(`Finished ${file}`);
+  }
+
+  try {
+    await mirrorCatalogToCdn(PRIVATE_DIR);
+  } catch (err) {
+    // Mirror failure leaves the previous hashed files (and manifest) in place,
+    // so the client keeps fetching the last successful build. Don't fail the
+    // whole card update over it.
+    console.error('CDN mirror failed (continuing):', err);
   }
 
   // Calculate checksum of the carddict.json file (main card database)

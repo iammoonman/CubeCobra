@@ -594,7 +594,11 @@ export class CubeDynamoDao extends BaseDynamoDao<Cube, UnhydratedCube> {
    * @param id - The cube ID
    * @param cube - Optional cube object (will be loaded if not provided)
    */
-  public async getCards(id: string, cube?: Cube): Promise<CubeCards> {
+  public async getCards(id: string, cube?: Cube, options?: { populate?: boolean }): Promise<CubeCards> {
+    // populate=false leaves `details` off every card. Routes that ship cards to
+    // the client (cube list/about/playtest/etc.) use this so the wire payload
+    // stays tiny; the browser fills details from IndexedDB via getCardDetails.
+    const populate = options?.populate ?? true;
     try {
       // Load cube metadata if not provided (needed for board config and legacy basics migration)
       if (!cube) {
@@ -669,10 +673,11 @@ export class CubeDynamoDao extends BaseDynamoDao<Cube, UnhydratedCube> {
         }
       }
 
-      // Add details to cards (after saving to S3)
       for (const [board, list] of Object.entries(cards)) {
         if (board !== 'id') {
-          this.addDetails(list as any[]);
+          if (populate) {
+            this.addDetails(list as any[]);
+          }
           for (let i = 0; i < (list as any[]).length; i++) {
             (list as any[])[i].index = i;
             (list as any[])[i].board = board;

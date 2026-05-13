@@ -13,6 +13,7 @@ import Video from 'components/content/Video';
 import CSRFForm from 'components/CSRFForm';
 import DynamicFlash from 'components/DynamicFlash';
 import RenderToRoot from 'components/RenderToRoot';
+import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 import useQueryParam from 'hooks/useQueryParam';
 import MainLayout from 'layouts/MainLayout';
 
@@ -33,15 +34,17 @@ const EditVideoPage: React.FC<EditVideoPageProps> = ({ video }) => {
   const [loading, setLoading] = useState(true);
   const saveFormRef = React.createRef<HTMLFormElement>();
   const submitFormRef = React.createRef<HTMLFormElement>();
+  const imageDictUrl = useCardCatalogUrl('imagedict.json');
 
   useEffect(() => {
-    fetch('/cube/api/imagedict')
+    if (!imageDictUrl) return;
+    fetch(imageDictUrl)
       .then((response) => response.json())
       .then((json) => {
         setLoading(false);
-        setImageDict(json.dict);
+        setImageDict(json);
       });
-  }, []);
+  }, [imageDictUrl]);
 
   useEffect(() => {
     if (imageDict && imageName) {

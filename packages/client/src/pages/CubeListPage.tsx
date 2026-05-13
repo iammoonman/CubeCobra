@@ -6,6 +6,7 @@ import { UserRoles } from '@utils/datatypes/User';
 
 import Container from 'components/base/Container';
 import { Flexbox } from 'components/base/Layout';
+import Spinner from 'components/base/Spinner';
 import Text from 'components/base/Text';
 import CardStacksView from 'components/cube/CardStacksView';
 import CubeEmptyState from 'components/cube/CubeEmptyState';
@@ -41,7 +42,7 @@ interface CubeListPageProps {
 
 const CubeListPageRaw: React.FC = () => {
   const { versionMismatch } = useContext(ChangesContext);
-  const { changedCards, unfilteredChangedCards, filterResult, canEdit, cube } = useContext(CubeContext);
+  const { changedCards, unfilteredChangedCards, filterResult, canEdit, cube, cardsLoading } = useContext(CubeContext);
   const { showAllBoards, activeView } = useContext(DisplayContext);
   const { filterInput, setFilterInput } = useContext(FilterContext);
   const user = useContext(UserContext);
@@ -159,7 +160,13 @@ const CubeListPageRaw: React.FC = () => {
       <DynamicFlash />
       <RotisserieDraftPanel />
       {showEmptyState && <CubeEmptyState />}
-      {!showEmptyState &&
+      {cardsLoading && !showEmptyState && (
+        <div className="flex justify-center py-12">
+          <Spinner lg />
+        </div>
+      )}
+      {!cardsLoading &&
+        !showEmptyState &&
         (() => {
           // Calculate how many boards are active
           const activeBoards = Object.entries(changedCards).filter(([boardname, boardcards]) => {

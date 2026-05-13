@@ -118,3 +118,5 @@ Since 1.6.0
 
 - update user preview component
 - update comment thread component
+- notifications page in profile layout, use narrow container
+- store card details client side indexeddb - fetch details lazily and never auto populate

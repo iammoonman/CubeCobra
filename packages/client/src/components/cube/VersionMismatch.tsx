@@ -1,8 +1,7 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext } from 'react';
 
 import { ArrowRightIcon, ArrowSwitchIcon, NoEntryIcon, PlusCircleIcon, ToolsIcon } from '@primer/octicons-react';
 import CardData, { BoardChanges } from '@utils/datatypes/Card';
-import { CardDetails } from '@utils/datatypes/Card';
 
 import Button from 'components/base/Button';
 import { Card, CardBody, CardHeader } from 'components/base/Card';
@@ -11,26 +10,12 @@ import Spinner from 'components/base/Spinner';
 import Text from 'components/base/Text';
 import withAutocard from 'components/WithAutocard';
 import ChangesContext from 'contexts/ChangesContext';
+import { useCardDetail } from 'hooks/useCardDetails';
 
 const TextAutocard = withAutocard('span');
 
 const Add = ({ card }: { card: CardData }) => {
-  const [loading, setLoading] = useState(true);
-  const [details, setDetails] = useState<CardDetails | null>(null);
-
-  useEffect(() => {
-    const getData = async () => {
-      const response = await fetch(`/cube/api/getcardfromid/${card.cardID}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDetails(data.card);
-        setLoading(false);
-      }
-      return null;
-    };
-    getData();
-  }, [card.cardID]);
-
+  const { details, loading } = useCardDetail(card.cardID);
   return (
     <Flexbox direction="row" gap="1" alignItems="center">
       <span className="mx-1" style={{ color: 'green' }}>
@@ -42,22 +27,7 @@ const Add = ({ card }: { card: CardData }) => {
 };
 
 const Remove = ({ card }: { card: CardData }) => {
-  const [loading, setLoading] = useState(true);
-  const [details, setDetails] = useState<CardDetails | null>(null);
-
-  useEffect(() => {
-    const getData = async () => {
-      const response = await fetch(`/cube/api/getcardfromid/${card.cardID}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDetails(data.card);
-        setLoading(false);
-      }
-      return null;
-    };
-    getData();
-  }, [card.cardID]);
-
+  const { details, loading } = useCardDetail(card.cardID);
   return (
     <Flexbox direction="row" gap="1" alignItems="center">
       <span className="mx-1" style={{ color: 'red' }}>
@@ -69,22 +39,7 @@ const Remove = ({ card }: { card: CardData }) => {
 };
 
 const Edit = ({ card }: { card: CardData }) => {
-  const [loading, setLoading] = useState(true);
-  const [details, setDetails] = useState<CardDetails | null>(null);
-
-  useEffect(() => {
-    const getData = async () => {
-      const response = await fetch(`/cube/api/getcardfromid/${card.cardID}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDetails(data.card);
-        setLoading(false);
-      }
-      return null;
-    };
-    getData();
-  }, [card.cardID]);
-
+  const { details, loading } = useCardDetail(card.cardID);
   return (
     <Flexbox direction="row" gap="1" alignItems="center">
       <span className="mx-1" style={{ color: 'orange' }}>
@@ -96,30 +51,9 @@ const Edit = ({ card }: { card: CardData }) => {
 };
 
 const Swap = ({ card, oldCard }: { card: CardData; oldCard: CardData }) => {
-  const [loading, setLoading] = useState(true);
-  const [details, setDetails] = useState<CardDetails | null>();
-  const [details2, setDetails2] = useState<CardDetails | null>();
-
-  useEffect(() => {
-    const getData = async () => {
-      const response = await fetch(`/cube/api/getcardfromid/${card.cardID}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDetails(data.card);
-        setLoading(false);
-      }
-
-      const response2 = await fetch(`/cube/api/getcardfromid/${oldCard.cardID}`);
-      if (response2.ok) {
-        const data = await response2.json();
-        setDetails2(data.card);
-        setLoading(false);
-      }
-
-      return null;
-    };
-    getData();
-  }, [card.cardID, oldCard.cardID]);
+  const { details, loading: loadingNew } = useCardDetail(card.cardID);
+  const { details: details2, loading: loadingOld } = useCardDetail(oldCard.cardID);
+  const loading = loadingNew || loadingOld;
 
   return (
     <Flexbox direction="row" gap="1">

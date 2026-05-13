@@ -18,6 +18,7 @@ import MtgImage from 'components/MtgImage';
 import TextEntry from 'components/TextEntry';
 import { CSRFContext } from 'contexts/CSRFContext';
 import CubeContext from 'contexts/CubeContext';
+import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 
 interface AlertProps {
   color: string;
@@ -30,21 +31,17 @@ const OverviewSettings: React.FC = () => {
   const [state, setState] = useState<Cube>(JSON.parse(JSON.stringify(cube)));
   const [imagename, setImagename] = useState(cube.imageName);
   const [imageDict, setImageDict] = useState<Record<string, Image>>({});
-  const [fetched, setFetched] = useState(false);
   const [alerts, setAlerts] = useState<AlertProps[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const imageDictUrl = useCardCatalogUrl('imagedict.json');
+  const fullNamesUrl = useCardCatalogUrl('full_names.json');
 
   useEffect(() => {
-    const getData = async () => {
-      const response = await csrfFetch('/cube/api/imagedict');
-      const json = await response.json();
-      setImageDict(json.dict);
-      setFetched(true);
-    };
-    if (!fetched) {
-      getData();
-    }
-  }, [csrfFetch, fetched]);
+    if (!imageDictUrl) return;
+    fetch(imageDictUrl)
+      .then((r) => r.json())
+      .then((json) => setImageDict(json));
+  }, [imageDictUrl]);
 
   // Detect changes
   useEffect(() => {
@@ -201,7 +198,7 @@ const OverviewSettings: React.FC = () => {
                 </Col>
               </Row>
               <AutocompleteInput
-                treeUrl="/cube/api/fullnames"
+                treeUrl={fullNamesUrl ?? ''}
                 treePath="cardnames"
                 type="text"
                 name="remove"

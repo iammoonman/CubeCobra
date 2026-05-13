@@ -1,10 +1,10 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { cardId, detailsToCard } from '@utils/cardutil';
 import { cdnUrl } from '@utils/cdnUrl';
 import { Combo } from '@utils/datatypes/CardCatalog';
 
-import { CSRFContext } from '../../contexts/CSRFContext';
+import { getCardDetails } from '../../utils/cardDetailsCache';
 import { Card, CardBody } from '../base/Card';
 import { Flexbox } from '../base/Layout';
 import Link from '../base/Link';
@@ -63,7 +63,6 @@ const createPlaceholderCard = (use: any) => ({
 });
 
 const useFetchCardDetails = (combo?: Combo) => {
-  const { csrfFetch } = useContext(CSRFContext);
   const [byOracle, setByOracle] = useState<Map<string, any>>(new Map());
 
   useEffect(() => {
@@ -76,18 +75,12 @@ const useFetchCardDetails = (combo?: Combo) => {
           return;
         }
 
-        const res = await csrfFetch('/cube/api/getdetailsforcards', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cards: oracleIds }),
-        });
-
-        if (!res.ok) throw new Error('Failed to fetch card details');
-        const data = await res.json();
+        // getdetailsforcards accepts oracle IDs too — the server resolves them to
+        // a representative printing via catalog.oracleToId.
+        const fetched = await getCardDetails(oracleIds);
 
         const map = new Map<string, any>();
-        const detailsArr: any[] = Array.isArray(data?.details) ? data.details : [];
-        for (const d of detailsArr) {
+        for (const d of Object.values(fetched)) {
           if (d?.oracle_id) map.set(d.oracle_id, d);
         }
 
@@ -99,7 +92,7 @@ const useFetchCardDetails = (combo?: Combo) => {
     };
 
     run();
-  }, [combo, csrfFetch]);
+  }, [combo]);
 
   return { byOracle };
 };

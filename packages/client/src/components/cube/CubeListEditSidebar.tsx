@@ -28,6 +28,7 @@ import withModal from 'components/WithModal';
 import { CSRFContext } from 'contexts/CSRFContext';
 import CubeContext from 'contexts/CubeContext';
 import DisplayContext, { DisplayContextValue } from 'contexts/DisplayContext';
+import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 import useLocalStorage from 'hooks/useLocalStorage';
 import { getCard } from 'utils/cards/getCard';
 
@@ -49,6 +50,8 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
   const { setRightSidebarMode, activeView } = useContext(DisplayContext) as DisplayContextValue;
   const addRef = useRef<HTMLInputElement>(null);
   const removeRef = useRef<HTMLInputElement>(null);
+  const fullNamesUrl = useCardCatalogUrl('full_names.json');
+  const cardNamesUrl = useCardCatalogUrl('cardtree.json');
 
   const {
     cube,
@@ -258,7 +261,7 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
               Add Card
             </Text>
             <AutocompleteInput
-              treeUrl={specifyEdition ? '/cube/api/fullnames' : '/cube/api/cardnames'}
+              treeUrl={(specifyEdition ? fullNamesUrl : cardNamesUrl) ?? ''}
               treePath="cardnames"
               type="text"
               innerRef={addRef}
@@ -412,7 +415,7 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
               <div className="flex gap-2">
                 <div className="flex-1">
                   <AutocompleteInput
-                    treeUrl={specifyEdition ? '/cube/api/fullnames' : '/cube/api/cardnames'}
+                    treeUrl={(specifyEdition ? fullNamesUrl : cardNamesUrl) ?? ''}
                     treePath="cardnames"
                     type="text"
                     innerRef={addRef}

@@ -1,11 +1,12 @@
-import React, { MouseEventHandler, useContext, useEffect, useState } from 'react';
+import React, { MouseEventHandler, useContext, useState } from 'react';
 
 import { ArrowRightIcon, ArrowSwitchIcon, NoEntryIcon, PlusCircleIcon, ToolsIcon } from '@primer/octicons-react';
 import { cardName } from '@utils/cardutil';
 import CardData, { BoardChanges, BoardType, CubeCardEdit, CubeCardRemove, CubeCardSwap } from '@utils/datatypes/Card';
-import { CardDetails } from '@utils/datatypes/Card';
 
 import CubeContext from '../contexts/CubeContext';
+import { useCardDetail } from '../hooks/useCardDetails';
+import { getCardDetail } from '../utils/cardDetailsCache';
 import { Card } from './base/Card';
 import { Flexbox } from './base/Layout';
 import Link from './base/Link';
@@ -43,21 +44,7 @@ const Add = ({
   index: number;
   board: BoardType;
 }) => {
-  const [loading, setLoading] = useState(true);
-  const [details, setDetails] = useState<CardDetails | null>(null);
-
-  useEffect(() => {
-    const getData = async () => {
-      const response = await fetch(`/cube/api/getcardfromid/${card.cardID}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDetails(data.card);
-        setLoading(false);
-      }
-      return null;
-    };
-    getData();
-  }, [card.cardID]);
+  const { details, loading } = useCardDetail(card.cardID);
 
   return (
     <Flexbox direction="row" gap="1" alignItems="center">
@@ -132,30 +119,9 @@ const Swap = ({
   index: number;
   board: BoardType;
 }) => {
-  const [loading, setLoading] = useState(true);
-  const [newCardDetails, setNewCardDetails] = useState<CardDetails | null>();
-  const [oldCardDetails, setOldCardDetails] = useState<CardDetails | null>();
-
-  useEffect(() => {
-    const getData = async () => {
-      const response = await fetch(`/cube/api/getcardfromid/${card.cardID}`);
-      if (response.ok) {
-        const data = await response.json();
-        setNewCardDetails(data.card);
-        setLoading(false);
-      }
-
-      const response2 = await fetch(`/cube/api/getcardfromid/${oldCard.cardID}`);
-      if (response2.ok) {
-        const data = await response2.json();
-        setOldCardDetails(data.card);
-        setLoading(false);
-      }
-
-      return null;
-    };
-    getData();
-  }, [card.cardID, oldCard.cardID]);
+  const { details: newCardDetails, loading: loadingNew } = useCardDetail(card.cardID);
+  const { details: oldCardDetails, loading: loadingOld } = useCardDetail(oldCard.cardID);
+  const loading = loadingNew || loadingOld;
 
   return (
     <Flexbox direction="row" gap="1">
@@ -225,15 +191,13 @@ const Changelist: React.FC = () => {
       const boardChanges = changes[board] as BoardChanges | undefined;
       const { adds, swaps } = boardChanges || { adds: [], swaps: [] };
 
-      // Add all newly added cards
       for (let index = 0; index < (adds || []).length; index++) {
         const card = adds![index];
-        const response = await fetch(`/cube/api/getcardfromid/${card.cardID}`);
-        if (response.ok) {
-          const data = await response.json();
+        const details = await getCardDetail(card.cardID);
+        if (details) {
           newCards.push({
             ...card,
-            details: data.card,
+            details,
             board,
             index: -1, // Sentinel value for new cards
             addIndex: index,
@@ -241,15 +205,13 @@ const Changelist: React.FC = () => {
         }
       }
 
-      // Add all newly swapped-in cards
       for (let index = 0; index < (swaps || []).length; index++) {
         const swap = swaps![index];
-        const response = await fetch(`/cube/api/getcardfromid/${swap.card.cardID}`);
-        if (response.ok) {
-          const data = await response.json();
+        const details = await getCardDetail(swap.card.cardID);
+        if (details) {
           newCards.push({
             ...swap.card,
-            details: data.card,
+            details,
             board,
             index: -1, // Sentinel value for new cards
             swapIndex: index,

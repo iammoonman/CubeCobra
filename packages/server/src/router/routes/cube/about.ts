@@ -18,7 +18,7 @@ export const aboutHandler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    const cards = await cubeDao.getCards(cube.id);
+    const cards = await cubeDao.getCards(cube.id, cube, { populate: false });
     const { mainboard } = cards;
 
     const followersCount = cube.likeCount ?? 0;
@@ -26,20 +26,25 @@ export const aboutHandler = async (req: Request, res: Response) => {
 
     const isInQueue = await isInFeaturedQueue(cube);
 
-    // calculate cube prices
+    // calculate cube prices — read details directly from carddb instead of from
+    // the card objects (cards arrive without details now; populate: false above)
     const nameToCards: Record<string, any[]> = {};
+    const detailsByCardId: Record<string, any> = {};
     for (const card of mainboard) {
-      if (card.details && !nameToCards[card.details.name]) {
-        const allVersionsOfCard = getIdsFromName(card.details.name) || [];
-        nameToCards[card.details.name] = allVersionsOfCard.map((id: string) => cardFromId(id));
+      const details = cardFromId(card.cardID);
+      detailsByCardId[card.cardID] = details;
+      if (details && !nameToCards[details.name]) {
+        const allVersionsOfCard = getIdsFromName(details.name) || [];
+        nameToCards[details.name] = allVersionsOfCard.map((id: string) => cardFromId(id));
       }
     }
 
     const cheapestDict: Record<string, number> = {};
     for (const card of mainboard) {
-      if (card.details) {
-        const versions = nameToCards[card.details.name];
-        if (!cheapestDict[card.details.name] && versions) {
+      const details = detailsByCardId[card.cardID];
+      if (details) {
+        const versions = nameToCards[details.name];
+        if (!cheapestDict[details.name] && versions) {
           for (const version of versions) {
             const currentCheapest = cheapestDict[version.name];
             if (!currentCheapest || (version.prices?.usd && version.prices.usd < currentCheapest)) {
@@ -56,9 +61,10 @@ export const aboutHandler = async (req: Request, res: Response) => {
     let totalPriceOwned = 0;
     let totalPricePurchase = 0;
     for (const card of mainboard) {
-      if (card.details) {
-        if (card.cardID.includes('-') && !card.details.prices.usd && !card.details.prices.usd_foil) {
-          const allVersionsOfCard = getIdsFromName(card.details.name) || [];
+      const details = detailsByCardId[card.cardID];
+      if (details) {
+        if (card.cardID.includes('-') && !details.prices.usd && !details.prices.usd_foil) {
+          const allVersionsOfCard = getIdsFromName(details.name) || [];
           allVersionsOfCard.forEach((id: string) => {
             const version = cardFromId(id);
             if (version.prices.usd) {
@@ -69,13 +75,13 @@ export const aboutHandler = async (req: Request, res: Response) => {
           });
         } else {
           if (card.finish === 'Foil') {
-            totalPriceOwned += card.details.prices.usd_foil || 0;
+            totalPriceOwned += details.prices.usd_foil || 0;
           } else {
-            totalPriceOwned += card.details.prices.usd || card.details.prices.usd_foil || 0;
+            totalPriceOwned += details.prices.usd || details.prices.usd_foil || 0;
           }
         }
 
-        totalPricePurchase += cheapestDict[card.details.name] || 0;
+        totalPricePurchase += cheapestDict[details.name] || 0;
       }
     }
 

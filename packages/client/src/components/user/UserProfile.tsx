@@ -11,15 +11,14 @@ import Text from 'components/base/Text';
 import CSRFForm from 'components/CSRFForm';
 import MtgImage from 'components/MtgImage';
 import TextEntry from 'components/TextEntry';
-import { CSRFContext } from 'contexts/CSRFContext';
 import UserContext from 'contexts/UserContext';
+import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 
 interface UserProfileProps {
   userEmail?: string;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ userEmail }) => {
-  const { csrfFetch } = useContext(CSRFContext);
   const user = useContext(UserContext);
   const [markdown, setMarkdown] = useState(user?.about || '');
   const [username, setUsername] = useState(user?.username);
@@ -33,15 +32,15 @@ const UserProfile: React.FC<UserProfileProps> = ({ userEmail }) => {
       uri: user?.image?.uri || '',
     },
   );
+  const imageDictUrl = useCardCatalogUrl('imagedict.json');
+  const fullNamesUrl = useCardCatalogUrl('full_names.json');
 
   useEffect(() => {
-    const getData = async () => {
-      const response = await csrfFetch('/cube/api/imagedict');
-      const json = await response.json();
-      setImageDict(json.dict);
-    };
-    getData();
-  }, [csrfFetch]);
+    if (!imageDictUrl) return;
+    fetch(imageDictUrl)
+      .then((r) => r.json())
+      .then((json) => setImageDict(json));
+  }, [imageDictUrl]);
 
   const changeImage = useCallback(
     (img: string) => {
@@ -84,7 +83,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userEmail }) => {
           </Col>
           <Col xs={6}>
             <AutocompleteInput
-              treeUrl="/cube/api/fullnames"
+              treeUrl={fullNamesUrl ?? ''}
               treePath="cardnames"
               type="text"
               name="remove"

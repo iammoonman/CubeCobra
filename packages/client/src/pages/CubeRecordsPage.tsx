@@ -7,9 +7,11 @@ import { RecordAnalytic } from '@utils/datatypes/RecordAnalytic';
 
 import { Card } from 'components/base/Card';
 import { Flexbox } from 'components/base/Layout';
+import Spinner from 'components/base/Spinner';
 import DynamicFlash from 'components/DynamicFlash';
 import RecordsNavbar from 'components/records/RecordsNavbar';
 import RenderToRoot from 'components/RenderToRoot';
+import CubeContext from 'contexts/CubeContext';
 import { DisplayContextProvider } from 'contexts/DisplayContext';
 import RecordsViewContext, { RecordsViewContextProvider } from 'contexts/RecordsViewContext';
 import CubeLayout from 'layouts/CubeLayout';
@@ -63,14 +65,26 @@ const CubeRecordsPage: React.FC<CubeRecordsPageProps> = ({ cube, cards, records,
     <MainLayout useContainer={false}>
       <DisplayContextProvider cubeID={cube.id}>
         <CubeLayout cube={cube} cards={cards} activeLink={view}>
-          <Flexbox direction="col" gap="2" className="mb-2">
-            <DynamicFlash />
-            <RecordsNavbar />
-            {content}
-          </Flexbox>
+          <CubeRecordsPageBody content={content} />
         </CubeLayout>
       </DisplayContextProvider>
     </MainLayout>
+  );
+};
+
+const CubeRecordsPageBody: React.FC<{ content: React.ReactNode }> = ({ content }) => {
+  const { cardsLoading } = useContext(CubeContext);
+  return (
+    <Flexbox direction="col" gap="2" className="mb-2">
+      <DynamicFlash />
+      <RecordsNavbar />
+      {cardsLoading && (
+        <Flexbox direction="row" gap="2" alignItems="center" justify="center" className="py-2">
+          <Spinner sm />
+        </Flexbox>
+      )}
+      {content}
+    </Flexbox>
   );
 };
 

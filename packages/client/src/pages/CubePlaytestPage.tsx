@@ -4,12 +4,14 @@ import Cube from '@utils/datatypes/Cube';
 import Draft from '@utils/datatypes/Draft';
 
 import { Flexbox } from 'components/base/Layout';
+import Spinner from 'components/base/Spinner';
 import PlaytestNavbar from 'components/cube/PlaytestNavbar';
 import DynamicFlash from 'components/DynamicFlash';
 import DecksView from 'components/playtest/DecksView';
 import PracticeDraftView from 'components/playtest/PracticeDraftView';
 import SamplePackView from 'components/playtest/SamplePackView';
 import RenderToRoot from 'components/RenderToRoot';
+import CubeContext from 'contexts/CubeContext';
 import { DisplayContextProvider } from 'contexts/DisplayContext';
 import PlaytestViewContext, { PlaytestViewContextProvider } from 'contexts/PlaytestViewContext';
 import CubeLayout from 'layouts/CubeLayout';
@@ -61,14 +63,26 @@ const CubePlaytestPage: React.FC<CubePlaytestPageProps> = ({
     <MainLayout useContainer={false}>
       <DisplayContextProvider cubeID={cube.id}>
         <CubeLayout cube={cubeWithoutCards} cards={cards} activeLink={view}>
-          <Flexbox direction="col" gap="2">
-            <DynamicFlash />
-            <PlaytestNavbar />
-            {content}
-          </Flexbox>
+          <CubePlaytestPageBody content={content} />
         </CubeLayout>
       </DisplayContextProvider>
     </MainLayout>
+  );
+};
+
+const CubePlaytestPageBody: React.FC<{ content: React.ReactNode }> = ({ content }) => {
+  const { cardsLoading } = useContext(CubeContext);
+  return (
+    <Flexbox direction="col" gap="2">
+      <DynamicFlash />
+      <PlaytestNavbar />
+      {cardsLoading && (
+        <Flexbox direction="row" gap="2" alignItems="center" justify="center" className="py-2">
+          <Spinner sm />
+        </Flexbox>
+      )}
+      {content}
+    </Flexbox>
   );
 };
 
