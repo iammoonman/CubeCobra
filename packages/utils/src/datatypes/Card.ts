@@ -215,7 +215,6 @@ export const DefaultPrintingPreference = PrintingPreference.FIRST;
  */
 export interface VoucherCard {
   cardID: string;
-  /** Override the version/printing of the card */
   imgUrl?: string;
   imgBackUrl?: string;
   colors?: Exclude<ManaSymbol, 'C'>[];
@@ -228,7 +227,6 @@ export interface VoucherCard {
   notes?: string;
   tags?: string[];
   custom_name?: string;
-  /** Resolved at runtime from carddb, not stored */
   details?: CardDetails;
 }
 
@@ -254,8 +252,6 @@ export default interface Card {
   details?: CardDetails;
   asfan?: number;
   custom_name?: string;
-  /** Only present on voucher cards — list of cards the voucher contains */
   voucher_cards?: VoucherCard[];
-  /** Indices in draft.cards where the expanded voucher sub-cards are stored (set at draft creation time) */
   voucher_card_indices?: number[];
 }

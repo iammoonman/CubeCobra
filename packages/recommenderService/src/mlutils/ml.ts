@@ -314,6 +314,46 @@ export const build = (oracles: string[]) => {
   return res.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
 };
 
+/**
+ * Batched version of draft() — encodes all N seat pools in one TF forward pass
+ * instead of N sequential passes. Returns rated pack cards per seat.
+ */
+export const draftBatch = (packs: string[][], pools: string[][]): { oracle: string; rating: number }[][] => {
+  if (!encoder || !draftDecoder || packs.length === 0) return packs.map(() => []);
+
+  const batchVector = pools.map((pool) =>
+    encodeIndeces(
+      pool.map((oracle) => oracleToIndex[oracle]).filter((index): index is number => index !== undefined),
+    ),
+  );
+
+  // Single batched forward pass: [N, numOracles] → encoder → draftDecoder → [N, numOracles]
+  const flatResult: number[] = tidy(() => {
+    const inputTensor = tensor(batchVector); // [N, numOracles]
+    const encoded = encoder.predict(inputTensor) as any; // [N, encodingDim]
+    const result = draftDecoder.predict([encoded]) as any; // [N, numOracles]
+    return Array.from(result.dataSync() as Float32Array);
+  });
+
+  return packs.map((pack, i) => {
+    const rowOffset = i * numOracles;
+    const packEntries = pack
+      .map((oracle) => {
+        const index = oracleIdToMlIndex(oracle);
+        return index === null || index === undefined ? null : { oracle, index, raw: flatResult[rowOffset + index] ?? 0 };
+      })
+      .filter((entry): entry is { oracle: string; index: number; raw: number } => entry !== null);
+
+    if (packEntries.length === 0) return [];
+
+    const softmaxed = softmax(packEntries.map((entry) => entry.raw));
+
+    return packEntries
+      .map((entry, idx) => ({ oracle: entry.oracle, rating: softmaxed[idx] ?? 0 }))
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+  });
+};
+
 export const draft = (pack: string[], pool: string[], cubeContext?: number[]) => {
   if (!encoder || !draftDecoder) {
     return [];
