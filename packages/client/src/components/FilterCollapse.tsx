@@ -127,7 +127,7 @@ const FilterCollapse: React.FC<FilterCollapseProps> = ({
           </ResponsiveDiv>
         </Flexbox>
         <Text sm>
-          Having trouble using filter syntax? Check out our <Link href="/filters">syntax guide</Link>.
+          Having trouble using filter syntax? Check out our <Link href="/help/filters">syntax guide</Link>.
         </Text>
         {filterResult && Object.keys(filterResult).length > 0 && filterTextFn && (
           <Text italic sm>

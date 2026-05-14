@@ -18,7 +18,7 @@ const options: React.ReactNode[] = [
       {' '}
       <Text lg>
         Become a supporter of Cube Cobra to remove these messages and gain access to exclusive features!{' '}
-        <Link href="/donate">Find out more.</Link>
+        <Link href="/help/donate">Find out more.</Link>
       </Text>
     </CardBody>
   </Card>,
@@ -49,7 +49,7 @@ const Banner: React.FC<BannerProps> = ({ className }) => {
             <Flexbox direction="col" justify="center" className="h-full">
               <Text lg>
                 Tired of seeing advertisments? Become a supporter of Cube Cobra to remove all advertisments and gain
-                access to exclusive features! <Link href="/donate">Find out more.</Link>
+                access to exclusive features! <Link href="/help/donate">Find out more.</Link>
               </Text>
             </Flexbox>
           </CardBody>

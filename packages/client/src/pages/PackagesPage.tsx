@@ -141,7 +141,9 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
             className="absolute inset-0 w-full h-full object-cover object-top select-none"
           />
           <div className="absolute inset-0 bg-bg-secondary/80" />
-          <div className="splash-taper absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
+          {packages.length > 0 && (
+            <div className="absolute inset-x-0 bottom-0 h-[25vh] bg-gradient-to-b from-transparent to-bg pointer-events-none" />
+          )}
         </div>
 
         <a

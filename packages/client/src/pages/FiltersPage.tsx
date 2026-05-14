@@ -737,7 +737,7 @@ const SECTIONS: Section[] = [
 ];
 
 const FiltersPage: React.FC = () => (
-  <HelpLayout activeHref="/filters">
+  <HelpLayout activeHref="/help/filters">
     <Flexbox direction="col" gap="3">
       <Card>
         <CardHeader>

@@ -16,7 +16,6 @@ import classNames from 'classnames';
 import Banner from 'components/Banner';
 import Container from 'components/base/Container';
 import { Flexbox } from 'components/base/Layout';
-import Text from 'components/base/Text';
 import DynamicFlash from 'components/DynamicFlash';
 import MainLayout from 'layouts/MainLayout';
 
@@ -27,20 +26,22 @@ export interface HelpLink {
 }
 
 export const HELP_LINKS: HelpLink[] = [
-  { label: 'Filter Syntax', href: '/filters', Icon: FilterIcon },
-  { label: 'Markdown Guide', href: '/markdown', Icon: MarkdownIcon },
-  { label: 'API Docs', href: '/apidocs', Icon: CodeIcon },
-  { label: 'Card Updates', href: '/tool/cardupdates', Icon: SyncIcon },
-  { label: 'Contact', href: '/contact', Icon: MailIcon },
-  { label: 'Donate', href: '/donate', Icon: HeartIcon },
+  { label: 'Filter Syntax', href: '/help/filters', Icon: FilterIcon },
+  { label: 'Markdown Guide', href: '/help/markdown', Icon: MarkdownIcon },
+  { label: 'API Docs', href: '/help/apidocs', Icon: CodeIcon },
+  { label: 'Card Updates', href: '/help/cardupdates', Icon: SyncIcon },
+  { label: 'Contact', href: '/help/contact', Icon: MailIcon },
+  { label: 'Donate', href: '/help/donate', Icon: HeartIcon },
 ];
 
 interface HelpLayoutProps {
   activeHref?: string;
+  /** Set on pages with brief content (e.g. Contact, Donate) where the taper would extend past the content. */
+  noTaper?: boolean;
   children: React.ReactNode;
 }
 
-const HelpLayout: React.FC<HelpLayoutProps> = ({ activeHref, children }) => {
+const HelpLayout: React.FC<HelpLayoutProps> = ({ activeHref, noTaper = false, children }) => {
   return (
     <MainLayout useContainer={false} transparentNav>
       <div className="relative min-h-screen">
@@ -53,7 +54,9 @@ const HelpLayout: React.FC<HelpLayoutProps> = ({ activeHref, children }) => {
             className="absolute inset-0 w-full h-full object-cover object-left-top md:object-top select-none"
           />
           <div className="absolute inset-0 bg-bg-secondary/80" />
-          <div className="splash-taper absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
+          {activeHref && !noTaper && (
+            <div className="absolute inset-x-0 bottom-0 h-[25vh] bg-gradient-to-b from-transparent to-bg pointer-events-none" />
+          )}
         </div>
 
         <a
@@ -72,10 +75,6 @@ const HelpLayout: React.FC<HelpLayoutProps> = ({ activeHref, children }) => {
                 <div className="md:w-60 md:flex-shrink-0">
                   <div className="md:sticky md:top-24">
                     <Flexbox direction="col" gap="3">
-                      <Text xxxxl bold className="!text-button-text block">
-                        Help
-                      </Text>
-
                       {/* Mobile: single back-to-help pill */}
                       <a
                         href="/help"

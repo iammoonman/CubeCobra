@@ -9,7 +9,7 @@ import RenderToRoot from 'components/RenderToRoot';
 import HelpLayout from 'layouts/HelpLayout';
 
 const MarkdownPage: React.FC = () => (
-  <HelpLayout activeHref="/markdown">
+  <HelpLayout activeHref="/help/markdown">
     <Card>
       <Flexbox direction="col" gap="2">
         <CardHeader>
@@ -20,7 +20,7 @@ const MarkdownPage: React.FC = () => (
         <CardBody>
           <p>
             CubeCobra supports regular Markdown as well as some extra features specific to our site. If you need any
-            help regarding how to use markdown, please <Link href="/contact">contact us</Link>.
+            help regarding how to use markdown, please <Link href="/help/contact">contact us</Link>.
           </p>
         </CardBody>
         <CardBody className="border-top">

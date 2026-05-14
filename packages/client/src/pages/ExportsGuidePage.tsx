@@ -48,7 +48,7 @@ const ExportsGuidePage: React.FC = () => (
               <CodeBlock>aws s3 sync s3://cubecobra-public/export/ ./data/ --no-sign-request</CodeBlock>
               <Text sm className="text-text-secondary">
                 Data exports are updated every three months. See the{' '}
-                <Link href="/tool/cardupdates">Card Database Status</Link> page for the date of the most recent export.
+                <Link href="/help/cardupdates">Card Database Status</Link> page for the date of the most recent export.
               </Text>
             </Flexbox>
           </CardBody>

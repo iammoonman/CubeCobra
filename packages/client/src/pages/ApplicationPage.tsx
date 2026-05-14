@@ -36,7 +36,7 @@ const ApplicationPage: React.FC = () => {
               <Flexbox direction="col" gap="2">
                 <p>
                   Content Creator Partners have access to post articles, videos, and podcasts on Cube Cobra. If you have
-                  more questions about the program, please reach out <a href="/contact">here</a>.
+                  more questions about the program, please reach out <a href="/help/contact">here</a>.
                 </p>
                 <p>
                   Please explain why you want to become a content creator partner. Links to existing content are

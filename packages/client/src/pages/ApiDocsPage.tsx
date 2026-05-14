@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 
 import { Card, CardBody, CardHeader } from 'components/base/Card';
-import Container from 'components/base/Container';
 import { Flexbox } from 'components/base/Layout';
 import Link from 'components/base/Link';
 import Text from 'components/base/Text';
 import RenderToRoot from 'components/RenderToRoot';
-import MainLayout from 'layouts/MainLayout';
+import HelpLayout from 'layouts/HelpLayout';
 
 /* ── Reusable formatting helpers ────────────────────────────────────── */
 
@@ -187,9 +186,8 @@ const CollapsibleSection: React.FC<{
 /* ── Main Page ──────────────────────────────────────────────────────── */
 
 const ApiDocsPage: React.FC = () => (
-  <MainLayout>
-    <Container sm>
-      <Flexbox direction="col" gap="4" className="my-4">
+  <HelpLayout activeHref="/help/apidocs">
+    <Flexbox direction="col" gap="4" className="my-4">
         {/* Header */}
         <Text semibold xxl className="text-center mb-1">
           API Documentation
@@ -353,7 +351,7 @@ Mox Sapphire
                 Comma-separated list of boards to include, e.g. <InlineCode>mainboard,maybeboard</InlineCode>
               </Param>
               <Param name="filter" type="query">
-                A <Link href="/filters">filter expression</Link> to include only matching cards
+                A <Link href="/help/filters">filter expression</Link> to include only matching cards
               </Param>
               <Param name="primary" type="query">
                 Primary sort column (e.g. <InlineCode>Color Category</InlineCode>)
@@ -972,8 +970,7 @@ with open('cube.csv', 'w') as f:
           </CardBody>
         </Card>
       </Flexbox>
-    </Container>
-  </MainLayout>
+  </HelpLayout>
 );
 
 export default RenderToRoot(ApiDocsPage);
