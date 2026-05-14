@@ -62,14 +62,14 @@ export const getCardImageHandler = async (req: Request, res: Response) => {
     const card = cardFromId(id);
     if (card.error || !card.image_normal) {
       res.setHeader('Cache-Control', 'public, max-age=604800'); // Cache for 1 month
-      return redirect(req, res, '/content/default_card.png');
+      return redirect(req, res, '/content/invalidcard.png');
     }
 
     res.setHeader('Cache-Control', 'public, max-age=604800'); // Cache for 1 month
     return redirect(req, res, card.image_normal);
   } catch {
     res.setHeader('Cache-Control', 'public, max-age=604800'); // Cache for 1 year
-    return redirect(req, res, '/content/default_card.png');
+    return redirect(req, res, '/content/invalidcard.png');
   }
 };
 

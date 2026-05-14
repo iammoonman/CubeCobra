@@ -1,4 +1,5 @@
 import { PatronStatuses } from '@utils/datatypes/Patron';
+import { sanitizeChangelog } from 'dynamo/dao/ChangelogDynamoDao';
 import { blogDao, packageDao, patronDao, userDao } from 'dynamo/daos';
 import { handleRouteError, redirect, render } from 'serverutils/render';
 
@@ -40,6 +41,10 @@ export const handler = async (req: Request, res: Response) => {
 
     const likedCubesCount = user.likedCubesCount ?? 0;
     const likedPackagesCount = await packageDao.countByVoter(user.id);
+
+    for (const post of filteredPosts) {
+      if (post.Changelog) sanitizeChangelog(post.Changelog);
+    }
 
     return render(
       req,

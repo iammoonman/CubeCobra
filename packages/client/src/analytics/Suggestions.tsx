@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 
 import { detailsToCard } from '@utils/cardutil';
-import CardType, { CardDetails } from '@utils/datatypes/Card';
+import CardType from '@utils/datatypes/Card';
 
 import { Card, CardBody } from '../components/base/Card';
 import { Flexbox } from '../components/base/Layout';
@@ -15,20 +15,16 @@ import AddToCubeModal from '../components/modals/AddToCubeModal';
 import { CSRFContext } from '../contexts/CSRFContext';
 import CubeContext from '../contexts/CubeContext';
 import FilterContext from '../contexts/FilterContext';
+import { getCardDetails } from '../utils/cardDetailsCache';
 
 const PAGE_SIZE = 96;
-
-interface SmartSearchAdd {
-  details: CardDetails;
-  cardID: string;
-}
 
 const Suggestions: React.FC = () => {
   const { csrfFetch } = useContext(CSRFContext);
   const { filterInput } = useContext(FilterContext);
   const { cube } = useContext(CubeContext);
 
-  const [adds, setAdds] = useState<SmartSearchAdd[]>([]);
+  const [pageCards, setPageCards] = useState<CardType[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -41,9 +37,9 @@ const Suggestions: React.FC = () => {
   }, [filterInput, cube.id]);
 
   // Single fetch effect — runs whenever any input that affects the result
-  // changes. No client-side cache; the recommender is fast and this keeps
-  // the loading state correct (the previous cache had a stale-closure bug
-  // that left the spinner up indefinitely on a re-search).
+  // changes. The server returns scryfall_ids only; we resolve details out of
+  // the persistent IndexedDB cache (cardDetailsCache), which coalesces any
+  // misses into a single /cube/api/getdetailsforcards call.
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -62,13 +58,23 @@ const Suggestions: React.FC = () => {
       if (cancelled) return;
       const json = await res.json();
       if (cancelled) return;
-      setAdds(json.adds || []);
+
+      const cardIDs: string[] = json.cardIDs || [];
+      const detailsById = cardIDs.length > 0 ? await getCardDetails(cardIDs) : {};
+      if (cancelled) return;
+
+      const cards = cardIDs
+        .map((id) => detailsById[id])
+        .filter((d): d is NonNullable<typeof d> => !!d)
+        .map((details) => detailsToCard(details));
+
+      setPageCards(cards);
       setHasMore(!!json.hasMoreAdds);
       setLoading(false);
     };
     run().catch(() => {
       if (!cancelled) {
-        setAdds([]);
+        setPageCards([]);
         setHasMore(false);
         setLoading(false);
       }
@@ -77,8 +83,6 @@ const Suggestions: React.FC = () => {
       cancelled = true;
     };
   }, [csrfFetch, cube.id, cube.defaultPrinting, filterInput, page]);
-
-  const pageCards: CardType[] = adds.map((item) => detailsToCard(item.details));
 
   // The recommender returns a fully-ranked list, so the page count is the
   // current page plus one if there are more results to fetch.

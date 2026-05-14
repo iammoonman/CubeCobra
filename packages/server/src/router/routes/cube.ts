@@ -1,5 +1,6 @@
 import { CUBE_VISIBILITY } from '@utils/datatypes/Cube';
 import { NoticeStatus, NoticeType } from '@utils/datatypes/Notice';
+import { sanitizeChangelog } from 'dynamo/dao/ChangelogDynamoDao';
 import {
   changelogDao,
   collaboratorIndexDao,
@@ -180,6 +181,12 @@ export const historyHandler = async (req: Request, res: Response) => {
 
     const query = await changelogDao.queryByCubeWithData(cube.id, undefined, 36);
 
+    // Strip card details from every changelog entry — the client rehydrates
+    // via utils/cardDetailsCache.
+    for (const entry of query.items) {
+      if (entry.changelog) sanitizeChangelog(entry.changelog);
+    }
+
     const baseUrl = getBaseUrl();
     return render(
       req,
@@ -208,6 +215,10 @@ export const historyHandler = async (req: Request, res: Response) => {
 export const getMoreChangelogsHandler = async (req: Request, res: Response) => {
   const { lastKey, cubeId } = req.body;
   const query = await changelogDao.queryByCubeWithData(cubeId, lastKey, 18);
+
+  for (const entry of query.items) {
+    if (entry.changelog) sanitizeChangelog(entry.changelog);
+  }
 
   return res.status(200).send({
     success: 'true',

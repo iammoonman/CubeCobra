@@ -1,6 +1,10 @@
 import { makeFilter } from '@utils/filtering/FilterCards';
 import { cubeDao } from 'dynamo/daos';
-import { getAllMostReasonable, getReasonableCardByOracleWithPrintingPreference } from 'serverutils/carddb';
+import {
+  cardFromId,
+  getAllMostReasonable,
+  getReasonableCardByOracleWithPrintingPreference,
+} from 'serverutils/carddb';
 import { recommend } from 'serverutils/ml';
 
 import { Request, Response } from '../../../../types/express';
@@ -14,7 +18,7 @@ export const addsHandler = async (req: Request, res: Response) => {
       return res.status(400).send({
         success: 'false',
         message: 'Cube ID is required',
-        adds: [],
+        cardIDs: [],
         hasMoreAdds: false,
       });
     }
@@ -22,9 +26,14 @@ export const addsHandler = async (req: Request, res: Response) => {
     limit = parseInt(limit, 10);
     skip = parseInt(skip, 10);
 
-    const cards = await cubeDao.getCards(cubeID);
+    // populate: false — we only need oracle_ids, which we can resolve from
+    // carddb directly via cardFromId. Skipping the per-card details spread
+    // saves ~one shallow copy per cube card (up to ~700).
+    const cards = await cubeDao.getCards(cubeID, undefined, { populate: false });
 
-    const oracles = cards.mainboard.map((card: any) => card.details?.oracle_id).filter(Boolean);
+    const oracles = cards.mainboard
+      .map((card: any) => cardFromId(card.cardID)?.oracle_id)
+      .filter(Boolean);
 
     const { adds } = await recommend(oracles);
 
@@ -37,7 +46,7 @@ export const addsHandler = async (req: Request, res: Response) => {
       if (err || !filter) {
         return res.status(400).send({
           success: 'false',
-          adds: [],
+          cardIDs: [],
           hasMoreAdds: false,
         });
       }
@@ -52,14 +61,13 @@ export const addsHandler = async (req: Request, res: Response) => {
       slice = adds.slice(skip, skip + limit);
     }
 
+    // Return scryfall_ids only. The client resolves details from its IndexedDB
+    // cache (utils/cardDetailsCache), batching any misses through
+    // /cube/api/getdetailsforcards.
     return res.status(200).send({
-      adds: slice.map((item: any) => {
-        const card = getReasonableCardByOracleWithPrintingPreference(item.oracle, printingPreference);
-        return {
-          details: card,
-          cardID: card.scryfall_id,
-        };
-      }),
+      cardIDs: slice
+        .map((item: any) => getReasonableCardByOracleWithPrintingPreference(item.oracle, printingPreference)?.scryfall_id)
+        .filter(Boolean),
       hasMoreAdds: length > skip + limit,
     });
   } catch (err) {
@@ -68,7 +76,7 @@ export const addsHandler = async (req: Request, res: Response) => {
     return res.status(500).send({
       success: 'false',
       message: 'Error retrieving recommendations',
-      adds: [],
+      cardIDs: [],
       hasMoreAdds: false,
     });
   }

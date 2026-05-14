@@ -52,7 +52,7 @@ const CardImage: React.FC<CardImageProps> = ({
       <ImageAutocard
         card={current}
         src={imageSrc}
-        fallbackSrc={cdnUrl('/content/default_card.png')}
+        fallbackSrc={cdnUrl('/content/loadingcard.png')}
         alt={cardName(current)}
         width={width ?? '100%'}
         height={height ?? 'auto'}
@@ -65,7 +65,7 @@ const CardImage: React.FC<CardImageProps> = ({
   return (
     <ImageFallback
       src={imageSrc}
-      fallbackSrc={cdnUrl('/content/default_card.png')}
+      fallbackSrc={cdnUrl('/content/loadingcard.png')}
       alt={cardName(current)}
       width={width ?? '100%'}
       height={height ?? 'auto'}

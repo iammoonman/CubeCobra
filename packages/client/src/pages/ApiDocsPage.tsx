@@ -672,8 +672,8 @@ Time Walk`}
             <Endpoint
               method="POST"
               path="/cube/api/adds"
-              returnType="{ adds, hasMoreAdds }"
-              description="Get AI-recommended cards to add to a cube."
+              returnType="{ cardIDs, hasMoreAdds }"
+              description="Get AI-recommended cards to add to a cube. Returns scryfall IDs only; resolve details via /cube/api/getdetailsforcards."
               responseFormat="application/json"
               params={
                 <>
@@ -694,7 +694,7 @@ Time Walk`}
                   </Param>
                 </>
               }
-              responseExample={`{ "adds": [ { "name": "...", ... }, ... ], "hasMoreAdds": true }`}
+              responseExample={`{ "cardIDs": [ "<scryfall_id>", ... ], "hasMoreAdds": true }`}
             />
 
             <Endpoint

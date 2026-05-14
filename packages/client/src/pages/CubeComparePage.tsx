@@ -1,9 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 
 import Card from '@utils/datatypes/Card';
 import Cube from '@utils/datatypes/Cube';
 
+import { useCardDetails } from 'hooks/useCardDetails';
 import Query from 'utils/Query';
+import { getPlaceholderCardDetails } from 'utils/placeholderCardDetails';
 
 import CompareView from '../components/CompareView';
 import CubeCompareNavbar from '../components/cube/CubeCompareNavbar';
@@ -66,14 +68,28 @@ const CubeComparePage: React.FC<CubeComparePageProps> = ({
   pitDate,
   changelogId: _changelogId,
 }) => {
+  // Server strips card.details to keep response size down; rehydrate from the
+  // shared IndexedDB cache and fall back to a placeholder while a card's real
+  // details are still loading.
+  const cardIDs = useMemo(() => cards.map((c) => c?.cardID).filter(Boolean) as string[], [cards]);
+  const { details: detailsById } = useCardDetails(cardIDs);
+  const hydratedCards = useMemo<Card[]>(
+    () =>
+      cards.map((c) => ({
+        ...c,
+        details: (c?.cardID && detailsById[c.cardID]) || c.details || getPlaceholderCardDetails(c?.cardID || ''),
+      })),
+    [cards, detailsById],
+  );
+
   return (
     <FilterContextProvider>
       <MainLayout>
         <DisplayContextProvider cubeID={cube.id}>
           <ChangesContextProvider cube={cube}>
-            <CubeContextProvider initialCube={cube} cards={{ mainboard: cards, maybeboard: [] }}>
+            <CubeContextProvider initialCube={cube} cards={{ mainboard: hydratedCards, maybeboard: [] }}>
               <CubeComparePageInner
-                cards={cards}
+                cards={hydratedCards}
                 cube={cube}
                 cubeB={cubeB}
                 onlyA={onlyA}

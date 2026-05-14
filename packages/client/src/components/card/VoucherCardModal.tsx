@@ -264,9 +264,9 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
       return imageUsed;
     }
     if (selectedSubCard) {
-      return selectedSubCard.imgUrl || selectedSubCard.details?.image_normal || '/content/default_card.png';
+      return selectedSubCard.imgUrl || selectedSubCard.details?.image_normal || '/content/vouchercard.png';
     }
-    return '/content/default_card.png';
+    return '/content/vouchercard.png';
   }, [selection, imageUsed, selectedSubCard]);
 
   return (
@@ -383,7 +383,7 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
               <div className="mt-2">
                 <ImageFallback
                   src={getSelectedImage()}
-                  fallbackSrc="/content/default_card.png"
+                  fallbackSrc="/content/vouchercard.png"
                   alt={selection === 'voucher' ? cardName(card) : selectedSubCard?.details?.name || 'Card'}
                   className="w-full rounded"
                 />

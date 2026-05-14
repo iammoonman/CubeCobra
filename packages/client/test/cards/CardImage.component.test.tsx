@@ -37,7 +37,7 @@ describe('CardImage Component', () => {
 
     const image = screen.getByAltText('My Card');
     expect(image).toBeInTheDocument();
-    expect(image).toHaveAttribute('src', '/content/default_card.png');
+    expect(image).toHaveAttribute('src', '/content/loadingcard.png');
   });
 
   it('calls onClick when the image is clicked', () => {

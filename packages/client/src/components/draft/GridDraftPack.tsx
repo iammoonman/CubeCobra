@@ -84,7 +84,7 @@ const Pack: React.FC<PackProps> = ({ pack, packNumber, pickNumber, makePick, sea
                 <FoilCardImage card={pack[row * 3 + col]} autocard />
               ) : (
                 <img
-                  src={cdnUrl('/content/default_card.png')}
+                  src={cdnUrl('/content/loadingcard.png')}
                   alt="Empty card slot"
                   width="100%"
                   height="auto"

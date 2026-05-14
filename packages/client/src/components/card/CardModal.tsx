@@ -236,7 +236,7 @@ const CardModal: React.FC<CardModalProps> = ({
                   card={card}
                   className="w-full"
                   src={imageUsed}
-                  fallbackSrc={cdnUrl('/content/default_card.png')}
+                  fallbackSrc={cdnUrl('/content/loadingcard.png')}
                   alt={cardName(card)}
                 />
                 {getCardBackImage(card) && (

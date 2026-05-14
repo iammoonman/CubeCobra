@@ -25,9 +25,12 @@ export interface Changelog extends ChangeLog {
 }
 
 /**
- * Sanitizes a changelog by removing card details before storing in S3.
+ * Sanitizes a changelog by removing card details. Used both before writing to
+ * S3 and at API boundaries so changelogs ship over the wire as scryfall IDs
+ * only — the client rehydrates via utils/cardDetailsCache. Operates in place
+ * and returns the same object for convenience.
  */
-const sanitizeChangelog = (changelog: Changes): Changes => {
+export const sanitizeChangelog = (changelog: Changes): Changes => {
   for (const [key, value] of Object.entries(changelog)) {
     if (key === 'version') continue;
     const boardChanges = value as BoardChanges;
