@@ -16,6 +16,7 @@ interface PaginateProps {
   hasMore?: boolean;
   loading?: boolean;
   justifyBetween?: boolean;
+  inverted?: boolean;
 }
 
 const Paginate: React.FC<PaginateProps> = ({
@@ -27,7 +28,10 @@ const Paginate: React.FC<PaginateProps> = ({
   loading = false,
   className,
   justifyBetween = false,
+  inverted = false,
 }) => {
+  const labelClass = inverted ? 'mr-4 !text-button-text' : 'mr-4';
+
   if (urlF) {
     return (
       <Flexbox
@@ -37,7 +41,7 @@ const Paginate: React.FC<PaginateProps> = ({
         justify={justifyBetween ? 'between' : 'start'}
         className={className}
       >
-        <Text semibold className="mr-4">{`Page ${active + 1} of ${count}`}</Text>
+        <Text semibold className={labelClass}>{`Page ${active + 1} of ${count}`}</Text>
         <Flexbox direction="row" gap="2" alignItems="center">
           <Button color="primary" href={urlF(0)} disabled={active === 0 || loading}>
             <MoveToStartIcon size={16} />
@@ -65,7 +69,7 @@ const Paginate: React.FC<PaginateProps> = ({
         justify={justifyBetween ? 'between' : 'start'}
         className={className}
       >
-        <Text semibold className="mr-4">{`Page ${active + 1} of ${count}${hasMore ? '+' : ''}`}</Text>
+        <Text semibold className={labelClass}>{`Page ${active + 1} of ${count}${hasMore ? '+' : ''}`}</Text>
         <Flexbox direction="row" gap="2" alignItems="center">
           {loading && <Spinner sm />}
           <Button color="primary" onClick={() => onClick(0)} disabled={active === 0 || loading}>

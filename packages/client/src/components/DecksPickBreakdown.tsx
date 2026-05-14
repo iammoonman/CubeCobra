@@ -6,6 +6,7 @@ import { getDrafterState } from '@utils/draftutil';
 
 import useLocalStorage from '../hooks/useLocalStorage';
 import useQueryParam from '../hooks/useQueryParam';
+import { modelScoresToProbabilities } from '../utils/botRatings';
 import Text from './base/Text';
 import DraftBreakdownDisplay from './draft/DraftBreakdownDisplay';
 
@@ -26,54 +27,6 @@ interface BreakdownProps {
 const CubeBreakdown: React.FC<BreakdownProps> = ({ draft, seatNumber, pickNumber, setPickNumber }) => {
   const [ratings, setRatings] = useState<number[]>([]);
   const [showRatings, setShowRatings] = useLocalStorage(`showDraftRatings-${draft.id}`, true);
-  // Cube context embedding (32-dim) — same value used by CubeDraftPage; fetched once per cube and reused.
-  const [cubeContextEmbedding, setCubeContextEmbedding] = useLocalStorage<number[] | null>(
-    `cube-context-${draft.cube}`,
-    null,
-  );
-  // Gate predict calls until the context fetch resolves so the breakdown ratings
-  // match the with-context predictions the bots actually used during the live draft.
-  const [cubeContextReady, setCubeContextReady] = useState<boolean>(
-    Boolean(cubeContextEmbedding && cubeContextEmbedding.length > 0),
-  );
-
-  useEffect(() => {
-    if (cubeContextEmbedding && cubeContextEmbedding.length > 0) {
-      setCubeContextReady(true);
-      return;
-    }
-    if (!draft.cube) {
-      setCubeContextReady(true);
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await fetch('/api/draftbots/cubecontext', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cubeId: draft.cube }),
-        });
-        if (!response.ok) {
-          if (!cancelled) setCubeContextReady(true);
-          return;
-        }
-        const data = await response.json();
-        if (cancelled) return;
-        if (Array.isArray(data?.embedding)) {
-          setCubeContextEmbedding(data.embedding);
-        }
-        setCubeContextReady(true);
-      } catch {
-        // Non-fatal: server falls back to zero context.
-        if (!cancelled) setCubeContextReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [draft.cube, cubeContextEmbedding, setCubeContextEmbedding]);
 
   // Handle both CubeCobra and Draftmancer drafts
   const {
@@ -176,12 +129,6 @@ const CubeBreakdown: React.FC<BreakdownProps> = ({ draft, seatNumber, pickNumber
   );
 
   useEffect(() => {
-    // Same gating as CubeDraftPage: don't fire the analysis until the cube-context
-    // fetch settles. Otherwise we'd briefly display zero-context ratings, then
-    // re-render with full context — making the displayed ratings disagree with
-    // whatever the bot actually picked during the draft.
-    if (!cubeContextReady) return;
-
     const fetchPredictions = async () => {
       if (!cardsInPack.length) return;
 
@@ -209,18 +156,13 @@ const CubeBreakdown: React.FC<BreakdownProps> = ({ draft, seatNumber, pickNumber
         const packOracleIds = packCardInfos.flatMap((info) => info.oracleIds);
         const picksOracleIds = allPicks.flatMap((idx) => getCardOracleIds(idx));
 
-        const body: { pack: string[]; picks: string[]; cubeContext?: number[] } = {
-          pack: packOracleIds,
-          picks: picksOracleIds,
-        };
-        if (cubeContextEmbedding && cubeContextEmbedding.length > 0) {
-          body.cubeContext = cubeContextEmbedding;
-        }
-
         const response = await fetch(`/api/draftbots/predict`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            pack: packOracleIds,
+            picks: picksOracleIds,
+          }),
         });
 
         if (response.ok) {
@@ -241,11 +183,7 @@ const CubeBreakdown: React.FC<BreakdownProps> = ({ draft, seatNumber, pickNumber
             return uniqueOracleIds.reduce((acc, oracleId) => acc + (oracleRatings.get(oracleId) || 0), 0);
           });
 
-          // Normalize: duplicates get the same rating, then we normalize so total = 100%
-          const total = rawRatings.reduce((acc, r) => acc + r, 0);
-          const newRatings = total > 0 ? rawRatings.map((r) => r / total) : rawRatings;
-
-          setRatings(newRatings);
+          setRatings(modelScoresToProbabilities(rawRatings));
         }
       } catch (error) {
         console.error('Error fetching predictions:', error);
@@ -253,7 +191,7 @@ const CubeBreakdown: React.FC<BreakdownProps> = ({ draft, seatNumber, pickNumber
     };
 
     fetchPredictions();
-  }, [cardsInPack, draft.cards, pack, pick, picksList, getCardOracleIds, cubeContextEmbedding, cubeContextReady]);
+  }, [cardsInPack, draft.cards, pack, pick, picksList, getCardOracleIds]);
 
   // Add keyboard navigation
   useEffect(() => {

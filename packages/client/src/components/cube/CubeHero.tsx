@@ -42,7 +42,6 @@ import { SafeMarkdown } from '../Markdown';
 import ArenaExportModal from '../modals/ArenaExportModal';
 import ConfirmActionModal from '../modals/ConfirmActionModal';
 import CubeCompareModal from '../modals/CubeCompareModal';
-import FollowersModal from '../modals/FollowersModal';
 import PrintAndPlayExportModal from '../modals/PrintAndPlayExportModal';
 import withModal from '../WithModal';
 
@@ -51,7 +50,6 @@ const PrintAndPlayExportModalItem = withModal('button', PrintAndPlayExportModal)
 const CompareModalButton = withModal('button', CubeCompareModal);
 const ShareCubeButton = withModal('button', CubeIdModal);
 const ReportCubeButton = withModal(Link, ConfirmActionModal);
-const FollowersModalLink = withModal(Link, FollowersModal);
 
 interface CubeHeroProps {
   cube: Cube;
@@ -75,7 +73,30 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
   const [isSortUsed, setIsSortUsed] = useState(true);
   const [isFilterUsed, setIsFilterUsed] = useState(true);
   const [exportAllBoards, setExportAllBoards] = useState(false);
-  const [followedState, setFollowedState] = useState(!!user && cube.following && cube.following.includes(user.id));
+  const [followedState, setFollowedState] = useState(!!user && !!cube.likedByCurrentUser);
+
+  // Server-rendered cube objects don't always carry `likedByCurrentUser`, so when
+  // the field is missing fall back to a single lightweight check. Bounded to one
+  // request per CubeHero mount.
+  React.useEffect(() => {
+    if (!user || typeof cube.likedByCurrentUser === 'boolean') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await csrfFetch(`/cube/isfollowed/${cube.id}`);
+        if (cancelled || !res.ok) return;
+        const json = await res.json();
+        if (typeof json.followed === 'boolean') {
+          setFollowedState(json.followed);
+        }
+      } catch {
+        // best-effort; default state is fine if this fails
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [csrfFetch, cube.id, cube.likedByCurrentUser, user]);
   const [maskGradient, setMaskGradient] = useState('linear-gradient(to left, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%)');
   const [mobileMaskGradient, setMobileMaskGradient] = useState(
     'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)',
@@ -541,11 +562,11 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                     <button
                       onClick={handleFollowToggle}
                       className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors whitespace-nowrap"
-                      aria-label={followedState ? 'Unfollow cube' : 'Follow cube'}
+                      aria-label={followedState ? 'Unlike cube' : 'Like cube'}
                     >
                       {followedState ? <HeartFillIcon size={20} className="text-red-500" /> : <HeartIcon size={20} />}
                       <Text sm className="text-white">
-                        {followedState ? 'Followed' : 'Follow'}
+                        {followedState ? 'Liked' : 'Like'}
                       </Text>
                     </button>
                   )}
@@ -652,11 +673,11 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                     <button
                       onClick={handleFollowToggle}
                       className="flex items-center gap-1 text-white hover:text-gray-300 transition-colors whitespace-nowrap"
-                      aria-label={followedState ? 'Unfollow cube' : 'Follow cube'}
+                      aria-label={followedState ? 'Unlike cube' : 'Like cube'}
                     >
                       {followedState ? <HeartFillIcon size={20} className="text-red-500" /> : <HeartIcon size={20} />}
                       <Text xs className="text-white">
-                        {followedState ? 'Followed' : 'Follow'}
+                        {followedState ? 'Liked' : 'Like'}
                       </Text>
                     </button>
                   )}
@@ -849,13 +870,9 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                     <h1 className="text-white font-semibold text-3xl">{cube.name}</h1>
                     <Text md className="text-white/80 mt-1">
                       {getCubeCardCountSnippet(cube, unfilteredChangedCards)} Cube •{' '}
-                      <FollowersModalLink
-                        href="#"
-                        modalprops={{ id: cube.id, type: 'cube' }}
-                        className="text-white/80 hover:text-white hover:underline"
-                      >
-                        {cube.following?.length || 0} {cube.following?.length === 1 ? 'follower' : 'followers'}
-                      </FollowersModalLink>
+                      <a href={`/cube/followers/${cube.id}`} className="text-white/80 hover:text-white hover:underline">
+                        {cube.likeCount ?? 0} {cube.likeCount === 1 ? 'like' : 'likes'}
+                      </a>
                     </Text>
                   </div>
                   <Flexbox direction="row" gap="2" alignItems="center">
@@ -922,11 +939,11 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                 <button
                   onClick={handleFollowToggle}
                   className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors whitespace-nowrap"
-                  aria-label={followedState ? 'Unfollow cube' : 'Follow cube'}
+                  aria-label={followedState ? 'Unlike cube' : 'Like cube'}
                 >
                   {followedState ? <HeartFillIcon size={20} className="text-red-500" /> : <HeartIcon size={20} />}
                   <Text sm className="text-white">
-                    {followedState ? 'Followed' : 'Follow'}
+                    {followedState ? 'Liked' : 'Like'}
                   </Text>
                 </button>
               )}
@@ -1033,11 +1050,11 @@ const CubeHero: React.FC<CubeHeroProps> = ({ cube, minified = false, activeLink 
                 <button
                   onClick={handleFollowToggle}
                   className="flex items-center gap-1 text-white hover:text-gray-300 transition-colors whitespace-nowrap"
-                  aria-label={followedState ? 'Unfollow cube' : 'Follow cube'}
+                  aria-label={followedState ? 'Unlike cube' : 'Like cube'}
                 >
                   {followedState ? <HeartFillIcon size={20} className="text-red-500" /> : <HeartIcon size={20} />}
                   <Text xs className="text-white">
-                    {followedState ? 'Followed' : 'Follow'}
+                    {followedState ? 'Liked' : 'Like'}
                   </Text>
                 </button>
               )}

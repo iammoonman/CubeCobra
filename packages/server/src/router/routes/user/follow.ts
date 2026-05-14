@@ -21,24 +21,16 @@ export const handler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    if (!(other.following || []).some((id) => id === user.id)) {
-      if (!other.following) {
-        other.following = [];
-      }
-      other.following.push(user.id);
-    }
-    if (!(user.followedUsers || []).some((id) => id === other.id)) {
-      if (!user.followedUsers) {
-        user.followedUsers = [];
-      }
-      user.followedUsers.push(other.id);
-    }
+    const alreadyFollowing = await userDao.getFollow(user.id, other.id);
+    if (!alreadyFollowing) {
+      await userDao.writeFollow(user.id, other.id);
+      await userDao.incrementFollowerCount(other.id, 1);
+      await userDao.incrementFollowingCount(user.id, 1);
 
-    if (!other.disableFollowAlerts) {
-      await addNotification(other, user, `/user/view/${user.id}`, `${user.username} has followed you!`);
+      if (!other.disableFollowAlerts) {
+        await addNotification(other, user, `/user/view/${user.id}`, `${user.username} has followed you!`);
+      }
     }
-
-    await userDao.batchPut([other, user]);
 
     return redirect(req, res, `/user/view/${req.params.id}`);
   } catch (err) {

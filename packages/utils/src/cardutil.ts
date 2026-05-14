@@ -227,7 +227,6 @@ export const isCustomCard = (card: Card): boolean => cardId(card) === 'custom-ca
 
 export const isVoucher = (card: Card): boolean => cardId(card) === 'voucher';
 
-/** Returns true for either custom cards or vouchers — both support custom_name and override fields */
 export const isCustomOrVoucher = (card: Card): boolean => isCustomCard(card) || isVoucher(card);
 
 export const cardType = (card: Partial<Card>): string => {
@@ -616,6 +615,19 @@ export const cardManaProduced = (card: Card): ManaSymbol[] => card.details?.prod
 
 export const cardIsLand = (card: Card): boolean => {
   return cardType(card).includes('Land') || card.colorCategory === 'Lands';
+};
+
+const BASIC_LAND_TYPE_NAMES = ['plains', 'island', 'swamp', 'mountain', 'forest'];
+
+export const isManaFixingLand = (details: CardDetailsType): boolean => {
+  const type = details.type ?? '';
+  if (!type.includes('Land')) return false;
+  if (type.includes('Basic')) return false;
+  if ((details.produced_mana?.length ?? 0) >= 2) return true;
+  const text = (details.oracle_text ?? '').toLowerCase();
+  if (!text.includes('search') || !text.includes('library')) return false;
+  if (text.includes('basic')) return true;
+  return BASIC_LAND_TYPE_NAMES.some((name) => text.includes(name));
 };
 
 const arePromoTypesReasonable = (card: CardDetailsType): boolean => {

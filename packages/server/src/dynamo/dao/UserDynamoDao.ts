@@ -18,7 +18,16 @@
  * - GSI2: Query by email (case-insensitive)
  */
 
-import { BatchGetCommand, DynamoDBDocumentClient, QueryCommandInput } from '@aws-sdk/lib-dynamodb';
+import {
+  BatchGetCommand,
+  DeleteCommand,
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  QueryCommandInput,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { BaseObject } from '@utils/datatypes/BaseObject';
 import { DefaultPrintingPreference } from '@utils/datatypes/Card';
 import User, {
@@ -102,9 +111,9 @@ export class UserDynamoDao extends BaseDynamoDao<UserWithBaseFields, StoredUserW
       cubes: item.cubes?.map((cube) => (typeof cube === 'string' ? cube : cube.id)),
       about: item.about,
       hideTagColors: item.hideTagColors,
-      followedCubes: item.followedCubes,
-      followedUsers: item.followedUsers,
-      following: item.following,
+      followerCount: item.followerCount,
+      followingCount: item.followingCount,
+      likedCubesCount: item.likedCubesCount,
       imageName: item.imageName,
       roles: item.roles,
       theme: item.theme,
@@ -502,5 +511,223 @@ export class UserDynamoDao extends BaseDynamoDao<UserWithBaseFields, StoredUserW
     const userWithBase = user as UserWithBaseFields;
 
     await this.delete(userWithBase);
+  }
+
+  /**
+   * Atomically adjusts a denormalized counter on the user metadata row.
+   * Accepts ± deltas (e.g. -1 to decrement).
+   */
+  private async incrementCounter(
+    userId: string,
+    field: 'followerCount' | 'followingCount' | 'likedCubesCount',
+    delta: number,
+  ): Promise<number> {
+    const result = await this.dynamoClient.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: { PK: this.typedKey(userId), SK: this.itemType() },
+        UpdateExpression: 'ADD #item.#field :delta',
+        ExpressionAttributeNames: {
+          '#item': 'item',
+          '#field': field,
+        },
+        ExpressionAttributeValues: {
+          ':delta': delta,
+        },
+        ReturnValues: 'UPDATED_NEW',
+      }),
+    );
+    return result.Attributes?.item?.[field] ?? 0;
+  }
+
+  public async incrementLikedCubesCount(userId: string, delta: number): Promise<number> {
+    return this.incrementCounter(userId, 'likedCubesCount', delta);
+  }
+
+  public async incrementFollowerCount(userId: string, delta: number): Promise<number> {
+    return this.incrementCounter(userId, 'followerCount', delta);
+  }
+
+  public async incrementFollowingCount(userId: string, delta: number): Promise<number> {
+    return this.incrementCounter(userId, 'followingCount', delta);
+  }
+
+  // ---------- User Follow relationships ----------
+  // Follow A → B stored as a single row on B's hash partition:
+  //   PK = HASH#USER#{B.id}
+  //   SK = FOLLOWER#{A.id}
+  //   GSI1PK = FOLLOWING-BY#{A.id}   (for "who does A follow" via GSI)
+  //   GSI1SK = DATE#{timestamp}      (for sorting by recency)
+  // Counters on User.followerCount / User.followingCount kept in sync by callers.
+
+  private followSK(followerId: string): string {
+    return `FOLLOWER#${followerId}`;
+  }
+
+  private followingByGSI1PK(followerId: string): string {
+    return `FOLLOWING-BY#${followerId}`;
+  }
+
+  public async writeFollow(followerId: string, followedId: string, timestamp: number = Date.now()): Promise<void> {
+    await this.dynamoClient.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          PK: `HASH#${this.typedKey(followedId)}`,
+          SK: this.followSK(followerId),
+          GSI1PK: this.followingByGSI1PK(followerId),
+          GSI1SK: `DATE#${String(timestamp).padStart(15, '0')}`,
+          followerId,
+          followedId,
+          followedAt: timestamp,
+        },
+      }),
+    );
+  }
+
+  public async deleteFollow(followerId: string, followedId: string): Promise<void> {
+    await this.dynamoClient.send(
+      new DeleteCommand({
+        TableName: this.tableName,
+        Key: {
+          PK: `HASH#${this.typedKey(followedId)}`,
+          SK: this.followSK(followerId),
+        },
+      }),
+    );
+  }
+
+  public async getFollow(followerId: string, followedId: string): Promise<boolean> {
+    const result = await this.dynamoClient.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: {
+          PK: `HASH#${this.typedKey(followedId)}`,
+          SK: this.followSK(followerId),
+        },
+      }),
+    );
+    return !!result.Item;
+  }
+
+  /**
+   * Lists user IDs that follow the given user, paginated by most recent.
+   */
+  public async queryFollowersOf(
+    userId: string,
+    lastKey?: Record<string, any>,
+    limit: number = 36,
+  ): Promise<{ userIds: string[]; lastKey?: Record<string, any> }> {
+    const params: QueryCommandInput = {
+      TableName: this.tableName,
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :prefix)',
+      ExpressionAttributeValues: {
+        ':pk': `HASH#${this.typedKey(userId)}`,
+        ':prefix': 'FOLLOWER#',
+      },
+      ScanIndexForward: false,
+      ExclusiveStartKey: lastKey,
+      Limit: limit,
+    };
+    const result = await this.dynamoClient.send(new QueryCommand(params));
+    const userIds = (result.Items || []).map((item: any) => item.followerId).filter(Boolean);
+    return { userIds, lastKey: result.LastEvaluatedKey };
+  }
+
+  public async countFollowersOf(userId: string): Promise<number> {
+    let total = 0;
+    let lastKey: Record<string, any> | undefined;
+    do {
+      const result = await this.dynamoClient.send(
+        new QueryCommand({
+          TableName: this.tableName,
+          KeyConditionExpression: 'PK = :pk AND begins_with(SK, :prefix)',
+          ExpressionAttributeValues: {
+            ':pk': `HASH#${this.typedKey(userId)}`,
+            ':prefix': 'FOLLOWER#',
+          },
+          Select: 'COUNT',
+          ExclusiveStartKey: lastKey,
+        }),
+      );
+      total += result.Count || 0;
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+    return total;
+  }
+
+  /**
+   * Lists user IDs that the user follows, paginated by most recent.
+   */
+  public async queryFollowingOf(
+    userId: string,
+    lastKey?: Record<string, any>,
+    limit: number = 36,
+  ): Promise<{ userIds: string[]; lastKey?: Record<string, any> }> {
+    const params: QueryCommandInput = {
+      TableName: this.tableName,
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'GSI1PK = :pk',
+      ExpressionAttributeValues: {
+        ':pk': this.followingByGSI1PK(userId),
+      },
+      ScanIndexForward: false,
+      ExclusiveStartKey: lastKey,
+      Limit: limit,
+    };
+    const result = await this.dynamoClient.send(new QueryCommand(params));
+    const userIds = (result.Items || []).map((item: any) => item.followedId).filter(Boolean);
+    return { userIds, lastKey: result.LastEvaluatedKey };
+  }
+
+  public async countFollowingOf(userId: string): Promise<number> {
+    let total = 0;
+    let lastKey: Record<string, any> | undefined;
+    do {
+      const result = await this.dynamoClient.send(
+        new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :pk',
+          ExpressionAttributeValues: {
+            ':pk': this.followingByGSI1PK(userId),
+          },
+          Select: 'COUNT',
+          ExclusiveStartKey: lastKey,
+        }),
+      );
+      total += result.Count || 0;
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+    return total;
+  }
+
+  /**
+   * Enumerates all user IDs that follow the given user. Pages through internally —
+   * intended for bounded fanouts (blog notifications etc.).
+   */
+  public async getAllFollowers(userId: string): Promise<string[]> {
+    const ids: string[] = [];
+    let lastKey: Record<string, any> | undefined;
+    do {
+      const page = await this.queryFollowersOf(userId, lastKey, 200);
+      ids.push(...page.userIds);
+      lastKey = page.lastKey;
+    } while (lastKey);
+    return ids;
+  }
+
+  /**
+   * Enumerates all user IDs that the user follows.
+   */
+  public async getAllFollowing(userId: string): Promise<string[]> {
+    const ids: string[] = [];
+    let lastKey: Record<string, any> | undefined;
+    do {
+      const page = await this.queryFollowingOf(userId, lastKey, 200);
+      ids.push(...page.userIds);
+      lastKey = page.lastKey;
+    } while (lastKey);
+    return ids;
   }
 }

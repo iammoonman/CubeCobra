@@ -1,4 +1,5 @@
-import { cubeDao, userDao } from 'dynamo/daos';
+import { PatronStatuses } from '@utils/datatypes/Patron';
+import { cubeDao, packageDao, patronDao, userDao } from 'dynamo/daos';
 import { isCubeListed } from 'serverutils/cubefn';
 import { getCubesSortValues, handleRouteError, redirect, render } from 'serverutils/render';
 
@@ -23,14 +24,24 @@ export const handler = async (req: Request, res: Response) => {
     const result = await cubeDao.queryByOwner(user.id, sort, ascending, undefined, 36);
     const cubes = result.items.filter((cube: any) => isCubeListed(cube, req.user));
 
-    const following = req.user && user.following && user.following.some((id) => id === req.user?.id);
+    const following = !!req.user && (await userDao.getFollow(req.user.id, user.id));
+
+    const patron = await patronDao.getById(user.id);
+    const patronLevel = patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
+
+    const likedCubesCount = user.likedCubesCount ?? 0;
+    const likedPackagesCount = await packageDao.countByVoter(user.id);
 
     return render(req, res, 'UserCubePage', {
       owner: user,
       cubes,
       lastKey: result.lastKey,
-      followersCount: (user.following || []).length,
+      followersCount: user.followerCount ?? 0,
+      followingCount: user.followingCount ?? 0,
       following,
+      patronLevel,
+      likedCubesCount,
+      likedPackagesCount,
     });
   } catch (err) {
     return handleRouteError(req, res, err, '/404');

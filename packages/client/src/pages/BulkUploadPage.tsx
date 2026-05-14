@@ -15,6 +15,7 @@ import RenderToRoot from 'components/RenderToRoot';
 import ChangesContext from 'contexts/ChangesContext';
 import { CSRFContext } from 'contexts/CSRFContext';
 import CubeContext from 'contexts/CubeContext';
+import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 import useLocalStorage from 'hooks/useLocalStorage';
 import useMount from 'hooks/UseMount';
 import CubeLayout from 'layouts/CubeLayout';
@@ -33,6 +34,7 @@ interface BulkUploadPageRawProps {
 const BulkUploadPageRaw: React.FC<BulkUploadPageRawProps> = ({ missing, addedByBoard, changelog }) => {
   const { csrfFetch } = useContext(CSRFContext);
   const [addValue, setAddValue] = useState('');
+  const cardNamesUrl = useCardCatalogUrl('cardtree.json');
 
   const { alerts, setAlerts, cube, loading, addCard, commitChanges, clearChanges } = useContext(CubeContext);
   const { changes, setChanges } = useContext(ChangesContext);
@@ -82,14 +84,10 @@ const BulkUploadPageRaw: React.FC<BulkUploadPageRawProps> = ({ missing, addedByB
   });
 
   const submit = useCallback(async () => {
-    const success = await commitChanges(postTitle, postContent);
-    if (success) {
-      setPostTitle(DEFAULT_BLOG_TITLE);
-      setPostContent('');
-
-      // go to cube page
-      window.location.href = `/cube/list/${cube.id}`;
-    }
+    await commitChanges(postTitle, postContent);
+    setPostTitle(DEFAULT_BLOG_TITLE);
+    setPostContent('');
+    window.location.href = `/cube/list/${cube.id}`;
   }, [commitChanges, cube.id, postContent, postTitle, setPostContent, setPostTitle]);
 
   const handleAdd = useCallback(
@@ -180,7 +178,7 @@ const BulkUploadPageRaw: React.FC<BulkUploadPageRawProps> = ({ missing, addedByB
                   <Row>
                     <Col xs={8}>
                       <AutocompleteInput
-                        treeUrl="/cube/api/cardnames"
+                        treeUrl={cardNamesUrl ?? ''}
                         treePath="cardnames"
                         type="text"
                         innerRef={addInput}

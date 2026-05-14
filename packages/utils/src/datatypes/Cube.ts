@@ -308,7 +308,10 @@ interface Cube {
   showUnsorted?: boolean;
   collapseDuplicateCards?: boolean;
   formats: DraftFormat[];
-  following: string[];
+  /** Denormalized count of users following this cube. Source of truth lives in CUBE_LIKE hash rows. */
+  likeCount?: number;
+  /** Set per-request by server handlers so the client knows whether the current user likes this cube. Not persisted. */
+  likedByCurrentUser?: boolean;
   collaborators: string[]; // User IDs of users who can edit this cube (besides the owner)
   defaultStatus: CardStatus;
   defaultPrinting: string;
@@ -318,6 +321,7 @@ interface Cube {
   basics: string[]; // Deprecated - kept for backwards compatibility
   views?: ViewDefinition[]; // View configurations for displaying cube content
   customSorts?: CustomSort[]; // User-defined custom sort configurations
+  lastDraftSimulation?: number; // Legacy timestamp from server-persisted simulator runs
   disableDraft?: boolean; // Disable standard draft format
   disableSealed?: boolean; // Disable sealed format
   disableGrid?: boolean; // Disable grid draft format

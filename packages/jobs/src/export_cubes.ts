@@ -17,7 +17,7 @@ import { uploadFileToPublicBucket } from './utils/s3';
 
 const processCube = async (cube: CubeType, oracleToIndex: Record<string, number>) => {
   try {
-    const cards = await cubeDao.getCards(cube.id);
+    const [cards, following] = await Promise.all([cubeDao.getCards(cube.id), cubeDao.getAllLikers(cube.id)]);
 
     return {
       cards: cards.mainboard.map((card: Card) => oracleToIndex[cardOracleId(card)] || -1),
@@ -28,7 +28,7 @@ const processCube = async (cube: CubeType, oracleToIndex: Record<string, number>
       image_uri: cube.image.uri,
       image_artist: cube.image.artist,
       card_count: cards.mainboard.length,
-      following: cube.following,
+      following,
       date_last_updated: cube.dateLastUpdated,
     };
   } catch (err) {

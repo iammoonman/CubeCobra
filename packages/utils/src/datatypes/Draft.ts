@@ -75,4 +75,5 @@ export default interface Draft {
   date: Date | number;
   name: string;
   complete: boolean;
+  seatNames?: string[];
 }

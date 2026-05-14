@@ -30,6 +30,7 @@ import Suggestions from '../analytics/Suggestions';
 import Tokens from '../analytics/Tokens';
 import { Card } from '../components/base/Card';
 import { Flexbox } from '../components/base/Layout';
+import Spinner from '../components/base/Spinner';
 import Text from '../components/base/Text';
 import AnalysisNavbar from '../components/cube/AnalysisNavbar';
 import DynamicFlash from '../components/DynamicFlash';
@@ -48,7 +49,7 @@ interface CubeAnalysisPageProps {
 const CubeAnalysisPage: React.FC<CubeAnalysisPageProps> = ({ cubeAnalytics, tokenMap }) => {
   const analysisViewContext = React.useContext(AnalysisViewContext);
   const view = analysisViewContext?.view || 'averages';
-  const { cube } = useContext(CubeContext);
+  const { cube, cardsLoading } = useContext(CubeContext);
 
   const convertToCharacteristic = (name: string, func: (card: any) => any) => ({
     get: func,
@@ -194,7 +195,11 @@ const CubeAnalysisPage: React.FC<CubeAnalysisPageProps> = ({ cubeAnalytics, toke
       <DynamicFlash />
       {/* Smart Search has its own inline filter, so the global analysis filter bar is redundant there. */}
       {view !== 'recommender' && <AnalysisNavbar />}
-      {cube.cards.mainboard.length === 0 ? (
+      {cardsLoading ? (
+        <div className="flex justify-center py-12">
+          <Spinner lg />
+        </div>
+      ) : cube.cards.mainboard.length === 0 ? (
         <Text lg>This cube doesn't have any cards. Add cards to see analytics.</Text>
       ) : view === 'at-a-glance' ? (
         content

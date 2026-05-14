@@ -10,7 +10,11 @@ import NavMenu from 'components/base/NavMenu';
 import { CSRFContext } from 'contexts/CSRFContext';
 import UserContext from 'contexts/UserContext';
 
-const NotificationsNav: React.FC = () => {
+interface NotificationsNavProps {
+  transparent?: boolean;
+}
+
+const NotificationsNav: React.FC<NotificationsNavProps> = ({ transparent = false }) => {
   const { csrfFetch } = useContext(CSRFContext);
   const user = useContext(UserContext);
   const [items, setItems] = useState<Notification[]>(user?.notifications || []);
@@ -43,7 +47,7 @@ const NotificationsNav: React.FC = () => {
   );
 
   return (
-    <NavMenu label={label} wide navBar noChevron>
+    <NavMenu label={label} wide navBar noChevron transparent={transparent}>
       <Flexbox direction="col">
         <CardHeader>
           <Flexbox justify="between" direction="row" className="font-semibold">

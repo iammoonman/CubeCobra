@@ -13,7 +13,7 @@ interface UserPreviewProps {
 }
 
 const UserPreview: React.FC<UserPreviewProps> = ({ user }) => {
-  const followers = (user.following || []).length;
+  const followers = user.followerCount ?? 0;
 
   return (
     <Tile href={`/user/view/${user.id}`}>

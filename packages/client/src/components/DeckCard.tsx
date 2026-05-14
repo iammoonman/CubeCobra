@@ -20,7 +20,7 @@ interface DeckStacksStaticProps {
   cards: any[];
 }
 
-const DeckStacksStatic: React.FC<DeckStacksStaticProps> = ({ piles, cards }) => (
+export const DeckStacksStatic: React.FC<DeckStacksStaticProps> = ({ piles, cards }) => (
   <CardBody className="pt-0 border-bottom">
     {piles.map((row, index) => (
       <Row key={index} xs={2} md={4} lg={8}>
@@ -57,8 +57,11 @@ interface DeckCardProps {
 }
 
 const DeckCard: React.FC<DeckCardProps> = ({ seat, draft, view = 'draft', seatIndex, hideComments = false }) => {
-  const stackedDeck = seat.mainboard.slice();
-  const stackedSideboard = seat.sideboard.slice();
+  const hasSeat = !!seat;
+  const mainboard = useMemo(() => seat?.mainboard ?? [], [seat]);
+  const sideboard = seat?.sideboard ?? [];
+  const stackedDeck = mainboard.slice();
+  const stackedSideboard = sideboard.slice();
   let sbCount = 0;
   for (const row of stackedSideboard) {
     for (const col of row) {
@@ -93,7 +96,7 @@ const DeckCard: React.FC<DeckCardProps> = ({ seat, draft, view = 'draft', seatIn
 
   const sorted = useMemo(() => {
     const deep = sortDeep(
-      seat.mainboard.flat(3).map((cardIndex) => draft.cards[cardIndex]),
+      mainboard.flat(3).map((cardIndex) => draft.cards[cardIndex]),
       true,
       'Unsorted',
       'Color Category',
@@ -104,9 +107,19 @@ const DeckCard: React.FC<DeckCardProps> = ({ seat, draft, view = 'draft', seatIn
     return deep
       .map((tuple1) => tuple1[1].map((tuple2) => tuple2[1].map((tuple3) => tuple3[1].map((card) => card))))
       .flat(4);
-  }, [draft.cards, seat.mainboard]);
+  }, [draft.cards, mainboard]);
 
   const mbCount = sorted.length;
+
+  if (!hasSeat) {
+    return (
+      <Card>
+        <CardBody>
+          <Text>This deck has no data for the selected seat.</Text>
+        </CardBody>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -131,7 +144,7 @@ const DeckCard: React.FC<DeckCardProps> = ({ seat, draft, view = 'draft', seatIn
         <CardBody>
           {draft.type === 'd' ? (
             <>
-              {draft.seats[0].pickorder ? (
+              {draft.seats[0]?.pickorder ? (
                 <DecksPickBreakdown draft={draft} seatNumber={parseInt(seatIndex, 10)} />
               ) : (
                 <p>There is no draft log associated with this draft.</p>
@@ -163,13 +176,13 @@ const DeckCard: React.FC<DeckCardProps> = ({ seat, draft, view = 'draft', seatIn
             Mainboard ({mbCount})
           </Text>
           <CardGrid cards={sorted} xs={8} />
-          {seat.sideboard.flat(2).length > 0 && (
+          {sideboard.flat(2).length > 0 && (
             <>
               <hr className="my-4" />
               <Text semibold lg>
                 Sideboard ({sbCount})
               </Text>
-              <CardGrid cards={seat.sideboard.flat(2).map((cardIndex) => draft.cards[cardIndex])} xs={8} />
+              <CardGrid cards={sideboard.flat(2).map((cardIndex) => draft.cards[cardIndex])} xs={8} />
             </>
           )}
         </CardBody>

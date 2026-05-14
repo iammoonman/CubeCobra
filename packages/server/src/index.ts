@@ -154,6 +154,26 @@ app.use(
 // Serve static files from the React frontend app (legacy support)
 app.use(express.static(path.join(__dirname, 'client')));
 
+// Same-origin fallback for the catalog files that normally come from the
+// assets CDN (CDN_BASE_URL set → client builds hashed URLs via cards/manifest.json).
+// In dev — and as a safety net if the CDN is unreachable — the client targets
+// /cards/<name> here and we stream them straight off disk from the carddb
+// directory the server boots from.
+const CATALOG_ALLOW = new Set(['cardtree.json', 'full_names.json', 'imagedict.json', 'cardimages.json']);
+app.get('/cards/:filename', (req: express.Request, res: express.Response) => {
+  const filename = req.params.filename;
+  if (!filename || !CATALOG_ALLOW.has(filename)) {
+    res.status(404).send('Not found');
+    return;
+  }
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  res.sendFile(path.join(__dirname, '..', 'private', filename), (err) => {
+    if (err && !res.headersSent) {
+      res.status(404).send('Not found');
+    }
+  });
+});
+
 // Express session middleware
 app.use(
   session({

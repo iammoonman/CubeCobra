@@ -17,14 +17,15 @@ export const analysisHandler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    const cards = await cubeDao.getCards(cube.id);
+    const cards = await cubeDao.getCards(cube.id, undefined, { populate: false });
     const tokenMap: Record<string, any> = {};
 
     for (const [boardname, list] of Object.entries(cards)) {
       if (boardname !== 'id') {
         for (const card of list as any[]) {
-          if (card.details.tokens) {
-            for (const oracle of card.details.tokens) {
+          const details = cardFromId(card.cardID);
+          if (details?.tokens) {
+            for (const oracle of details.tokens) {
               const tokenDetails = cardFromId(oracle);
               tokenMap[oracle] = {
                 tags: [],

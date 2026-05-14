@@ -90,7 +90,7 @@ export const removeHandler = async (req: Request, res: Response) => {
       req.flash('danger', 'Cube not found');
       return redirect(req, res, '/cube/list/404');
     }
-    if (!cube || cube.owner.id !== req.user!.id) {
+    if (!cube || (cube.owner.id !== req.user!.id && !isAdmin(req.user!))) {
       req.flash('danger', 'Not Authorized');
       return redirect(req, res, `/cube/list/${encodeURIComponent(cubeId)}`);
     }
@@ -144,7 +144,7 @@ export const listHandler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    const cards = await cubeDao.getCards(cube.id, cube);
+    const cards = await cubeDao.getCards(cube.id, cube, { populate: false });
 
     const baseUrl = getBaseUrl();
     return render(
@@ -246,37 +246,26 @@ export const followHandler = async (req: Request, res: Response) => {
     });
   }
 
-  // Fetch user with sensitive data to preserve email field during update
-  const userToUpdate = await userDao.getByIdWithSensitiveData(user!.id);
+  const alreadyLiked = await cubeDao.getLike(cube.id, user!.id);
+  if (!alreadyLiked) {
+    await cubeDao.writeLike(cube.id, user!.id);
+    const newLikeCount = await cubeDao.incrementLikeCount(cube.id, 1);
+    await userDao.incrementLikedCubesCount(user!.id, 1);
 
-  if (!userToUpdate) {
-    return res.status(404).send({
-      success: 'false',
-    });
-  }
+    // Hash-row GSI sort keys embed cube.likeCount; refresh them so popularity ranking
+    // reflects the new count. cubeDao.update() recomputes hash rows on metadata change.
+    cube.likeCount = newLikeCount;
+    await cubeDao.update(cube, { skipTimestampUpdate: true });
 
-  cube.following = [...new Set([...(cube.following || []), user!.id])];
-
-  if (!userToUpdate.followedCubes) {
-    userToUpdate.followedCubes = [];
-  }
-
-  if (!userToUpdate.followedCubes.some((id: string) => id === cube.id)) {
-    userToUpdate.followedCubes.push(cube.id);
-  }
-
-  //TODO: Can remove after fixing models to not muck with the original input
-  const cubeOwner = cube.owner;
-  await userDao.update(userToUpdate as any);
-  await cubeDao.update(cube, { skipTimestampUpdate: true });
-
-  if (!cubeOwner.disableFollowAlerts && !cube.disableFollowAlerts) {
-    await addNotification(
-      cubeOwner,
-      user!,
-      `/cube/list/${cube.id}`,
-      `${user!.username} followed your cube: ${cube.name}`,
-    );
+    const cubeOwner = cube.owner;
+    if (!cubeOwner.disableFollowAlerts && !cube.disableFollowAlerts) {
+      await addNotification(
+        cubeOwner,
+        user!,
+        `/cube/list/${cube.id}`,
+        `${user!.username} followed your cube: ${cube.name}`,
+      );
+    }
   }
 
   return res.status(200).send({
@@ -294,24 +283,31 @@ export const unfollowHandler = async (req: Request, res: Response) => {
     });
   }
 
-  // Fetch user with sensitive data to preserve email field during update
-  const userToUpdate = await userDao.getByIdWithSensitiveData(req.user!.id);
+  const stillLiked = await cubeDao.getLike(cube.id, req.user!.id);
+  if (stillLiked) {
+    await cubeDao.deleteLike(cube.id, req.user!.id);
+    const newLikeCount = await cubeDao.incrementLikeCount(cube.id, -1);
+    await userDao.incrementLikedCubesCount(req.user!.id, -1);
 
-  if (!userToUpdate) {
-    return res.status(404).send({
-      success: 'false',
-    });
+    cube.likeCount = newLikeCount;
+    await cubeDao.update(cube, { skipTimestampUpdate: true });
   }
-
-  cube.following = cube.following?.filter((id: string) => req.user!.id !== id) || [];
-  userToUpdate.followedCubes = userToUpdate.followedCubes?.filter((id: string) => cube.id !== id) || [];
-
-  await userDao.update(userToUpdate as any);
-  await cubeDao.update(cube, { skipTimestampUpdate: true });
 
   return res.status(200).send({
     success: 'true',
   });
+};
+
+export const isFollowedHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.user || !req.params.id) {
+      return res.status(200).send({ followed: false });
+    }
+    const followed = await cubeDao.getLike(req.params.id, req.user.id);
+    return res.status(200).send({ followed });
+  } catch (_err) {
+    return res.status(200).send({ followed: false });
+  }
 };
 
 export const featureHandler = async (req: Request, res: Response) => {
@@ -560,6 +556,11 @@ export const routes = [
     path: '/unfollow/:id',
     method: 'post',
     handler: [csrfProtection, ensureAuth, unfollowHandler],
+  },
+  {
+    path: '/isfollowed/:id',
+    method: 'get',
+    handler: [csrfProtection, isFollowedHandler],
   },
   {
     path: '/feature/:id',

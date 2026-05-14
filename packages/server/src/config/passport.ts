@@ -51,7 +51,16 @@ export default (passport: PassportStatic): void => {
   });
 
   passport.deserializeUser(async (id: string, done) => {
-    const user = await userDao.getById(id);
-    done(null, user);
+    try {
+      const user = await userDao.getById(id);
+      // Passing `undefined` here causes passport to throw "Failed to deserialize user
+      // out of session". Returning `false` instead tells passport the session is
+      // invalid so it clears it and continues as anonymous — what we want when the
+      // session references a user that no longer exists (deleted account, table
+      // reset, stale cookie, etc.).
+      done(null, user ?? false);
+    } catch (_err) {
+      done(null, false);
+    }
   });
 };

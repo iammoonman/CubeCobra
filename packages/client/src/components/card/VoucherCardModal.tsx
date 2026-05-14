@@ -15,7 +15,6 @@ import {
   isCardCmcValid,
   normalizeName,
 } from '@utils/cardutil';
-import { cdnUrl } from '@utils/cdnUrl';
 import Card, { BoardType, CARD_STATUSES, FINISHES, VoucherCard } from '@utils/datatypes/Card';
 import { getBoardDefinitions, TagColor } from '@utils/datatypes/Cube';
 import TagData from '@utils/datatypes/TagData';
@@ -27,6 +26,7 @@ import ImageFallback from 'components/ImageFallback';
 import { CSRFContext } from '../../contexts/CSRFContext';
 import CubeContext from '../../contexts/CubeContext';
 import DisplayContext from '../../contexts/DisplayContext';
+import useCardCatalogUrl from '../../hooks/useCardCatalogUrl';
 import { getCard } from '../../utils/cards/getCard';
 import AutocompleteInput from '../base/AutocompleteInput';
 import Badge from '../base/Badge';
@@ -82,6 +82,7 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
   const [targetBoard, setTargetBoard] = useState<string>('');
   const [searchValue, setSearchValue] = useState('');
   const [selection, setSelection] = useState<Selection>('voucher');
+  const cardNamesUrl = useCardCatalogUrl('cardtree.json');
   const [subCardVersions, setSubCardVersions] = useState<Record<string, any>>({});
   const [subCardVersionsLoading, setSubCardVersionsLoading] = useState(false);
   const fetchedSubCardsRef = useRef<Set<string>>(new Set());
@@ -263,9 +264,9 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
       return imageUsed;
     }
     if (selectedSubCard) {
-      return selectedSubCard.imgUrl || selectedSubCard.details?.image_normal || cdnUrl('/content/default_card.png');
+      return selectedSubCard.imgUrl || selectedSubCard.details?.image_normal || '/content/default_card.png';
     }
-    return cdnUrl('/content/default_card.png');
+    return '/content/default_card.png';
   }, [selection, imageUsed, selectedSubCard]);
 
   return (
@@ -304,7 +305,7 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
                 <Flexbox direction="row" gap="2" alignItems="center">
                   <div className="flex-1">
                     <AutocompleteInput
-                      treeUrl="/cube/api/cardnames"
+                      treeUrl={cardNamesUrl ?? ''}
                       treePath="cardnames"
                       value={searchValue}
                       setValue={setSearchValue}
@@ -382,7 +383,7 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
               <div className="mt-2">
                 <ImageFallback
                   src={getSelectedImage()}
-                  fallbackSrc={cdnUrl('/content/default_card.png')}
+                  fallbackSrc="/content/default_card.png"
                   alt={selection === 'voucher' ? cardName(card) : selectedSubCard?.details?.name || 'Card'}
                   className="w-full rounded"
                 />

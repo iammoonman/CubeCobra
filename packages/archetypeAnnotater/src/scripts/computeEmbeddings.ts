@@ -12,11 +12,14 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { loadBasicLandIndices } from './loadBasicLandIndices.js';
+
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(currentDir, '..', '..', 'data', 'exports');
 const OUTPUT_DIR = path.join(currentDir, '..', '..', 'data', 'embeddings');
 const MODEL_DIR = path.join(currentDir, '..', '..', '..', '..', 'packages', 'recommenderService', 'model');
 const BATCH_SIZE = 500;
+const MIN_DECK_SIZE = 20;
 
 interface DeckExport {
   id: string;
@@ -43,6 +46,9 @@ async function main() {
   const exportIndexToOracle: Record<string, string> = JSON.parse(
     fs.readFileSync(path.join(DATA_DIR, 'indexToOracleMap.json'), 'utf8'),
   );
+
+  const basicLandIndices = loadBasicLandIndices(exportIndexToOracle);
+  console.log(`Identified ${basicLandIndices.size} basic-land export indices to filter out.`);
 
   // Load encoder model
   console.log('Loading encoder model...');
@@ -85,6 +91,7 @@ async function main() {
   // Process in batches
   let processed = 0;
   let skipped = 0;
+  let skippedTooSmall = 0;
 
   // Open output file for streaming NDJSON (one JSON object per line)
   const outPath = path.join(OUTPUT_DIR, 'embeddings.ndjson');
@@ -94,10 +101,19 @@ async function main() {
   for (let i = 0; i < allDecks.length; i += BATCH_SIZE) {
     const batch = allDecks.slice(i, i + BATCH_SIZE);
 
-    // Convert each deck's mainboard export indices -> oracle IDs -> model indices
+    // Convert each deck's mainboard export indices -> oracle IDs -> model indices.
+    // Basic lands are stripped so mana base doesn't dominate the embedding, and
+    // decks with too few non-basic cards are dropped before encoding.
     const batchInputs: { deckId: string; modelIndices: number[] }[] = [];
     for (const deck of batch) {
-      const modelIndices = deck.mainboard
+      const nonBasicCards = deck.mainboard.filter((idx) => !basicLandIndices.has(idx));
+
+      if (nonBasicCards.length < MIN_DECK_SIZE) {
+        skippedTooSmall += 1;
+        continue;
+      }
+
+      const modelIndices = nonBasicCards
         .map((idx) => exportIndexToOracle[String(idx)])
         .filter((id): id is string => id !== undefined)
         .map((oracleId) => oracleToIndex[oracleId])
@@ -131,7 +147,10 @@ async function main() {
 
     processed += batch.length;
     if (processed % 5000 === 0 || processed === allDecks.length) {
-      console.log(`Progress: ${processed}/${allDecks.length} (${totalWritten} encoded, ${skipped} skipped)`);
+      console.log(
+        `Progress: ${processed}/${allDecks.length} ` +
+          `(${totalWritten} encoded, ${skipped} skipped empty, ${skippedTooSmall} skipped <${MIN_DECK_SIZE} cards)`,
+      );
     }
   }
 

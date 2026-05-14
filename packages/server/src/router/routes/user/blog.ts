@@ -1,4 +1,5 @@
-import { blogDao, userDao } from 'dynamo/daos';
+import { PatronStatuses } from '@utils/datatypes/Patron';
+import { blogDao, packageDao, patronDao, userDao } from 'dynamo/daos';
 import { handleRouteError, redirect, render } from 'serverutils/render';
 
 import { Request, Response } from '../../../types/express';
@@ -34,6 +35,12 @@ export const handler = async (req: Request, res: Response) => {
       return true;
     });
 
+    const patron = await patronDao.getById(user.id);
+    const patronLevel = patron && patron.status === PatronStatuses.ACTIVE ? patron.level : undefined;
+
+    const likedCubesCount = user.likedCubesCount ?? 0;
+    const likedPackagesCount = await packageDao.countByVoter(user.id);
+
     return render(
       req,
       res,
@@ -42,8 +49,12 @@ export const handler = async (req: Request, res: Response) => {
         owner: user,
         posts: filteredPosts,
         lastKey: posts.lastKey,
-        followersCount: (user.following || []).length,
-        following: req.user && (req.user.followedUsers || []).some((id) => id === user.id),
+        followersCount: user.followerCount ?? 0,
+        followingCount: user.followingCount ?? 0,
+        following: !!req.user && (await userDao.getFollow(req.user.id, user.id)),
+        patronLevel,
+        likedCubesCount,
+        likedPackagesCount,
       },
       {
         title: user.username,

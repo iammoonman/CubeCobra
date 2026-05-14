@@ -404,5 +404,12 @@ function createJobsEnvironmentVariables(
     envVars.DYNAMO_TABLE = dynamoTableName;
   }
 
+  // Only beta and production have a CloudFront-fronted assets bucket. The bucket
+  // name is deterministic (see AssetsDistribution), so we hard-code it here rather
+  // than importing across regions (assets stack lives in us-east-1).
+  if (stage === 'BETA' || stage === 'PROD') {
+    envVars.CUBECOBRA_ASSETS_BUCKET = `cubecobra-assets-${params.environmentName}`;
+  }
+
   return envVars;
 }

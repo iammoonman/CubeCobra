@@ -11,6 +11,7 @@ import {
   TrophyIcon,
 } from '@primer/octicons-react';
 import Cube, { getViewDefinitions, viewNameToKey } from '@utils/datatypes/Cube';
+import { UserRoles } from '@utils/datatypes/User';
 import { getCubeId } from '@utils/Util';
 import classNames from 'classnames';
 
@@ -78,7 +79,8 @@ const getNavigationItems = (cube: Cube, isCubeOwner: boolean, canEdit: boolean):
       subItems: [
         { label: 'Practice Draft', key: 'practice-draft' },
         { label: 'Sample Pack', key: 'sample-pack' },
-        { label: 'Decks', key: 'decks' },
+        { label: 'Drafts', key: 'decks' },
+        { label: 'Draft Simulator', key: 'draft-simulator', href: '/cube/draftsimulator' },
       ],
     },
     {
@@ -142,7 +144,8 @@ const CubeSidebar: React.FC<CubeSidebarProps> = ({ cube: _cubeProp, activeLink, 
   // Use cube from context to pick up live updates (e.g., when views are modified)
   const { cube, canEdit } = React.useContext(CubeContext);
   const user = React.useContext(UserContext);
-  const isCubeOwner = !!user && cube.owner?.id === user.id;
+  const isAdmin = !!user && Array.isArray(user.roles) && user.roles.includes(UserRoles.ADMIN);
+  const isCubeOwner = (!!user && cube.owner?.id === user.id) || isAdmin;
   const navigationItems = React.useMemo(
     () => getNavigationItems(cube, isCubeOwner, canEdit),
     [cube, isCubeOwner, canEdit],
@@ -723,7 +726,7 @@ const CubeSidebar: React.FC<CubeSidebarProps> = ({ cube: _cubeProp, activeLink, 
                             aboutViewContext.setView(subItem.key);
                           }
                         };
-                      } else if (item.key === 'playtest') {
+                      } else if (item.key === 'playtest' && !subItem.href) {
                         subHref = `${item.href}/${encodeURIComponent(getCubeId(cube))}?view=${subItem.key}`;
 
                         handleClick = (e: React.MouseEvent) => {

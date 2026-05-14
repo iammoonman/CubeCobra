@@ -11,6 +11,7 @@ import Spinner from 'components/base/Spinner';
 import Text from 'components/base/Text';
 import TextArea from 'components/base/TextArea';
 import ArticlePreview from 'components/content/ArticlePreview';
+import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 interface EditArticleProps {
   article: ArticleType;
   title: string;
@@ -40,6 +41,7 @@ const EditArticle: React.FC<EditArticleProps> = ({
   setBody,
   loading,
 }) => {
+  const fullNamesUrl = useCardCatalogUrl('full_names.json');
   return (
     <Flexbox direction="col" gap="2" className="m-2">
       <Row>
@@ -83,7 +85,7 @@ const EditArticle: React.FC<EditArticleProps> = ({
                 Thumbnail:
               </Text>
               <AutocompleteInput
-                treeUrl="/cube/api/fullnames"
+                treeUrl={fullNamesUrl ?? ''}
                 treePath="cardnames"
                 type="text"
                 className="me-2"

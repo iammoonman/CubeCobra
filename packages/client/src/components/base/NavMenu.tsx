@@ -13,6 +13,8 @@ interface NavMenuProps {
   noChevron?: boolean; // New prop to hide the dropdown chevron
   noActiveStyle?: boolean; // New prop to prevent active styling
   noGap?: boolean; // New prop to remove gap between button and dropdown
+  noPadding?: boolean; // New prop to remove the trigger padding (p-2)
+  transparent?: boolean; // Match the transparent navbar styling on the dropdown
   icon?: React.ReactNode; // Icon to display at smaller breakpoints
 }
 
@@ -25,6 +27,8 @@ const NavMenu: React.FC<NavMenuProps> = ({
   noChevron = false,
   noActiveStyle = false,
   noGap = false,
+  noPadding = false,
+  transparent = false,
   icon,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -61,13 +65,13 @@ const NavMenu: React.FC<NavMenuProps> = ({
       <div className={classNames('inline-block cursor-pointer')} onClick={() => setIsOpen(!isOpen)}>
         <div
           className={classNames('flex items-center gap-1', {
-            'rounded-md select-none p-2 font-semibold transition-colors duration-200 ease-in-out':
-              !noActiveStyle || navBar,
+            'rounded-md select-none font-semibold transition-colors duration-200 ease-in-out': !noActiveStyle || navBar,
+            'p-2': (!noActiveStyle || navBar) && !noPadding,
             'rounded-br-none': !alignLeft && !noActiveStyle,
             'rounded-bl-none': alignLeft && !noActiveStyle,
-            'text-text-secondary hover:text-text-secondary-active': !isOpen && navBar && !noActiveStyle,
+            'text-text-secondary': !isOpen && navBar && !noActiveStyle,
             'text-text bg-bg': isOpen && navBar && !noActiveStyle,
-            'text-link hover:text-link-active': !isOpen && !navBar && !noActiveStyle,
+            'text-link': !isOpen && !navBar && !noActiveStyle,
             'bg-link text-bg': isOpen && !navBar && !noActiveStyle,
           })}
         >
@@ -85,17 +89,17 @@ const NavMenu: React.FC<NavMenuProps> = ({
         </div>
       </div>
       <div
-        className={classNames(
-          'absolute bg-bg shadow-lg rounded-md z-10 border border-border transition-all duration-300',
-          {
-            'mt-2': !noGap,
-            'mt-0': noGap,
-            'opacity-100 max-h-screen': isOpen,
-            'opacity-0 pointer-events-none max-h-0': !isOpen,
-            'w-64': !wide,
-            'w-96': wide,
-          },
-        )}
+        className={classNames('absolute shadow-lg rounded-md z-10 border border-border transition-all duration-300', {
+          'bg-bg': !transparent,
+          'bg-bg-secondary/80 backdrop-blur-sm text-button-text': transparent,
+          'mt-2': !noGap && !noPadding,
+          'mt-3.5': !noGap && noPadding,
+          'mt-0': noGap,
+          'opacity-100 max-h-screen': isOpen,
+          'opacity-0 pointer-events-none max-h-0': !isOpen,
+          'w-64': !wide,
+          'w-96': wide,
+        })}
         style={{ right: 0 }}
       >
         {children}

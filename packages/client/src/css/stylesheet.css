@@ -3,10 +3,13 @@
 @tailwind utilities;
 
 @layer base {
-  /* Prevent text overflow from causing horizontal scroll on mobile */
+  /* Prevent text overflow from causing horizontal scroll on mobile.
+     Use `clip` rather than `hidden` so the body doesn't become a scroll container —
+     `overflow-x: hidden` forces the computed `overflow-y` to `auto`, which breaks
+     `position: sticky` on descendants and traps fixed-positioned rail ads. */
   html,
   body {
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   * {
@@ -224,6 +227,107 @@
 }
 .nav-transparent .hover\:text-text-secondary-active:hover {
   color: rgb(255 255 255);
+}
+/* Dropdown content inside a transparent navbar sits on a dark translucent panel,
+   so override theme-default text colors that would otherwise be unreadable. */
+.nav-transparent .text-text,
+.nav-transparent .text-link {
+  color: rgb(255 255 255);
+}
+.nav-transparent .hover\:text-text:hover,
+.nav-transparent .hover\:text-link-active:hover {
+  color: rgb(255 255 255 / 0.8);
+}
+/* …but when an element pairs `text-text` with `bg-bg` (e.g. the open-state of a
+   NavMenu trigger), `bg-bg` flips to light in light mode, and the override above
+   would produce white-on-white. Re-assert the theme `--text` color in that case
+   so light mode reads as dark text on light bg. */
+.nav-transparent .text-text.bg-bg {
+  color: rgb(var(--text));
+}
+
+/* Animated gradient + hover treatment for patron/tier badges. Each tier gets a
+   distinct multi-stop gradient that slowly drifts; hovering lifts and brightens. */
+@keyframes patron-shimmer {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.patron-badge {
+  background-size: 200% 200%;
+  animation: patron-shimmer 6s ease-in-out infinite;
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    filter 200ms ease;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.15);
+}
+.patron-badge:hover {
+  transform: translateY(-1px) scale(1.04);
+  filter: brightness(1.08) saturate(1.1);
+}
+
+/* Patreon's brand coral-red for the generic Patron badge. */
+.patron-badge-patron {
+  background-image: linear-gradient(120deg, #f96854 0%, #ff8a7a 50%, #f96854 100%);
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.25);
+}
+.patron-badge-patron:hover {
+  box-shadow: 0 4px 10px -2px rgb(249 104 84 / 0.55);
+}
+
+/* Cobra Hatchling — fresh green snake. */
+.patron-badge-hatchling {
+  background-image: linear-gradient(120deg, #10b981 0%, #34d399 35%, #6ee7b7 70%, #10b981 100%);
+  color: #022c22;
+  border-color: rgb(255 255 255 / 0.3);
+}
+.patron-badge-hatchling:hover {
+  box-shadow: 0 4px 10px -2px rgb(16 185 129 / 0.55);
+}
+
+/* Coiling Oracle — mystical cyan/violet. */
+.patron-badge-oracle {
+  background-image: linear-gradient(120deg, #06b6d4 0%, #6366f1 50%, #a855f7 100%);
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.3);
+}
+.patron-badge-oracle:hover {
+  box-shadow: 0 4px 10px -2px rgb(99 102 241 / 0.55);
+}
+
+/* Lotus Cobra — fancy gold/rose top-tier treatment, faster shimmer. */
+.patron-badge-lotus {
+  background-image: linear-gradient(120deg, #f59e0b 0%, #fbbf24 25%, #fde68a 45%, #fb7185 70%, #f59e0b 100%);
+  color: #422006;
+  border-color: rgb(255 255 255 / 0.45);
+  animation-duration: 4s;
+}
+.patron-badge-lotus:hover {
+  box-shadow:
+    0 6px 14px -2px rgb(251 113 133 / 0.5),
+    0 0 0 1px rgb(251 191 36 / 0.5);
+}
+
+/* Splash-image bottom gradient that fades into the page background.
+   Only shown when the dark theme is active — the light page background is
+   the same color as the splash overlay, so the taper would just blur the edge. */
+.splash-taper {
+  display: none;
+}
+:root[class~='dark'] .splash-taper {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :root[class~='system'] .splash-taper {
+    display: block;
+  }
 }
 
 .dropdown-toggle::after {

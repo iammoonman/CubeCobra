@@ -152,9 +152,11 @@ export const createBlogHandler = async (req: Request, res: Response) => {
     const shouldPublishToFeed = cube.visibility === CUBE_VISIBILITY.PUBLIC;
 
     if (shouldPublishToFeed) {
-      const followers: string[] = [
-        ...new Set([...(user.following || []), ...cube.following, ...mentionedUsers.map((u) => u.id)]),
-      ];
+      const [cubeLikers, userFollowers] = await Promise.all([
+        cubeDao.getAllLikers(cube.id),
+        userDao.getAllFollowers(user.id),
+      ]);
+      const followers: string[] = [...new Set([...userFollowers, ...cubeLikers, ...mentionedUsers.map((u) => u.id)])];
 
       const feedItems = followers.map((userId) => ({
         id,

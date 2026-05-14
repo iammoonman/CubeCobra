@@ -7,10 +7,12 @@ import BlogView from 'components/about/BlogView';
 import ChangelogView from 'components/about/ChangelogView';
 import PrimerView from 'components/about/PrimerView';
 import { Flexbox } from 'components/base/Layout';
+import Spinner from 'components/base/Spinner';
 import AboutNavbar from 'components/cube/AboutNavbar';
 import DynamicFlash from 'components/DynamicFlash';
 import RenderToRoot from 'components/RenderToRoot';
 import AboutViewContext, { AboutViewContextProvider } from 'contexts/AboutViewContext';
+import CubeContext from 'contexts/CubeContext';
 import { DisplayContextProvider } from 'contexts/DisplayContext';
 import CubeLayout from 'layouts/CubeLayout';
 import MainLayout from 'layouts/MainLayout';
@@ -57,14 +59,26 @@ const CubeAboutPageContent: React.FC<CubeAboutPageProps> = ({
     <MainLayout useContainer={false}>
       <DisplayContextProvider cubeID={cube.id}>
         <CubeLayout cards={cards} cube={cube} activeLink={view}>
-          <Flexbox direction="col" gap="2" className="my-2">
-            <DynamicFlash />
-            <AboutNavbar />
-            {content}
-          </Flexbox>
+          <CubeAboutPageBody content={content} />
         </CubeLayout>
       </DisplayContextProvider>
     </MainLayout>
+  );
+};
+
+const CubeAboutPageBody: React.FC<{ content: React.ReactNode }> = ({ content }) => {
+  const { cardsLoading } = useContext(CubeContext);
+  return (
+    <Flexbox direction="col" gap="2" className="my-2">
+      <DynamicFlash />
+      <AboutNavbar />
+      {cardsLoading && (
+        <Flexbox direction="row" gap="2" alignItems="center" justify="center" className="py-2">
+          <Spinner sm />
+        </Flexbox>
+      )}
+      {content}
+    </Flexbox>
   );
 };
 

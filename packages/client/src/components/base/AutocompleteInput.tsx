@@ -184,12 +184,16 @@ const fetchTree = async (treeUrl: string, treePath: string): Promise<TreeNode | 
     return null;
   }
   const json = await response.json();
-  if (json.success !== 'true') {
-    console.error('Error getting autocomplete tree.');
-    return null;
+  // CDN-served catalog files are raw trees. The per-cube /cube/api/cubecardnames
+  // endpoint still wraps with { success: 'true', cardnames: ... }.
+  if (json && typeof json === 'object' && Object.prototype.hasOwnProperty.call(json, 'success')) {
+    if (json.success !== 'true') {
+      console.error('Error getting autocomplete tree.');
+      return null;
+    }
+    return json[treePath];
   }
-
-  return json[treePath];
+  return json;
 };
 
 export interface AutocompleteInputProps extends InputProps {
@@ -222,8 +226,9 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   const { hideCard } = useContext(AutocardContext);
 
   // Lazy load the tree only when the user starts typing (value is non-empty)
+  // and the treeUrl has resolved — the CDN-backed hook resolves it async.
   useEffect(() => {
-    if (!value) return; // Don't fetch until user types something
+    if (!value || !treeUrl) return;
     let cancelled = false;
     const wrapper = async () => {
       try {

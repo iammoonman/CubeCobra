@@ -4,6 +4,7 @@ import { cubeDao } from 'dynamo/daos';
 import { csrfProtection, ensureAuth } from 'router/middleware';
 import { isCubeViewable } from 'serverutils/cubefn';
 import { redirect } from 'serverutils/render';
+import { isAdmin } from 'serverutils/util';
 
 import { Request, Response } from '../../../types/express';
 
@@ -54,7 +55,7 @@ export const updateSettingsHandler = async (req: Request, res: Response) => {
       return redirect(req, res, '/404');
     }
 
-    if (!cube || cube.owner.id !== req.user!.id) {
+    if (!cube || (cube.owner.id !== req.user!.id && !isAdmin(req.user!))) {
       req.flash('danger', 'Unauthorized');
       return redirect(req, res, `/cube/settings/${req.params.id}?view=options`);
     }

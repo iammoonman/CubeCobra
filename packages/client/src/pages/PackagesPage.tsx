@@ -1,31 +1,34 @@
-import React, { useCallback, useContext, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 
 import { QuestionIcon } from '@primer/octicons-react';
+import { cdnUrl } from '@utils/cdnUrl';
 import CardPackageData from '@utils/datatypes/CardPackage';
 
 import Banner from 'components/Banner';
-import Alert from 'components/base/Alert';
-import Button from 'components/base/Button';
-import Controls from 'components/base/Controls';
+import Container from 'components/base/Container';
 import Input from 'components/base/Input';
-import { Col, Flexbox, Row } from 'components/base/Layout';
+import { Flexbox } from 'components/base/Layout';
 import Pagination from 'components/base/Pagination';
+import ResponsiveDiv from 'components/base/ResponsiveDiv';
 import Select from 'components/base/Select';
+import Spinner from 'components/base/Spinner';
 import Text from 'components/base/Text';
 import CardPackage from 'components/card/CardPackage';
 import DynamicFlash from 'components/DynamicFlash';
-import CreatePackageModal from 'components/modals/CreatePackageModal';
+import LoadingButton from 'components/LoadingButton';
 import PackageSearchSyntaxModal from 'components/modals/PackageSearchSyntaxModal';
 import RenderToRoot from 'components/RenderToRoot';
-import withModal from 'components/WithModal';
+import SideBanner from 'components/SideBanner';
 import { CSRFContext } from 'contexts/CSRFContext';
-import UserContext from 'contexts/UserContext';
 import useQueryParam from 'hooks/useQueryParam';
 import MainLayout from 'layouts/MainLayout';
 
-const CreatePackageModalLink = withModal(Button, CreatePackageModal);
-
 const PAGE_SIZE = 36;
+
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'votes', label: 'Sorted by Popularity' },
+  { value: 'date', label: 'Sorted by Date' },
+];
 
 interface PackagesPageProps {
   items: CardPackageData[];
@@ -34,14 +37,22 @@ interface PackagesPageProps {
 }
 
 const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery }) => {
-  const user = useContext(UserContext);
   const { csrfFetch } = useContext(CSRFContext);
 
   const [query, setQuery] = useQueryParam('q', '');
   const [sort, setSort] = useQueryParam('s', 'votes');
   const [ascending, setAscending] = useQueryParam('a', 'false');
 
-  const [alerts, setAlerts] = useState<{ color: string; message: string }[]>([]);
+  const [queryText, setQueryText] = useState(query || '');
+  const [sortText, setSortText] = useState(sort || 'votes');
+  const [ascendingText, setAscendingText] = useState(ascending || 'false');
+
+  useEffect(() => {
+    setQueryText(query || '');
+    setSortText(sort || 'votes');
+    setAscendingText(ascending || 'false');
+  }, [query, sort, ascending]);
+
   const [packages, setPackages] = useState<CardPackageData[]>(items);
   const [currentLastKey, setLastKey] = useState(lastKey);
   const [loading, setLoading] = useState(false);
@@ -52,29 +63,14 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
   const pageCount = Math.ceil(packages.length / PAGE_SIZE);
   const hasMore = !!currentLastKey;
 
-  const addAlert = (color: string, message: string) => {
-    setAlerts([...alerts, { color, message }]);
-  };
-
   const getData = useCallback(
     async (q: string | null, s: string | null, a: string | null, key: any) => {
       const response = await csrfFetch('/packages/getmore', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: q,
-          sort: s,
-          ascending: a,
-          lastKey: key,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q, sort: s, ascending: a, lastKey: key }),
       });
-
-      if (response.ok) {
-        return response.json();
-      }
-
+      if (response.ok) return response.json();
       return {};
     },
     [csrfFetch],
@@ -87,9 +83,7 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
     const newPackages = [...packages, ...result.packages];
     setPackages(newPackages);
     setLastKey(result.lastKey);
-    if (result.parsedQuery) {
-      setParsedQuery(result.parsedQuery);
-    }
+    if (result.parsedQuery) setParsedQuery(result.parsedQuery);
 
     const numItemsShowOnLastPage = packages.length % PAGE_SIZE;
     const newItemsShowOnLastPage = newPackages.length % PAGE_SIZE;
@@ -97,12 +91,14 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
     if (numItemsShowOnLastPage === 0 && newItemsShowOnLastPage > 0) {
       setPage(page + 1);
     }
-
     setLoading(false);
   }, [getData, query, sort, ascending, currentLastKey, packages, page]);
 
   const getNewData = useCallback(
-    async (q: string | null, s: string | null, a: string | null) => {
+    async (q: string, s: string, a: string) => {
+      setQuery(q);
+      setSort(s);
+      setAscending(a);
       setLoading(true);
       setPackages([]);
       setPage(0);
@@ -110,15 +106,13 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
 
       setPackages(result.packages);
       setLastKey(result.lastKey);
-      if (result.parsedQuery) {
-        setParsedQuery(result.parsedQuery);
-      }
+      if (result.parsedQuery) setParsedQuery(result.parsedQuery);
       setLoading(false);
     },
-    [getData],
+    [getData, setQuery, setSort, setAscending],
   );
 
-  const pager = (
+  const renderPager = (inverted: boolean) => (
     <Pagination
       count={pageCount}
       active={page}
@@ -131,138 +125,145 @@ const PackagesPage: React.FC<PackagesPageProps> = ({ items, lastKey, parsedQuery
         }
       }}
       loading={loading}
+      inverted={inverted}
     />
   );
 
   return (
-    <MainLayout>
-      <Flexbox direction="col" gap="4" className="pb-4">
-        <Controls className="p-2">
-          <DynamicFlash />
-          {alerts.map(({ color, message }, index) => (
-            <Alert color={color} key={index}>
-              {message}
-            </Alert>
-          ))}
-          <Flexbox direction="col" gap="2">
-            <Flexbox direction="row" gap="2" alignItems="center">
-              <Text xl semibold className="whitespace-nowrap">
-                Browse Card Packages
-              </Text>
-              <button
-                onClick={() => setShowSyntaxModal(true)}
-                className="text-green-600 hover:text-green-700 cursor-pointer"
-                aria-label="Search syntax help"
-              >
-                <QuestionIcon size={20} className="hidden md:inline" />
-              </button>
-              <Input
-                type="text"
-                placeholder='Search for keywords or packages: e.g. "reanimator" or "card:Griselbrand"'
-                value={query || ''}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    getNewData(query, sort, ascending);
-                  }
-                }}
-                className="flex-grow min-w-0"
-              />
-              <Button
-                color="primary"
-                onClick={async () => {
-                  await getNewData(query, sort, ascending);
-                }}
-              >
-                <span className="px-4">Apply</span>
-              </Button>
-            </Flexbox>
-            <Text sm className="text-text-secondary">
-              Search by keywords, or filter packages that include a card using <code>card:cardname</code> syntax
-            </Text>
-            {currentParsedQuery.length > 0 && (
-              <Flexbox direction="row" justify="start" gap="2" className="w-full">
-                <Text sm semibold italic>
-                  {currentParsedQuery.join(', ')}
+    <MainLayout useContainer={false} transparentNav>
+      <div className="relative min-h-screen">
+        <div className="absolute inset-x-0 top-0 h-screen overflow-hidden bg-bg-secondary pointer-events-none z-0">
+          <img
+            src={cdnUrl('/content/retrocobra.webp')}
+            alt=""
+            aria-hidden
+            draggable={false}
+            className="absolute inset-0 w-full h-full object-cover object-top select-none"
+          />
+          <div className="absolute inset-0 bg-bg-secondary/80" />
+          <div className="splash-taper absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
+        </div>
+
+        <a
+          href="https://bsky.app/profile/firosart.bsky.social"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute top-20 right-3 text-xs text-button-text/70 hover:text-button-text underline-offset-2 hover:underline z-[15]"
+        >
+          Art by Santiago Rosas
+        </a>
+
+        <div className="relative z-10">
+          <div className="px-4 pt-28 pb-10 md:pt-36 md:pb-12">
+            <div className="w-full max-w-xl mx-auto flex flex-col items-center text-center gap-5">
+              <div>
+                <Text xxxxl bold className="!text-button-text block">
+                  Card Packages
                 </Text>
-              </Flexbox>
-            )}
-            <Row>
-              <Col sm={6}>
-                <Select
-                  label="Sort By"
-                  options={[
-                    { value: 'votes', label: 'Popularity' },
-                    { value: 'date', label: 'Date' },
-                  ]}
-                  value={sort || 'votes'}
-                  setValue={async (value) => {
-                    setSort(value);
-                    await getNewData(query, value, ascending);
-                  }}
-                  className="mt-1"
-                />
-              </Col>
-              <Col sm={6}>
-                <Select
-                  label="Direction"
-                  options={[
-                    { value: 'true', label: 'Ascending' },
-                    { value: 'false', label: 'Descending' },
-                  ]}
-                  value={ascending || 'false'}
-                  setValue={async (value) => {
-                    setAscending(value);
-                    await getNewData(query, sort, value);
-                  }}
-                  className="mt-1"
-                />
-              </Col>
-            </Row>
-          </Flexbox>
-        </Controls>
-        <Banner />
-        {user && (
-          <Flexbox direction="row" justify="end" gap="2">
-            <Button color="primary" type="link" href={`/packages?q=user:${user.username}`}>
-              <span className="p-2">Your Packages</span>
-            </Button>
-            <CreatePackageModalLink
-              color="primary"
-              modalprops={{
-                onError: (message: string) => {
-                  addAlert('danger', message);
-                },
-                onSuccess: (message: string) => {
-                  addAlert('success', message);
-                },
-              }}
-            >
-              <span className="p-2">Create New Package</span>
-            </CreatePackageModalLink>
-          </Flexbox>
-        )}
-        {packages.length === 0 ? (
-          <p>No packages found</p>
-        ) : (
-          <Flexbox direction="col" gap="2">
-            <Flexbox direction="row" justify="between" alignItems="center" className="w-full">
-              <Text lg semibold>
-                Packages Found ({packages.length}
-                {hasMore ? '+' : ''})
-              </Text>
-              {packages.length > 0 && pager}
+                <p className="mt-1 text-sm text-button-text/80">Browse community-curated packages of cards by theme.</p>
+              </div>
+
+              <div className="w-full flex flex-col gap-2">
+                <Flexbox direction="row" alignItems="center" gap="2" className="w-full">
+                  <button
+                    type="button"
+                    onClick={() => setShowSyntaxModal(true)}
+                    aria-label="Search syntax"
+                    className="text-button-text/80 hover:text-button-text cursor-pointer p-1 inline-flex items-center"
+                  >
+                    <QuestionIcon size={20} />
+                  </button>
+                  <Input
+                    placeholder='e.g. "reanimator" or card:Griselbrand'
+                    value={queryText}
+                    onChange={(event) => setQueryText(event.target.value)}
+                    onEnter={() => getNewData(queryText, sortText, ascendingText)}
+                    className="!bg-white !text-gray-800 !placeholder-gray-500 !border-gray-300"
+                  />
+                  <div className="hidden md:block">
+                    <LoadingButton color="primary" onClick={() => getNewData(queryText, sortText, ascendingText)}>
+                      <span className="px-3">Search</span>
+                    </LoadingButton>
+                  </div>
+                </Flexbox>
+
+                <Flexbox direction="row" alignItems="center" justify="center" gap="2" wrap="wrap">
+                  <div className="w-52">
+                    <Select dense options={SORT_OPTIONS} value={sortText} setValue={(value) => setSortText(value)} />
+                  </div>
+                  <div className="w-36">
+                    <Select
+                      dense
+                      options={[
+                        { value: 'true', label: 'Ascending' },
+                        { value: 'false', label: 'Descending' },
+                      ]}
+                      value={ascendingText}
+                      setValue={(value) => setAscendingText(value)}
+                    />
+                  </div>
+                </Flexbox>
+              </div>
+            </div>
+          </div>
+
+          <PackageSearchSyntaxModal isOpen={showSyntaxModal} setOpen={setShowSyntaxModal} />
+
+          <Container xxxl className="pb-6">
+            <Flexbox direction="row" gap="4">
+              <ResponsiveDiv xxl className="pl-2 py-2 min-w-fit">
+                <SideBanner placementId="left-rail" />
+              </ResponsiveDiv>
+              <div className="flex-grow px-2 max-w-full min-w-0">
+                <Flexbox direction="col" gap="3" className="pt-3 md:pt-4 pb-3">
+                  <Flexbox direction="row" alignItems="center" justify="between" gap="3" wrap="wrap" className="w-full">
+                    <Flexbox direction="col" gap="1" alignItems="start" className="text-left min-w-0">
+                      <Text lg semibold className="!text-button-text">
+                        {loading
+                          ? 'Searching…'
+                          : `${packages.length.toLocaleString()}${hasMore ? '+' : ''} packages found`}
+                      </Text>
+                      {currentParsedQuery.length > 0 && (
+                        <Text sm semibold italic className="!text-button-text/80 break-all">
+                          {currentParsedQuery.join(', ')}
+                        </Text>
+                      )}
+                    </Flexbox>
+                    {packages.length > 0 && renderPager(true)}
+                  </Flexbox>
+                </Flexbox>
+                <DynamicFlash />
+                <Banner />
+                <Flexbox direction="col" gap="3" className="mt-3">
+                  {packages.length > 0 ? (
+                    <Flexbox direction="col" gap="2">
+                      {packages.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((pack) => (
+                        <CardPackage key={pack.id} cardPackage={pack} />
+                      ))}
+                      <Flexbox direction="row" justify="center" alignItems="center" className="w-full px-2">
+                        {renderPager(false)}
+                      </Flexbox>
+                    </Flexbox>
+                  ) : (
+                    <Flexbox direction="row" justify="center" alignItems="center" className="w-full px-2 py-12">
+                      {loading ? (
+                        <Spinner xl />
+                      ) : (
+                        <Text semibold lg className="!text-button-text">
+                          No Results
+                        </Text>
+                      )}
+                    </Flexbox>
+                  )}
+                </Flexbox>
+              </div>
+              <ResponsiveDiv lg className="pr-2 py-2 min-w-fit">
+                <SideBanner placementId="right-rail" />
+              </ResponsiveDiv>
             </Flexbox>
-            {packages.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((pack) => (
-              <CardPackage key={pack.id} cardPackage={pack} />
-            ))}
-            <Flexbox direction="row" justify="end" alignItems="center" className="w-full">
-              {pager}
-            </Flexbox>
-          </Flexbox>
-        )}
-        <PackageSearchSyntaxModal isOpen={showSyntaxModal} setOpen={setShowSyntaxModal} />
-      </Flexbox>
+          </Container>
+        </div>
+      </div>
     </MainLayout>
   );
 };

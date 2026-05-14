@@ -14,7 +14,7 @@ interface CubeMetadata {
   categoryPrefixes?: string[];
   tags?: string[];
   name: string;
-  following: string[];
+  likeCount?: number;
   cardCount: number;
 }
 
@@ -285,7 +285,7 @@ const cubeHash = {
 
     return hashes.map((hash) => ({
       [FIELDS.HASH]: hash,
-      [FIELDS.NUM_FOLLOWERS]: metadata.following.length,
+      [FIELDS.NUM_FOLLOWERS]: metadata.likeCount ?? 0,
       [FIELDS.CARD_COUNT]: metadata.cardCount,
       [FIELDS.NAME]: metadata.name,
       [FIELDS.CUBE_ID]: metadata.id,
@@ -296,7 +296,7 @@ const cubeHash = {
 
     return hashes.map((hash) => ({
       [FIELDS.HASH]: hash,
-      [FIELDS.NUM_FOLLOWERS]: metadata.following.length,
+      [FIELDS.NUM_FOLLOWERS]: metadata.likeCount ?? 0,
       [FIELDS.CARD_COUNT]: metadata.cardCount,
       [FIELDS.NAME]: metadata.name,
       [FIELDS.CUBE_ID]: metadata.id,

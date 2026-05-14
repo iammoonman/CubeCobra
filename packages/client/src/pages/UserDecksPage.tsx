@@ -3,7 +3,6 @@ import React, { useCallback, useContext, useState } from 'react';
 import Draft from '@utils/datatypes/Draft';
 import User from '@utils/datatypes/User';
 
-import { Card, CardBody, CardFooter, CardHeader } from 'components/base/Card';
 import { Flexbox } from 'components/base/Layout';
 import Pagination from 'components/base/Pagination';
 import Text from 'components/base/Text';
@@ -17,14 +16,28 @@ import UserLayout from 'layouts/UserLayout';
 interface UserDecksPageProps {
   owner: User;
   followersCount: number;
+  followingCount: number;
   following: boolean;
   decks: Draft[];
   lastKey?: any;
+  patronLevel?: number;
+  likedCubesCount?: number;
+  likedPackagesCount?: number;
 }
 
 const PAGE_SIZE = 20;
 
-const UserDecksPage: React.FC<UserDecksPageProps> = ({ followersCount, following, decks, owner, lastKey }) => {
+const UserDecksPage: React.FC<UserDecksPageProps> = ({
+  followersCount,
+  followingCount,
+  following,
+  decks,
+  owner,
+  lastKey,
+  patronLevel,
+  likedCubesCount,
+  likedPackagesCount,
+}) => {
   const { csrfFetch } = useContext(CSRFContext);
   const [items, setItems] = useState<Draft[]>(decks);
   const [currentLastKey, setLastKey] = useState(lastKey);
@@ -65,7 +78,6 @@ const UserDecksPage: React.FC<UserDecksPageProps> = ({ followersCount, following
       active={page}
       hasMore={hasMore}
       onClick={async (newPage) => {
-        console.log(newPage, pageCount);
         if (newPage >= pageCount) {
           await fetchMoreData();
         } else {
@@ -78,45 +90,41 @@ const UserDecksPage: React.FC<UserDecksPageProps> = ({ followersCount, following
 
   return (
     <MainLayout>
-      <UserLayout user={owner} followersCount={followersCount} following={following} activeLink="decks">
+      <UserLayout
+        user={owner}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        following={following}
+        activeLink="decks"
+        patronLevel={patronLevel}
+        likedCubesCount={likedCubesCount}
+        likedPackagesCount={likedPackagesCount}
+      >
         <DynamicFlash />
+        <Flexbox direction="col" gap="2" className="mt-3 w-full">
+          <Flexbox direction="row" justify="between" alignItems="center" className="w-full">
+            <Text lg semibold>
+              Drafts ({items.length}
+              {hasMore ? '+' : ''})
+            </Text>
+            {items.length > 0 && pager}
+          </Flexbox>
 
-        <Card className="my-3">
           {items.length > 0 ? (
             <>
-              <CardHeader>
-                <Flexbox direction="row" justify="between" alignItems="center" className="w-full">
-                  <Text lg semibold>
-                    Decks ({items.length}
-                    {hasMore ? '+' : ''})
-                  </Text>
-                  {pager}
-                </Flexbox>
-              </CardHeader>
-              {items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((deck) => (
-                <DeckPreview key={deck.id} deck={deck} />
-              ))}
-              <CardFooter>
-                <Flexbox direction="row" justify="end" alignItems="center" className="w-full">
-                  {pager}
-                </Flexbox>
-              </CardFooter>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 5xl:grid-cols-6">
+                {items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((deck) => (
+                  <DeckPreview key={deck.id} deck={deck} />
+                ))}
+              </div>
+              <Flexbox direction="row" justify="end" alignItems="center" className="w-full mt-3">
+                {pager}
+              </Flexbox>
             </>
           ) : (
-            <>
-              <CardHeader>
-                <Flexbox direction="row" justify="between" alignItems="center" className="w-full">
-                  <Text lg semibold>
-                    {'Decks (0)'}
-                  </Text>
-                </Flexbox>
-              </CardHeader>
-              <CardBody>
-                <p className="my-3">This user has not drafted any decks!</p>
-              </CardBody>
-            </>
+            <Text className="text-text-secondary">This user has not drafted any decks yet.</Text>
           )}
-        </Card>
+        </Flexbox>
       </UserLayout>
     </MainLayout>
   );

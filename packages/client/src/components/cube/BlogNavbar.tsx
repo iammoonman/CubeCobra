@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 
 import { PlusIcon } from '@primer/octicons-react';
+import { UserRoles } from '@utils/datatypes/User';
 
 import { Flexbox } from 'components/base/Layout';
 import CreateBlogModal from 'components/modals/CreateBlogModal';
@@ -14,9 +15,10 @@ const BlogNavbar: React.FC = () => {
   const user = useContext(UserContext);
   const { cube } = useContext(CubeContext);
 
-  const isOwner = user && cube && user.id === cube.owner.id;
+  const isAdmin = !!user && Array.isArray(user.roles) && user.roles.includes(UserRoles.ADMIN);
+  const canPost = (user && cube && user.id === cube.owner.id) || isAdmin;
 
-  if (!isOwner) {
+  if (!canPost) {
     return null;
   }
 

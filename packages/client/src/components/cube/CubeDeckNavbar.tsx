@@ -37,7 +37,7 @@ const CubeDeckNavbar: React.FC<CubeDeckNavbarProps> = ({ draft, user, seatIndex,
 
   const copyToClipboard = useCallback(async () => {
     const cards = draft.cards;
-    const mainboard = draft.seats[parseInt(seatIndex || '0')].mainboard;
+    const mainboard = draft.seats[parseInt(seatIndex || '0')]?.mainboard ?? [];
 
     const cardNames = [];
     for (const row of mainboard) {
@@ -191,7 +191,7 @@ const CubeDeckNavbar: React.FC<CubeDeckNavbarProps> = ({ draft, user, seatIndex,
             <Flexbox direction="col" gap="2" className="p-3">
               <SampleHandModalLink
                 modalprops={{
-                  deck: draft.seats[parseInt(seatIndex || '0')].mainboard
+                  deck: draft.seats[parseInt(seatIndex || '0')]?.mainboard
                     ?.flat(3)
                     .map((cardIndex) => draft.cards[cardIndex]),
                 }}
@@ -329,7 +329,7 @@ const CubeDeckNavbar: React.FC<CubeDeckNavbarProps> = ({ draft, user, seatIndex,
               <Flexbox direction="col" gap="2" className="p-3">
                 <SampleHandModalLink
                   modalprops={{
-                    deck: draft.seats[parseInt(seatIndex || '0')].mainboard
+                    deck: draft.seats[parseInt(seatIndex || '0')]?.mainboard
                       ?.flat(3)
                       .map((cardIndex) => draft.cards[cardIndex]),
                   }}

@@ -58,7 +58,7 @@ export const cloneHandler = async (req: Request, res: Response) => {
       showUnsorted: source.showUnsorted,
       collapseDuplicateCards: source.collapseDuplicateCards,
       formats: source.formats,
-      following: [],
+      likeCount: 0,
       collaborators: [],
       defaultStatus: source.defaultStatus,
       defaultPrinting: source.defaultPrinting,
