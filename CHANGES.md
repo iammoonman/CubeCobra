@@ -97,26 +97,11 @@ Since 1.6.0
 
 # Technical Changes
 
-- Added a new `archetypeAnnotater` package — a standalone tool for manually labeling draft/deck datasets and building the cluster-center annotations that power automatic archetype naming
 - Static assets (JS bundles, CSS, fonts, images) are now served via S3 + CloudFront instead of being served directly from the application servers — reduces load on the main fleet and improves cache hit rates and latency for users
 - Reduced the production main app fleet from 5/6 to 3/4 instances — feasible after offloading static asset serving to CloudFront
-- "Your Cubes" navbar dropdown now queries 10 cubes from DynamoDB instead of 36, reducing read capacity per authenticated page render
-- Consolidated `TopCardsPage` + `CardSearchPage` into a single page driven by a `v=rows` / `v=cards` URL param; the old `TopCardsPage` bundle and `TopCardsTable` component were removed and `/tool/topcards` now redirects
-- Removed `CreatePackageModal` — replaced by a standalone `CreatePackagePage` rendered at `/packages/create`
-- New server routes: `/packages/create` (page), `/user/packages/:userid` (list), `/user/getmorepackages` (paginated fetch)
-- `Footer` now renders inside `Container xxxl` so its content max-width matches the rest of the layout
-- `NavMenu` gained `transparent`, `noPadding`, and tighter responsive label handling so the nav can baseline-align icon and label triggers and inherit the navbar's translucent backdrop on hero pages
-- Replaced the sprawling `Cube.following: string[]` and `User.followedCubes: string[]` arrays with a per-relationship hash-row model. Each cube-like is one row on the cube's hash partition (`PK=HASH#CUBE#{id}`, `SK=LIKE#{userId}`, plus a `LIKE-BY#{userId}` GSI1) so both "who liked this cube" and "what cubes did this user like" paginate cleanly. Denormalized `Cube.likeCount` and `User.likedCubesCount` counters keep the cheap displays cheap; the legacy arrays are no longer read and a one-shot migration backfills hash rows + counters from existing data
+- Card catalog files (`imagedict`, `full_names`, `cardtree`, `cardimages`) now ship from the assets bucket via CloudFront as content-hashed objects with a tiny `cards/manifest.json` mapping canonical names to current hashes; the four legacy server routes are gone and the server no longer loads `full_names`/`cardtree` into memory
+- Replaced the sprawling `Cube.following: string[]` and `User.followedCubes: string[]` arrays with a per-relationship hash-row model. Each cube-like is one row on the cube's hash partition (`PK=HASH#CUBE#{id}`, `SK=LIKE#{userId}`, plus a `LIKE-BY#{userId}` GSI1) so both "who liked this cube" and "what cubes did this user like" paginate cleanly. Denormalized `Cube.likeCount` and `User.likedCubesCount` counters keep the cheap displays cheap
 - Same treatment for User-to-User follows. `User.following` (followers) and `User.followedUsers` (who you follow) replaced with FOLLOWER rows on the followed user's partition + a `FOLLOWING-BY#{userId}` GSI; counters live on `User.followerCount` / `User.followingCount`. Notification fanout (blog posts, commits, package adds, bulk imports, devblog) now pages through hash rows instead of iterating arrays
-- `PackageDynamoDao` gained `countByVoter` (Select=COUNT), used by profile pages to show the Liked Packages count without hydrating items
-- New endpoints: `GET /cube/isfollowed/:id` (small JSON probe so the cube hero can render its follow state without threading the flag through every cube page route), `GET /cube/liked/:userid` and `GET /packages/liked/:userid` (public, per-user; the param-less versions were removed), `GET /user/followers/:id`, `GET /user/following/:id`
-- One-shot `migrateCubeLikes.ts` in `packages/scripts/src/dynamoMigrations` — iterates every cube via the existing sharded `GSI3` (`GSI3PK = CUBE#{0..9}`) so it never scans the base table. Reads the legacy `cube.following[]` off the raw item, writes a LIKE hash row per follower, stamps `Cube.likeCount`, and accumulates per-user counts in memory. The user counter pass at the end touches only users that actually liked something, by direct primary key — no user-table scan. Idempotent
-- One-shot `migrateUserFollows.ts` — users don't have a sharded enumeration index, so this one is a scan, but it's a tightly-filtered one: `FilterExpression: SK = USER AND begins_with(PK, USER#)` drops non-user rows server-side, and parallel scan segments are configurable via `MIGRATE_USER_FOLLOWS_SEGMENTS`. For each user it expands the legacy `following` / `followedUsers` arrays into FOLLOWER hash rows, then issues a single `UpdateCommand` that stamps `followerCount` / `followingCount` and `REMOVE`s both legacy attributes — guarded by `ConditionExpression: attribute_exists(item.following) OR attribute_exists(item.followedUsers)` so already-migrated rows no-op cleanly on rerun
-- `repairPackageHashes.ts` job — the equivalent of `repairCubeHashes` for the package hash table; useful after any change to package hash row schema (such as the new `voter:` hash type that powers Liked Packages)
-
-# TODO
-
-- update user preview component
-- update comment thread component
-- notifications page in profile layout, use narrow container
-- store card details client side indexeddb - fetch details lazily and never auto populate
+- Cube view routes (`/cube/list`, `/cube/about`, `/cube/playtest`, `/cube/analysis`, `/cube/records`) ship cards without `details` populated via a new `{ populate: false }` option on `cubeDao.getCards`; `about` and `analysis` handlers were rewritten to read details via `cardFromId(cardID)` directly
+- New client-side card detail cache backed by IndexedDB (`cardDetailsCache.ts`) with a 7-day per-row TTL, microtask coalescing of misses into a single batch POST, and `useCardDetail` / `useCardDetails` hooks
+- `CubeContext` detects undetailed cards on mount, hydrates them from the cache, and exposes `cardsLoading` so cube pages can show a spinner during the fetch window; every existing client caller of `getdetailsforcards` / `getcardfromid` was rerouted through the cache
