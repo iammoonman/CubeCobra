@@ -66,7 +66,7 @@ const Footer: React.FC = () => {
                   <FooterLink href="/packages">Packages</FooterLink>
                 </li>
                 <li className="mb-2">
-                  <FooterLink href="/filters">Filter Syntax</FooterLink>
+                  <FooterLink href="/help/filters">Filter Syntax</FooterLink>
                 </li>
               </ul>
             </Text>
@@ -102,22 +102,22 @@ const Footer: React.FC = () => {
                   <FooterLink href="/dev/blog">Dev Blog</FooterLink>
                 </li>
                 <li className="mb-2">
-                  <FooterLink href="/contact">Contact</FooterLink>
+                  <FooterLink href="/help/contact">Contact</FooterLink>
                 </li>
                 {/* <li className="mb-2">
                   <FooterLink href="/merchandise">Merchandise</FooterLink>
                 </li> */}
                 <li className="mb-2">
-                  <FooterLink href="/donate">Donate</FooterLink>
+                  <FooterLink href="/help/donate">Donate</FooterLink>
                 </li>
                 <li className="mb-2">
                   <FooterLink href="https://github.com/dekkerglen/CubeCobra">Github</FooterLink>
                 </li>
                 <li className="mb-2">
-                  <FooterLink href="/apidocs">API Docs</FooterLink>
+                  <FooterLink href="/help/apidocs">API Docs</FooterLink>
                 </li>
                 <li className="mb-2">
-                  <FooterLink href="/tool/cardupdates">Card Updates</FooterLink>
+                  <FooterLink href="/help/cardupdates">Card Updates</FooterLink>
                 </li>
               </ul>
             </Text>

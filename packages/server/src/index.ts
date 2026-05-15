@@ -120,6 +120,9 @@ app.set('view engine', 'pug');
 // Expose cdnUrl to all Pug templates so view code can wrap static asset paths.
 // When CDN_BASE_URL is set, hrefs resolve to CloudFront; otherwise same-origin.
 app.locals.cdnUrl = cdnUrl;
+// GA4 Measurement ID (G-XXXXXXXXXX). Only loaded in production; unset disables
+// analytics entirely (dev/staging never report).
+app.locals.gaMeasurementId = process.env.GA_MEASUREMENT_ID;
 
 // Static asset serving from the Express server.
 // In production this is a fallback only — assets are served from CloudFront
@@ -154,25 +157,10 @@ app.use(
 // Serve static files from the React frontend app (legacy support)
 app.use(express.static(path.join(__dirname, 'client')));
 
-// Same-origin fallback for the catalog files that normally come from the
-// assets CDN (CDN_BASE_URL set → client builds hashed URLs via cards/manifest.json).
-// In dev — and as a safety net if the CDN is unreachable — the client targets
-// /cards/<name> here and we stream them straight off disk from the carddb
-// directory the server boots from.
-const CATALOG_ALLOW = new Set(['cardtree.json', 'full_names.json', 'imagedict.json', 'cardimages.json']);
-app.get('/cards/:filename', (req: express.Request, res: express.Response) => {
-  const filename = req.params.filename;
-  if (!filename || !CATALOG_ALLOW.has(filename)) {
-    res.status(404).send('Not found');
-    return;
-  }
-  res.setHeader('Cache-Control', 'public, max-age=60');
-  res.sendFile(path.join(__dirname, '..', 'private', filename), (err) => {
-    if (err && !res.headersSent) {
-      res.status(404).send('Not found');
-    }
-  });
-});
+// The catalog files (imagedict/full_names/cardimages) are no longer
+// served to the browser at all — card-name autocomplete and image lookups go
+// through /tool/api/cardnames and /tool/api/cardimagedata, which read the
+// in-memory catalog. Nothing ships these multi-MB files over the wire.
 
 // Express session middleware
 app.use(

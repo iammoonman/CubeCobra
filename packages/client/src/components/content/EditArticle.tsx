@@ -11,7 +11,8 @@ import Spinner from 'components/base/Spinner';
 import Text from 'components/base/Text';
 import TextArea from 'components/base/TextArea';
 import ArticlePreview from 'components/content/ArticlePreview';
-import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
+import { cardNameMatches } from 'utils/cardAutocomplete';
+
 interface EditArticleProps {
   article: ArticleType;
   title: string;
@@ -41,7 +42,6 @@ const EditArticle: React.FC<EditArticleProps> = ({
   setBody,
   loading,
 }) => {
-  const fullNamesUrl = useCardCatalogUrl('full_names.json');
   return (
     <Flexbox direction="col" gap="2" className="m-2">
       <Row>
@@ -85,8 +85,7 @@ const EditArticle: React.FC<EditArticleProps> = ({
                 Thumbnail:
               </Text>
               <AutocompleteInput
-                treeUrl={fullNamesUrl ?? ''}
-                treePath="cardnames"
+                getMatches={cardNameMatches(true)}
                 type="text"
                 className="me-2"
                 name="remove"
@@ -103,7 +102,7 @@ const EditArticle: React.FC<EditArticleProps> = ({
       </Row>
       <Text>
         Write the article text here. Cube Cobra articles use a variation of markdown you can read about{' '}
-        <Link href="/markdown" target="_blank">
+        <Link href="/help/markdown" target="_blank">
           here
         </Link>
         .

@@ -1,16 +1,26 @@
 import { FeedTypes } from '@utils/datatypes/Feed';
 import { UserRoles } from '@utils/datatypes/User';
+import { sanitizeChangelog } from 'dynamo/dao/ChangelogDynamoDao';
 import { blogDao, feedDao, userDao } from 'dynamo/daos';
 import { csrfProtection, ensureRole } from 'router/middleware';
 import { render } from 'serverutils/render';
 
 import { Request, Response } from '../../types/express';
 
+// Strip card details from every blog's changelog — the client rehydrates via
+// utils/cardDetailsCache.
+const stripBlogsDetails = (blogs: any[]): any[] => {
+  for (const blog of blogs) {
+    if (blog?.Changelog) sanitizeChangelog(blog.Changelog);
+  }
+  return blogs;
+};
+
 export const blogHandler = async (req: Request, res: Response) => {
   const blogs = await blogDao.getByCube('DEVBLOG', 10);
 
   return render(req, res, 'DevBlog', {
-    blogs: blogs.items,
+    blogs: stripBlogsDetails(blogs.items),
     lastKey: blogs.lastKey,
   });
 };
@@ -21,7 +31,7 @@ export const getMoreBlogsHandler = async (req: Request, res: Response) => {
 
   return res.status(200).send({
     success: 'true',
-    blogs: blogs.items,
+    blogs: stripBlogsDetails(blogs.items),
     lastKey: blogs.lastKey,
   });
 };

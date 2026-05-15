@@ -1,204 +1,32 @@
-import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 import classNames from 'classnames';
 
 import AutocardContext from '../../contexts/AutocardContext';
+import { MatchFetcher } from '../../utils/cardAutocomplete';
 import withAutocard from '../WithAutocard';
 import Input, { InputProps } from './Input';
 
-export interface AutocardLiProps {
-  inModal: boolean;
-  image: string;
-  onClick: (event: React.MouseEvent<HTMLLIElement, MouseEvent>) => void;
-  className?: string;
-  children?: ReactNode;
-}
-
 const AutocardDiv = withAutocard('div');
 
-// Deepmerge utility
-function isMergeableObject(val: any): val is Record<string, any> {
-  const nonNullObject = val && typeof val === 'object';
+// Shorter prefixes match an unhelpfully large slice of the catalog; the server
+// enforces the same floor and returns nothing below it.
+const MIN_QUERY_LENGTH = 3;
+const DEBOUNCE_MS = 150;
 
-  return (
-    nonNullObject &&
-    Object.prototype.toString.call(val) !== '[object RegExp]' &&
-    Object.prototype.toString.call(val) !== '[object date]'
-  );
-}
-
-function emptyTarget<T>(val: T): T {
-  return Array.isArray(val) ? ([] as T) : ({} as T);
-}
-
-function cloneIfNecessary<T>(value: T, optionsArgument?: { clone?: boolean }): T {
-  const clone = optionsArgument && optionsArgument.clone === true;
-  return clone && isMergeableObject(value) ? deepmerge(emptyTarget(value), value, optionsArgument) : value;
-}
-
-function mergeObject<T extends Record<string, any>>(target: T, source: T, optionsArgument?: { clone?: boolean }): T {
-  const destination: T = {} as T;
-  if (isMergeableObject(target)) {
-    Object.keys(target).forEach((key) => {
-      destination[key as keyof T] = cloneIfNecessary(target[key as keyof T], optionsArgument);
-    });
-  }
-  Object.keys(source).forEach((key) => {
-    if (!isMergeableObject(source[key]) || !target[key as keyof T]) {
-      destination[key as keyof T] = cloneIfNecessary(source[key as keyof T], optionsArgument);
-    } else {
-      destination[key as keyof T] = deepmerge(target[key as keyof T], source[key as keyof T], optionsArgument);
-    }
-  });
-  return destination;
-}
-
-function deepmerge<T extends object | any[]>(
-  target: T,
-  source: T,
-  optionsArgument?: { clone?: boolean; arrayMerge?: <U>(target: U[], source: U[], options?: any) => U[] },
-): T {
-  const array = Array.isArray(source);
-  const options = optionsArgument || {
-    arrayMerge: defaultArrayMerge,
-  };
-  const arrayMerge = options.arrayMerge || defaultArrayMerge;
-
-  if (array) {
-    return Array.isArray(target)
-      ? (arrayMerge(target, source, optionsArgument) as T)
-      : cloneIfNecessary(source, optionsArgument);
-  }
-  return mergeObject(target, source, optionsArgument);
-}
-
-function defaultArrayMerge<T>(target: T[], source: T[], optionsArgument?: { clone?: boolean }): T[] {
-  const destination = target.slice();
-  source.forEach((e, i) => {
-    if (typeof destination[i] === 'undefined') {
-      destination[i] = cloneIfNecessary(e, optionsArgument);
-    } else if (isMergeableObject(e)) {
-      destination[i] = deepmerge(target[i] as any, e, optionsArgument);
-    } else if (target.indexOf(e) === -1) {
-      destination.push(cloneIfNecessary(e, optionsArgument));
-    }
-  });
-  return destination;
-}
-
-interface TreeNode {
-  [key: string]: TreeNode;
-}
-
-function getPosts(names: TreeNode, current: string): TreeNode {
-  if (current === '') {
-    return names;
-  }
-  const character = current.charAt(0);
-  const sub = current.substr(1, current.length);
-
-  // please don't try to understand why this works
-  if (
-    character.toUpperCase() !== character.toLowerCase() &&
-    names[character.toUpperCase()] &&
-    names[character.toLowerCase()]
-  ) {
-    if (names[character.toUpperCase()][sub.charAt(0)]) {
-      const upper = getPosts(names[character.toUpperCase()], sub);
-      if (names[character.toLowerCase()]) {
-        const lower = getPosts(names[character.toLowerCase()], sub);
-        const res = deepmerge(upper, lower);
-        return res;
-      }
-      return upper;
-    }
-    const lower = getPosts(names[character.toLowerCase()], sub);
-    if (names[character.toUpperCase()]) {
-      const upper = getPosts(names[character.toUpperCase()], sub);
-      const res = deepmerge(upper, lower);
-      return res;
-    }
-    return lower;
-  }
-  if (names[character.toUpperCase()]) {
-    return getPosts(names[character.toUpperCase()], sub);
-  }
-  if (names[character.toLowerCase()]) {
-    return getPosts(names[character.toLowerCase()], sub);
-  }
-  return {};
-}
-
-function getAllMatches(names: TreeNode, current: string): string[] {
-  const posts = getPosts(names, current);
-  const words = treeToWords(posts, 10).slice(0, 10);
-
-  for (let i = 0; i < words.length; i++) {
-    words[i] = current + words[i];
-    words[i] = words[i].substr(0, words[i].length - 1);
-  }
-  return words;
-}
-
-function treeToWords(tree: TreeNode, max: number): string[] {
-  if (isEmpty(tree)) {
-    return [];
-  }
-  const words: string[] = [];
-
-  for (const prop in tree) {
-    // eslint-disable-next-line no-prototype-builtins
-    if (tree.hasOwnProperty(prop)) {
-      if (isEmpty(tree[prop])) {
-        words.push(prop);
-      }
-      const wordlets = treeToWords(tree[prop], max);
-      for (let i = 0; i < wordlets.length; i++) {
-        words.push(prop + wordlets[i]);
-      }
-    }
-    if (words.length > max) {
-      return words;
-    }
-  }
-  return words;
-}
-
-function isEmpty(obj: any): boolean {
-  for (const prop in obj) {
-    // eslint-disable-next-line no-prototype-builtins
-    if (obj.hasOwnProperty(prop)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// Map URL => Promise returning tree
-export const treeCache: Record<string, Promise<TreeNode | null>> = {};
-
-const fetchTree = async (treeUrl: string, treePath: string): Promise<TreeNode | null> => {
-  const response = await fetch(treeUrl);
-  if (!response.ok) {
-    console.error(`Failed to fetch autocomplete tree: ${response.status}`);
-    return null;
-  }
-  const json = await response.json();
-  // CDN-served catalog files are raw trees. The per-cube /cube/api/cubecardnames
-  // endpoint still wraps with { success: 'true', cardnames: ... }.
-  if (json && typeof json === 'object' && Object.prototype.hasOwnProperty.call(json, 'success')) {
-    if (json.success !== 'true') {
-      console.error('Error getting autocomplete tree.');
-      return null;
-    }
-    return json[treePath];
-  }
-  return json;
-};
+const normalize = (raw: string): string =>
+  (raw || '')
+    // Replace curly quotes with straight quotes. Needed for iOS.
+    .replace(/[‘’“”]/g, (c: string) => '\'\'""'.substr('‘’“”'.indexOf(c), 1))
+    .trim()
+    .normalize('NFD') // convert to consistent unicode format
+    .replace(/[̀-ͯ]/g, '') // remove unicode
+    .toLowerCase();
 
 export interface AutocompleteInputProps extends InputProps {
-  treeUrl: string;
-  treePath: string;
+  // Returns the top matches for a query. See utils/cardAutocomplete for the
+  // standard fetchers (cardNameMatches, cubeCardNameMatches, cubeCardTagMatches).
+  getMatches: MatchFetcher;
   defaultValue?: string;
   value: string;
   setValue: (value: string) => void;
@@ -210,8 +38,7 @@ export interface AutocompleteInputProps extends InputProps {
 }
 
 const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
-  treeUrl,
-  treePath,
+  getMatches,
   value,
   setValue,
   onSubmit,
@@ -220,32 +47,50 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   showImages = true,
   ...props
 }) => {
-  const [tree, setTree] = useState<TreeNode>({});
+  const [matches, setMatches] = useState<string[]>([]);
   const [position, setPosition] = useState(-1);
   const [visible, setVisible] = useState(false);
   const { hideCard } = useContext(AutocardContext);
 
-  // Lazy load the tree only when the user starts typing (value is non-empty)
-  // and the treeUrl has resolved — the CDN-backed hook resolves it async.
+  // Guards against out-of-order responses: only the newest request may write
+  // state. Bumped per keystroke; stale resolutions compare unequal and no-op.
+  const requestSeq = useRef(0);
+  const cache = useRef<Map<string, string[]>>(new Map());
+  // Held in a ref so a fresh getMatches identity each parent render doesn't
+  // restart the debounce timer (callers pass inline fetcher factories).
+  const getMatchesRef = useRef(getMatches);
+  getMatchesRef.current = getMatches;
+
+  const normalizedValue = normalize(value);
+
+  // Debounced async lookup. Fires only once the user has typed enough and the
+  // dropdown is meant to be open; never ships the catalog to the client.
   useEffect(() => {
-    if (!value || !treeUrl) return;
-    let cancelled = false;
-    const wrapper = async () => {
-      try {
-        if (!treeCache[treeUrl]) {
-          treeCache[treeUrl] = fetchTree(treeUrl, treePath);
-        }
-        const result = await treeCache[treeUrl];
-        if (!cancelled) setTree(result ?? {});
-      } catch (e) {
-        console.error('Error getting autocomplete tree.', e);
-      }
-    };
-    wrapper();
+    if (!visible || normalizedValue.length < MIN_QUERY_LENGTH) {
+      setMatches([]);
+      return;
+    }
+
+    const cached = cache.current.get(normalizedValue);
+    if (cached) {
+      setMatches(cached);
+      return;
+    }
+
+    const seq = ++requestSeq.current;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      const result = await getMatchesRef.current(normalizedValue, controller.signal);
+      if (seq !== requestSeq.current) return;
+      cache.current.set(normalizedValue, result);
+      setMatches(result);
+    }, DEBOUNCE_MS);
+
     return () => {
-      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
     };
-  }, [treePath, treeUrl, value]);
+  }, [normalizedValue, visible]);
 
   // Reset position when value changes externally (e.g., cleared after submit)
   useEffect(() => {
@@ -282,16 +127,8 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     [acceptSuggestion],
   );
 
-  // Replace curly quotes with straight quotes. Needed for iOS.
-  const normalizedValue = (value || '')
-    .replace(/[\u2018\u2019\u201C\u201D]/g, (c: string) => '\'\'""'.substr('\u2018\u2019\u201C\u201D'.indexOf(c), 1))
-    .trim()
-    .normalize('NFD') // convert to consistent unicode format
-    .replace(/[\u0300-\u036f]/g, '') // remove unicode
-    .toLowerCase();
-
-  const matches = useMemo(() => getAllMatches(tree, normalizedValue), [tree, normalizedValue]);
-  const showMatches = visible && value && matches.length > 0 && !(matches.length === 1 && matches[0] === value);
+  const showMatches =
+    visible && !!value && matches.length > 0 && !(matches.length === 1 && matches[0] === normalizedValue);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -315,7 +152,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
             onSubmit(event, match);
           }
           //If not showing matches but there is a single match for the current card name, then hitting enter should trigger the on submit
-        } else if (matches.length === 1 && matches[0] === value) {
+        } else if (matches.length === 1 && matches[0] === normalizedValue) {
           if (enterPressed && onSubmit) {
             // ENTER key
             onSubmit(event, matches[0]);
@@ -323,7 +160,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         }
       }
     },
-    [position, acceptSuggestion, matches, showMatches, onSubmit, value],
+    [position, acceptSuggestion, matches, showMatches, onSubmit, normalizedValue],
   );
 
   return (

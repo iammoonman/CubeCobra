@@ -38,7 +38,7 @@ export const getCardUpdatesHandler = async (req: Request, res: Response) => {
 export const routes = [
   {
     method: 'get',
-    path: '/',
+    path: '',
     handler: [getCardUpdatesHandler],
   },
 ];

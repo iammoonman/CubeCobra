@@ -352,7 +352,6 @@ function createMockFiles() {
   };
 
   const metadatadict = {};
-  const cardtree = {};
   const comboTree = {};
   const cubeEmbeddings = {};
 
@@ -367,7 +366,6 @@ function createMockFiles() {
   fs.writeFileSync('../server/private/cardimages.json', JSON.stringify(cardimages, null, 2));
   fs.writeFileSync('../server/private/english.json', JSON.stringify(english, null, 2));
   fs.writeFileSync('../server/private/metadatadict.json', JSON.stringify(metadatadict, null, 2));
-  fs.writeFileSync('../server/private/cardtree.json', JSON.stringify(cardtree, null, 2));
   fs.writeFileSync('../server/private/comboTree.json', JSON.stringify(comboTree, null, 2));
   fs.writeFileSync('../server/private/comboOracleToIndex.json', JSON.stringify(comboOracleToIndex, null, 2));
   fs.writeFileSync('../server/private/cubeEmbeddings.json', JSON.stringify(cubeEmbeddings, null, 2));

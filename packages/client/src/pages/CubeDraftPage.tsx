@@ -21,6 +21,7 @@ import useAlerts, { Alerts } from 'hooks/UseAlerts';
 import useLocalStorage from 'hooks/useLocalStorage';
 import CubeLayout from 'layouts/CubeLayout';
 import MainLayout from 'layouts/MainLayout';
+import { trackEvent } from 'utils/analytics';
 
 interface CubeDraftPageProps {
   cube: Cube;
@@ -239,6 +240,9 @@ const CubeDraftPage: React.FC<CubeDraftPageProps> = ({ cube, draft }) => {
         throw new Error(`HTTP error! Status: ${finishResponse.status}`);
       }
 
+      // Funnel denominator: a finished draft. "Submitted without building" is
+      // derived in GA as draft_complete minus deck_build (no save = no event).
+      trackEvent('draft_complete', { type: 'draft' });
       window.location.href = `/draft/deckbuilder/${draft.id}`;
     } catch (err) {
       console.error('endDraft error caught:', err);

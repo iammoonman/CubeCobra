@@ -138,8 +138,14 @@ const CardSearch: React.FC = () => {
     [advancedValues],
   );
 
-  const pager = (
-    <Paginate count={Math.ceil(parseInt(count || '0', 10) / 96)} active={page} onClick={(i: number) => updatePage(i)} />
+  const pageCount = Math.ceil(parseInt(count || '0', 10) / 96);
+  // Top pager sits on the dark splash; bottom pager sits past the splash on
+  // the regular page bg. Pass inverted only for the top one.
+  const topPager = (
+    <Paginate count={pageCount} active={page} onClick={(i: number) => updatePage(i)} inverted />
+  );
+  const bottomPager = (
+    <Paginate count={pageCount} active={page} onClick={(i: number) => updatePage(i)} />
   );
 
   const tableHeaders = ['Name', 'Cost', 'Type', 'Elo', 'Total Picks', 'Cube Count'];
@@ -186,7 +192,9 @@ const CardSearch: React.FC = () => {
           className="absolute inset-0 w-full h-full object-cover object-top select-none"
         />
         <div className="absolute inset-0 bg-bg-secondary/80" />
-        <div className="splash-taper absolute inset-x-0 bottom-0 h-[6vh] bg-gradient-to-b from-transparent to-bg" />
+        {cards.length > 0 && (
+          <div className="absolute inset-x-0 bottom-0 h-[25vh] bg-gradient-to-b from-transparent to-bg pointer-events-none" />
+        )}
       </div>
 
       <a
@@ -395,7 +403,7 @@ const CardSearch: React.FC = () => {
                         </Text>
                       )}
                     </Flexbox>
-                    {cards.length > 0 && pager}
+                    {cards.length > 0 && topPager}
                   </Flexbox>
                 )}
               </Flexbox>
@@ -425,7 +433,7 @@ const CardSearch: React.FC = () => {
                       />
                     )}
                     <Flexbox direction="row" justify="center" alignItems="center" className="w-full px-2">
-                      {pager}
+                      {bottomPager}
                     </Flexbox>
                   </Flexbox>
                 ) : (

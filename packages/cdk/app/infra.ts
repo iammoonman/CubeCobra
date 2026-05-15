@@ -77,6 +77,8 @@ if (bootstrap && bootstrap === 'true') {
       fleetSize: config.fleetSize,
       captchaSiteKey: process.env.CAPTCHA_SITE_KEY || '',
       captchaSecretKey: process.env.CAPTCHA_SECRET_KEY || '',
+      gaMeasurementId: process.env.GA_MEASUREMENT_ID || '',
+      gaApiSecret: process.env.GA_API_SECRET || '',
       draftmancerApiKey: process.env.DRAFTMANCER_API_KEY || '',
       stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
       stripePublicKey: process.env.STRIPE_PUBLIC_KEY || '',

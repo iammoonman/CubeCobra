@@ -15,6 +15,14 @@ html(lang='en' class=htmlClasses)
 			meta(name='robots' content='noindex, noodp, noarchive, noimageindex')
 		link(rel='icon', href=cdnUrl('/content/favicon.ico?v=1.1'), type='image/x-icon')
 		title=title
+		//- Google Analytics (GA4). Production-only; skipped when GA_MEASUREMENT_ID is unset.
+		if node_env === 'production' && gaMeasurementId
+			script(async='' src='https://www.googletagmanager.com/gtag/js?id=' + gaMeasurementId)
+			script.
+				window.dataLayer = window.dataLayer || [];
+				function gtag(){dataLayer.push(arguments);}
+				gtag('js', new Date());
+				gtag('config', '#{gaMeasurementId}');
 		link(rel='stylesheet' href=cssBundles.autocomplete)
 		link(rel='stylesheet' href=cssBundles.editcube)
 		link(rel='stylesheet' href=cssBundles.tags)

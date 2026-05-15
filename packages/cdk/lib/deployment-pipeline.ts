@@ -220,6 +220,9 @@ export class DeploymentPipeline extends Construct {
           type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
           value: '/cubecobra/beta/captcha-secret-key',
         },
+        // GA_MEASUREMENT_ID intentionally omitted for beta so analytics never
+        // reports from the beta environment (it runs as NODE_ENV=production, so
+        // the only thing keeping it silent is the absence of this variable).
         DRAFTMANCER_API_KEY: {
           type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
           value: '/cubecobra/beta/draftmancer-api-key',
@@ -459,6 +462,14 @@ export class DeploymentPipeline extends Construct {
         CAPTCHA_SECRET_KEY: {
           type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
           value: '/cubecobra/prod/captcha-secret-key',
+        },
+        GA_MEASUREMENT_ID: {
+          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: '/cubecobra/prod/ga-measurement-id',
+        },
+        GA_API_SECRET: {
+          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: '/cubecobra/prod/ga-api-secret',
         },
         DRAFTMANCER_API_KEY: {
           type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,

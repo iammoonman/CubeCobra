@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 
 import { detailsToCard } from '@utils/cardutil';
-import CardType, { CardDetails } from '@utils/datatypes/Card';
+import CardType from '@utils/datatypes/Card';
 
 import { Card, CardBody } from '../components/base/Card';
 import { Flexbox } from '../components/base/Layout';
@@ -15,23 +15,19 @@ import AddToCubeModal from '../components/modals/AddToCubeModal';
 import { CSRFContext } from '../contexts/CSRFContext';
 import CubeContext from '../contexts/CubeContext';
 import FilterContext from '../contexts/FilterContext';
+import { getCardDetails } from '../utils/cardDetailsCache';
 
 const PAGE_SIZE = 96;
-
-interface SmartSearchAdd {
-  details: CardDetails;
-  cardID: string;
-}
 
 const Suggestions: React.FC = () => {
   const { csrfFetch } = useContext(CSRFContext);
   const { filterInput } = useContext(FilterContext);
   const { cube } = useContext(CubeContext);
 
-  const [adds, setAdds] = useState<SmartSearchAdd[]>([]);
+  const [pageCards, setPageCards] = useState<CardType[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [modalCard, setModalCard] = useState<CardType | null>(null);
 
   // When the filter changes, jump back to page 0. We track this in a separate
@@ -41,10 +37,19 @@ const Suggestions: React.FC = () => {
   }, [filterInput, cube.id]);
 
   // Single fetch effect — runs whenever any input that affects the result
-  // changes. No client-side cache; the recommender is fast and this keeps
-  // the loading state correct (the previous cache had a stale-closure bug
-  // that left the spinner up indefinitely on a re-search).
+  // changes. The server returns scryfall_ids only; we resolve details out of
+  // the persistent IndexedDB cache (cardDetailsCache), which coalesces any
+  // misses into a single /cube/api/getdetailsforcards call.
   useEffect(() => {
+    // Smart Search is filter-driven: with no filter there is nothing to rank,
+    // so don't hit the endpoint at all — just clear any prior results.
+    if (!filterInput || filterInput.trim().length === 0) {
+      setPageCards([]);
+      setHasMore(false);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     const run = async () => {
       setLoading(true);
@@ -62,13 +67,23 @@ const Suggestions: React.FC = () => {
       if (cancelled) return;
       const json = await res.json();
       if (cancelled) return;
-      setAdds(json.adds || []);
+
+      const cardIDs: string[] = json.cardIDs || [];
+      const detailsById = cardIDs.length > 0 ? await getCardDetails(cardIDs) : {};
+      if (cancelled) return;
+
+      const cards = cardIDs
+        .map((id) => detailsById[id])
+        .filter((d): d is NonNullable<typeof d> => !!d)
+        .map((details) => detailsToCard(details));
+
+      setPageCards(cards);
       setHasMore(!!json.hasMoreAdds);
       setLoading(false);
     };
     run().catch(() => {
       if (!cancelled) {
-        setAdds([]);
+        setPageCards([]);
         setHasMore(false);
         setLoading(false);
       }
@@ -77,8 +92,6 @@ const Suggestions: React.FC = () => {
       cancelled = true;
     };
   }, [csrfFetch, cube.id, cube.defaultPrinting, filterInput, page]);
-
-  const pageCards: CardType[] = adds.map((item) => detailsToCard(item.details));
 
   // The recommender returns a fully-ranked list, so the page count is the
   // current page plus one if there are more results to fetch.
@@ -93,7 +106,7 @@ const Suggestions: React.FC = () => {
         <Text>
           Smart Search is card search with a context-aware sort. It runs your filter against the full card pool and then
           ranks the results by how well each card fits this specific cube — surfacing relevant additions that a plain
-          alphabetical search would bury. Leave the filter blank to see the recommender's top picks for your cube.
+          alphabetical search would bury. Enter a search filter to begin.
         </Text>
         <FilterCollapse isOpen buttonLabel="Search" />
       </Flexbox>
@@ -109,11 +122,7 @@ const Suggestions: React.FC = () => {
               <ResponsiveDiv baseVisible sm>
                 {`Page ${page + 1}`}
               </ResponsiveDiv>
-              <ResponsiveDiv md>
-                {filterInput
-                  ? `Smart-sorted results for the query: ${filterInput}`
-                  : 'Top recommended additions for this cube'}
-              </ResponsiveDiv>
+              <ResponsiveDiv md>{`Smart-sorted results for the query: ${filterInput}`}</ResponsiveDiv>
             </Text>
             <Paginate count={pageCount} active={page} onClick={setPage} hasMore={hasMore} loading={loading} />
           </Flexbox>
@@ -138,6 +147,18 @@ const Suggestions: React.FC = () => {
             <Paginate count={pageCount} active={page} onClick={setPage} hasMore={hasMore} loading={loading} />
           </Flexbox>
         </Flexbox>
+      ) : !filterInput || filterInput.trim().length === 0 ? (
+          <CardBody>
+            <Flexbox direction="col" gap="3" alignItems="start" justify="start">
+            <Text lg semibold>
+              Enter a search filter
+            </Text>
+            <Text sm className="text-text-secondary">
+              Smart Search ranks the cards matching your filter by how well they fit this cube. Type a filter above to
+              see suggestions.
+            </Text>
+            </Flexbox>
+          </CardBody>
       ) : (
         <Card className="mt-2">
           <CardBody>
@@ -145,7 +166,7 @@ const Suggestions: React.FC = () => {
               No results
             </Text>
             <Text sm className="text-text-secondary">
-              Try a different filter, or clear the filter to see the top recommended additions for this cube.
+              No cards match this filter. Try a different one.
             </Text>
           </CardBody>
         </Card>

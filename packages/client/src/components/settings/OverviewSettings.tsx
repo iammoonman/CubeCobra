@@ -1,7 +1,6 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 
 import Cube, { CUBE_CATEGORIES, CUBE_PREFIXES } from '@utils/datatypes/Cube';
-import Image from '@utils/datatypes/Image';
 import { getCubeDescription } from '@utils/Util';
 
 import Alert from 'components/base/Alert';
@@ -18,7 +17,7 @@ import MtgImage from 'components/MtgImage';
 import TextEntry from 'components/TextEntry';
 import { CSRFContext } from 'contexts/CSRFContext';
 import CubeContext from 'contexts/CubeContext';
-import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
+import { cardNameMatches, fetchCardImage } from 'utils/cardAutocomplete';
 
 interface AlertProps {
   color: string;
@@ -30,18 +29,8 @@ const OverviewSettings: React.FC = () => {
   const { csrfFetch } = useContext(CSRFContext);
   const [state, setState] = useState<Cube>(JSON.parse(JSON.stringify(cube)));
   const [imagename, setImagename] = useState(cube.imageName);
-  const [imageDict, setImageDict] = useState<Record<string, Image>>({});
   const [alerts, setAlerts] = useState<AlertProps[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
-  const imageDictUrl = useCardCatalogUrl('imagedict.json');
-  const fullNamesUrl = useCardCatalogUrl('full_names.json');
-
-  useEffect(() => {
-    if (!imageDictUrl) return;
-    fetch(imageDictUrl)
-      .then((r) => r.json())
-      .then((json) => setImageDict(json));
-  }, [imageDictUrl]);
 
   // Detect changes
   useEffect(() => {
@@ -49,15 +38,14 @@ const OverviewSettings: React.FC = () => {
     setHasChanges(changed);
   }, [state, cube, imagename]);
 
-  const changeImage = useCallback(
-    (image: string) => {
-      setImagename(image);
-      if (imageDict[image.toLowerCase()]) {
-        setState({ ...state, imageName: image, image: imageDict[image.toLowerCase()] });
+  const changeImage = useCallback((image: string) => {
+    setImagename(image);
+    fetchCardImage(image).then((resolved) => {
+      if (resolved) {
+        setState((prev) => ({ ...prev, imageName: image, image: resolved }));
       }
-    },
-    [imageDict, state],
-  );
+    });
+  }, []);
 
   const saveChanges = useCallback(async () => {
     setAlerts([]);
@@ -198,8 +186,7 @@ const OverviewSettings: React.FC = () => {
                 </Col>
               </Row>
               <AutocompleteInput
-                treeUrl={fullNamesUrl ?? ''}
-                treePath="cardnames"
+                getMatches={cardNameMatches(true)}
                 type="text"
                 name="remove"
                 value={imagename}

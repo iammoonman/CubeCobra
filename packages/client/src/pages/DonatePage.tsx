@@ -8,7 +8,7 @@ import RenderToRoot from 'components/RenderToRoot';
 import HelpLayout from 'layouts/HelpLayout';
 
 const DonatePage: React.FC = () => (
-  <HelpLayout activeHref="/donate">
+  <HelpLayout activeHref="/help/donate" noTaper>
     <Card>
       <CardHeader>
         <Text semibold lg>

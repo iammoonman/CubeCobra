@@ -8,7 +8,6 @@ import carddb, {
   getIdsFromName,
   getMostReasonable,
   getMostReasonableById,
-  getOracleForMl,
   getRelatedCards,
 } from 'serverutils/carddb';
 import generateMeta from 'serverutils/meta';
@@ -18,22 +17,17 @@ import { validate as uuidValidate } from 'uuid';
 
 import { Request, Response } from '../../../types/express';
 
-// Strip unnecssary Card fields that are not used by this view.
-const trimRelatedCards = (related: Record<string, CardDetails[]>): Record<string, Partial<CardDetails>[]> => {
-  const trimCard = (card: CardDetails): Partial<CardDetails> => ({
-    scryfall_id: card.scryfall_id,
-    name: card.name,
-    image_normal: card.image_normal,
-    image_flip: card.image_flip,
-    image_small: card.image_small,
-    type: card.type,
-    cmc: card.cmc,
-    colorcategory: card.colorcategory,
-    rarity: card.rarity,
-  });
-
-  return Object.fromEntries(Object.entries(related).map(([key, cards]) => [key, cards.map(trimCard)]));
-};
+// Reduce a bucket of CardDetails arrays to scryfall_ids only. The client
+// rehydrates from its IndexedDB cache (utils/cardDetailsCache), so we never
+// ship per-card detail blobs from this route.
+const bucketsToIds = (
+  buckets: Record<string, CardDetails[]> | undefined,
+): { top: string[]; creatures: string[]; spells: string[]; other: string[] } => ({
+  top: (buckets?.top || []).map((c) => c.scryfall_id).filter(Boolean),
+  creatures: (buckets?.creatures || []).map((c) => c.scryfall_id).filter(Boolean),
+  spells: (buckets?.spells || []).map((c) => c.scryfall_id).filter(Boolean),
+  other: (buckets?.other || []).map((c) => c.scryfall_id).filter(Boolean),
+});
 
 const chooseIdFromInput = (req: Request): string => {
   //ID is scryfall id or a card name (eg. via Autocomplete hover)
@@ -96,15 +90,15 @@ export const getCardHandler = async (req: Request, res: Response) => {
 
     const printingPreference = (req?.user?.defaultPrinting || PrintingPreference.RECENT) as PrintingPreference;
     const related = getRelatedCards(card.oracle_id, printingPreference);
-    const mlSubstitution = getOracleForMl(card.oracle_id, printingPreference || null);
 
     const baseUrl = getBaseUrl();
     const oracleVersions = carddb.oracleToId[card.oracle_id];
-    const versions = oracleVersions
+    const versionIDs = oracleVersions
       ? oracleVersions
           .filter((cid) => cid !== card.scryfall_id)
           .map((cardid) => cardFromId(cardid))
-          .filter((c) => !c.isExtra) //Card isExtra if its the preflipped backside
+          .filter((c) => !c.isExtra) // Card isExtra if its the preflipped backside
+          .map((c) => c.scryfall_id)
       : [];
 
     return render(
@@ -112,14 +106,17 @@ export const getCardHandler = async (req: Request, res: Response) => {
       res,
       'CardPage',
       {
+        // The main card ships inline — it's the subject of the page and is
+        // needed for the immediate breakdown/header render. The list-of-cards
+        // fields (versions + related-cards buckets) only ship scryfall IDs;
+        // the client rehydrates them via cardDetailsCache.
         card,
-        mlSubstitution: mlSubstitution ? cardFromId(mlSubstitution) : null,
         history: history.items ? history.items.reverse() : [],
         lastKey: history.lastKey,
-        versions,
-        draftedWith: related.draftedWith ? trimRelatedCards(related.draftedWith) : {},
-        cubedWith: related.cubedWith ? trimRelatedCards(related.cubedWith) : {},
-        synergistic: related.synergistic ? trimRelatedCards(related.synergistic) : {},
+        versionIDs,
+        draftedWithIDs: bucketsToIds(related.draftedWith),
+        cubedWithIDs: bucketsToIds(related.cubedWith),
+        synergisticIDs: bucketsToIds(related.synergistic),
       },
       {
         title: `${card.name}`,

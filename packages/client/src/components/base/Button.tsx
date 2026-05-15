@@ -10,6 +10,7 @@ interface ButtonLinkProps {
   href?: string;
   target?: string;
   rel?: string;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 const ButtonLink: React.FC<ButtonLinkProps> = ({
@@ -18,6 +19,7 @@ const ButtonLink: React.FC<ButtonLinkProps> = ({
   href = '#',
   target = '_self',
   rel = 'noopener noreferrer',
+  onClick,
 }) => {
   const [loading, setLoading] = React.useState(false);
 
@@ -40,6 +42,7 @@ const ButtonLink: React.FC<ButtonLinkProps> = ({
     }
 
     setLoading(true); // Set loading state to true to prevent further clicks
+    onClick?.(e); // Fire side effects (e.g. analytics) before navigation
     //Allow default anchor behaviour to take effect
   };
 
@@ -114,7 +117,7 @@ const Button: React.FC<ButtonProps> = ({
 
   if (type === 'link') {
     return (
-      <ButtonLink className={classes} href={href} target={target} rel={rel}>
+      <ButtonLink className={classes} href={href} target={target} rel={rel} onClick={onClick}>
         {children}
       </ButtonLink>
     );

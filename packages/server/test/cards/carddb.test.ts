@@ -3,7 +3,6 @@
 import { Catalog } from '@utils/datatypes/CardCatalog';
 
 const mockCardCatalog: Catalog = {
-  cardtree: {},
   imagedict: {},
   cardimages: {},
   cardnames: [],

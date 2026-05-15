@@ -34,7 +34,7 @@ const CardUpdatesPage: React.FC<CardUpdatesPageProps> = ({
   lastExportTask,
   lastMigrationTask,
 }) => (
-  <HelpLayout activeHref="/tool/cardupdates">
+  <HelpLayout activeHref="/help/cardupdates">
     <Flexbox direction="col" gap="3">
       {/* Card Database Update */}
       <Card>

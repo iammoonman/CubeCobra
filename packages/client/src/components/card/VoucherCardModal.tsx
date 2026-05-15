@@ -26,7 +26,7 @@ import ImageFallback from 'components/ImageFallback';
 import { CSRFContext } from '../../contexts/CSRFContext';
 import CubeContext from '../../contexts/CubeContext';
 import DisplayContext from '../../contexts/DisplayContext';
-import useCardCatalogUrl from '../../hooks/useCardCatalogUrl';
+import { cardNameMatches } from '../../utils/cardAutocomplete';
 import { getCard } from '../../utils/cards/getCard';
 import AutocompleteInput from '../base/AutocompleteInput';
 import Badge from '../base/Badge';
@@ -82,7 +82,6 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
   const [targetBoard, setTargetBoard] = useState<string>('');
   const [searchValue, setSearchValue] = useState('');
   const [selection, setSelection] = useState<Selection>('voucher');
-  const cardNamesUrl = useCardCatalogUrl('cardtree.json');
   const [subCardVersions, setSubCardVersions] = useState<Record<string, any>>({});
   const [subCardVersionsLoading, setSubCardVersionsLoading] = useState(false);
   const fetchedSubCardsRef = useRef<Set<string>>(new Set());
@@ -264,9 +263,9 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
       return imageUsed;
     }
     if (selectedSubCard) {
-      return selectedSubCard.imgUrl || selectedSubCard.details?.image_normal || '/content/default_card.png';
+      return selectedSubCard.imgUrl || selectedSubCard.details?.image_normal || '/content/vouchercard.png';
     }
-    return '/content/default_card.png';
+    return '/content/vouchercard.png';
   }, [selection, imageUsed, selectedSubCard]);
 
   return (
@@ -305,8 +304,7 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
                 <Flexbox direction="row" gap="2" alignItems="center">
                   <div className="flex-1">
                     <AutocompleteInput
-                      treeUrl={cardNamesUrl ?? ''}
-                      treePath="cardnames"
+                      getMatches={cardNameMatches(false)}
                       value={searchValue}
                       setValue={setSearchValue}
                       onSubmit={handleAddCard}
@@ -383,7 +381,7 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
               <div className="mt-2">
                 <ImageFallback
                   src={getSelectedImage()}
-                  fallbackSrc="/content/default_card.png"
+                  fallbackSrc="/content/vouchercard.png"
                   alt={selection === 'voucher' ? cardName(card) : selectedSubCard?.details?.name || 'Card'}
                   className="w-full rounded"
                 />

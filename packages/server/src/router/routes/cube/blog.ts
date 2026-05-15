@@ -1,6 +1,7 @@
 import CubeType from '@utils/datatypes/Cube';
 import { FeedTypes } from '@utils/datatypes/Feed';
 import UserType from '@utils/datatypes/User';
+import { sanitizeChangelog } from 'dynamo/dao/ChangelogDynamoDao';
 import { blogDao, cubeDao, feedDao, userDao } from 'dynamo/daos';
 import { csrfProtection, ensureAuth, ensureAuthJson } from 'router/middleware';
 import { isCubeEditable, isCubeViewable } from 'serverutils/cubefn';
@@ -217,6 +218,10 @@ export const getBlogPostHandler = async (req: Request, res: Response) => {
       [bodyExcerpt, changelistSummary && `Changelist: ${changelistSummary}`].filter(Boolean).join(' — ') ||
       `A blog post on Cube Cobra by ${post.owner?.username || 'a user'}.`;
 
+    // Ship the changelog as scryfall IDs only; the client rehydrates from
+    // utils/cardDetailsCache.
+    if (post.Changelog) sanitizeChangelog(post.Changelog);
+
     return render(
       req,
       res,
@@ -288,6 +293,10 @@ export const getMoreBlogPostsForCubeHandler = async (req: Request, res: Response
 
   const { lastKey } = req.body;
   const posts = await blogDao.queryByCube(req.params.id, lastKey, 20);
+
+  for (const post of posts.items) {
+    if (post.Changelog) sanitizeChangelog(post.Changelog);
+  }
 
   return res.status(200).send({
     success: 'true',

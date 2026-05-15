@@ -2,6 +2,7 @@ import { CUBE_VISIBILITY, PRICE_VISIBILITY } from '@utils/datatypes/Cube';
 import Cube from '@utils/datatypes/Cube';
 import { cubeDao } from 'dynamo/daos';
 import { csrfProtection, ensureAuth, recaptcha } from 'router/middleware';
+import { trackServerEvent } from 'serverutils/analytics';
 import { getRandomNewCubeImage } from 'serverutils/imageutil';
 import { handleRouteError, redirect } from 'serverutils/render';
 import { hasProfanity } from 'serverutils/util';
@@ -100,6 +101,8 @@ export const addHandler = async (req: Request, res: Response) => {
       mainboard: [],
       maybeboard: [],
     });
+
+    trackServerEvent('cube_create', {}, { clientId: req.user!.id, logger: req.logger });
 
     req.flash('success', 'Cube created!');
     return redirect(req, res, `/cube/view/${cube.id}`);

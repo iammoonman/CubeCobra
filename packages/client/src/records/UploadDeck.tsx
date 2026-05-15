@@ -16,7 +16,7 @@ import TextArea from 'components/base/TextArea';
 import CardGrid from 'components/card/CardGrid';
 import AutocardContext from 'contexts/AutocardContext';
 import { CSRFContext } from 'contexts/CSRFContext';
-import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
+import { cardNameMatches, cubeCardNameMatches } from 'utils/cardAutocomplete';
 import { getCard } from 'utils/cards/getCard';
 
 interface UploadDeckProps {
@@ -47,7 +47,6 @@ const UploadDeck: React.FC<UploadDeckProps> = ({
   const { csrfFetch } = useContext(CSRFContext);
   const removeRef = useRef<HTMLInputElement>(null);
   const { hideCard } = useContext(AutocardContext);
-  const cardNamesUrl = useCardCatalogUrl('cardtree.json');
   const [cardNameValue, setCardNameValue] = useState<string>('');
   const [decklistText, setDecklistText] = useState<string>('');
   const [parseErrors, setParseErrors] = useState<string[]>([]);
@@ -164,8 +163,7 @@ const UploadDeck: React.FC<UploadDeckProps> = ({
       <Flexbox direction="row" justify="start" gap="2">
         <AutocompleteInput
           cubeId={cubeId}
-          treeUrl={allowCardsOutsideOfCube ? (cardNamesUrl ?? '') : `/cube/api/cubecardnames/${cubeId}/mainboard`}
-          treePath="cardnames"
+          getMatches={allowCardsOutsideOfCube ? cardNameMatches(false) : cubeCardNameMatches(cubeId, 'mainboard')}
           type="text"
           innerRef={removeRef}
           name="remove"

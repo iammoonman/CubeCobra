@@ -132,10 +132,15 @@ const DeckStacks: React.FC<DeckStacksProps> = ({ cards, title, subtitle, locatio
                   const isBeingDragged =
                     draggedFrom?.row === index && draggedFrom?.col === index2 && draggedFrom?.index === index3;
 
+                  // Include the card identity in the key so React mounts a
+                  // fresh element (and a fresh <img>) when the card at this
+                  // slot changes — switching seats keeps the same positional
+                  // indices, and a purely positional key makes the browser
+                  // show the previous image until the new src downloads.
                   return (
                     <div
                       className="stacked"
-                      key={`row-${index}-col-${index2}-card-${index3}`}
+                      key={`row-${index}-col-${index2}-card-${index3}-${card.cardID}`}
                       style={{
                         transform: shift !== 0 ? `translateY(${shift * 10}%)` : undefined,
                         opacity: isBeingDragged ? 0.3 : 1,

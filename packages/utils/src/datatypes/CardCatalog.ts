@@ -108,7 +108,6 @@ export interface Combo {
 }
 
 export interface Catalog {
-  cardtree: Record<string, any>;
   imagedict: Record<string, any>;
   cardimages: Record<string, any>;
   cardnames: string[];

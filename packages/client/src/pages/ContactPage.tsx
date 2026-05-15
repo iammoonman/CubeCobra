@@ -8,7 +8,7 @@ import RenderToRoot from 'components/RenderToRoot';
 import HelpLayout from 'layouts/HelpLayout';
 
 const ContactPage: React.FC = () => (
-  <HelpLayout activeHref="/contact">
+  <HelpLayout activeHref="/help/contact" noTaper>
     <Card>
       <CardHeader>
         <Text semibold xl>

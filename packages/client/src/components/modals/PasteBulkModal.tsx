@@ -11,6 +11,7 @@ import Select from '../base/Select';
 import Text from '../base/Text';
 import TextArea from '../base/TextArea';
 import CSRFForm from '../CSRFForm';
+import { trackEvent } from '../../utils/analytics';
 
 interface PasteBulkModalProps {
   isOpen: boolean;
@@ -77,7 +78,19 @@ const PasteBulkModal: React.FC<PasteBulkModalProps> = ({ isOpen, setOpen, cubeID
         </ModalBody>
         <ModalFooter>
           <Flexbox direction="row" justify="between" gap="2" className="w-full">
-            <Button color="primary" disabled={!bulkText} block onClick={() => formRef.current?.submit()}>
+            <Button
+              color="primary"
+              disabled={!bulkText}
+              block
+              onClick={() => {
+                trackEvent('cube_card_add', {
+                  method: 'bulk_paste',
+                  count: bulkText.split('\n').filter((line) => line.trim()).length,
+                  board: targetBoard,
+                });
+                formRef.current?.submit();
+              }}
+            >
               Add Cards
             </Button>
             <Button color="secondary" onClick={() => setOpen(false)} block>

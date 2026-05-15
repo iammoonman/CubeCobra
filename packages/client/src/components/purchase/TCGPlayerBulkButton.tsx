@@ -5,6 +5,7 @@ import Card from '@utils/datatypes/Card';
 
 import { Flexbox } from 'components/base/Layout';
 import { tcgMassEntryUrl, tcgplayerAffiliate } from 'utils/Affiliate';
+import { trackEvent } from 'utils/analytics';
 
 import Button from '../base/Button';
 import Text from '../base/Text';
@@ -40,7 +41,15 @@ const TCGPlayerBulkButton: React.FC<MassBuyButtonProps> = ({ cards, block = true
 
   return (
     <Form method="POST" action={tcgMassEntryUrl} formData={formData} ref={formRef}>
-      <Button block={block} outline color="accent" onClick={() => formRef.current?.submit()}>
+      <Button
+        block={block}
+        outline
+        color="accent"
+        onClick={() => {
+          trackEvent('affiliate_click', { vendor: 'tcgplayer', scope: 'bulk', cards_value: price });
+          formRef.current?.submit();
+        }}
+      >
         <Flexbox direction="row" justify="between" gap="2" className="w-full">
           <Text semibold>TCGPlayer</Text>
           {price > 0 && <Text semibold>{`$${price.toFixed(2)}`}</Text>}

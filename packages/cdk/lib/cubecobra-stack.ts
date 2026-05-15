@@ -44,6 +44,8 @@ interface CubeCobraStackParams {
   jobs?: Map<string, ScheduledJobProps>;
   captchaSiteKey: string;
   captchaSecretKey: string;
+  gaMeasurementId: string;
+  gaApiSecret: string;
   draftmancerApiKey: string;
   stripeSecretKey: string;
   stripePublicKey: string;
@@ -308,6 +310,8 @@ function createEnvironmentVariables(
     USE_S3: 'true',
     CAPTCHA_SITE_KEY: params.captchaSiteKey,
     CAPTCHA_SECRET_KEY: params.captchaSecretKey,
+    GA_MEASUREMENT_ID: params.gaMeasurementId,
+    GA_API_SECRET: params.gaApiSecret,
     DRAFTMANCER_API_KEY: params.draftmancerApiKey,
     STRIPE_SECRET_KEY: params.stripeSecretKey,
     STRIPE_PUBLIC_KEY: params.stripePublicKey,

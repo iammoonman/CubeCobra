@@ -43,7 +43,7 @@ const createPlaceholderCard = (use: any) => ({
   rarity: '',
   legalities: {},
   oracle_text: '',
-  image_normal: cdnUrl('/content/default_card.png'),
+  image_normal: cdnUrl('/content/loadingcard.png'),
   cmc: 0,
   colors: [],
   color_identity: [],

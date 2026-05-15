@@ -1,5 +1,25 @@
 import carddb, { cardFromId, getOracleForMl, getReasonableCardByOracle } from './carddb';
-import { batchBuild, batchDraft, build, draft as draftbotPick } from './ml';
+import { batchBuildOrThrow, batchDraftOrThrow, buildOrThrow, draft as draftbotPick, draftOrThrow } from './ml';
+
+// Bot deckbuilding leans on the ML service for every pick. A transient 5xx /
+// timeout must not be read as "no more cards" — that silently truncates the
+// deck. Retry instead; the cap bounds a service that is truly down so we fail
+// loudly (the caller falls back to a naive layout) rather than hang forever.
+const ML_MAX_ATTEMPTS = 100;
+
+async function withMlRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= ML_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw new Error(
+    `${label} failed after ${ML_MAX_ATTEMPTS} attempts: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`,
+  );
+}
 
 /*
   drafterState = {
@@ -123,7 +143,7 @@ export const deckbuild = async (
   const poolMlOracles = poolOracles.map((o) => toMl[o] ?? o);
 
   // Phase 1: Use deckbuild model to seed the first 10 cards
-  const buildResult = await build(poolMlOracles);
+  const buildResult = await withMlRetry('deckbuild seed', () => buildOrThrow(poolMlOracles));
 
   const mainboard: string[] = [];
   const remainingPool = [...poolOracles]; // tracks available copies (original oracles)
@@ -185,7 +205,7 @@ export const deckbuild = async (
     const uniqueMlCandidates = [...new Set(candidates.map((o) => toMl[o] ?? o))];
     const mlMainboard = mainboard.map((o) => toMl[o] ?? o);
 
-    const draftResult = await draftbotPick(uniqueMlCandidates, mlMainboard);
+    const draftResult = await withMlRetry('deckbuild pick', () => draftOrThrow(uniqueMlCandidates, mlMainboard));
 
     // Apply duplicate penalty and pick the best, mapping back to originals
     let bestOracle: string | null = null;
@@ -292,9 +312,9 @@ export const batchDeckbuild = async (
   });
 
   // Phase 1: Batch deckbuild model to seed first 10 cards per seat
-  let allBuildResults: Awaited<ReturnType<typeof batchBuild>>;
+  let allBuildResults: Awaited<ReturnType<typeof batchBuildOrThrow>>;
   try {
-    allBuildResults = await batchBuild(allPoolMlOracles);
+    allBuildResults = await withMlRetry('batch deckbuild (phase 1)', () => batchBuildOrThrow(allPoolMlOracles));
   } catch (err) {
     throw new Error(`Batch deckbuild (phase 1) failed: ${err instanceof Error ? err.message : err}`);
   }
@@ -367,9 +387,9 @@ export const batchDeckbuild = async (
 
     if (batchInputs.length === 0) break;
 
-    let batchResults: Awaited<ReturnType<typeof batchDraft>>;
+    let batchResults: Awaited<ReturnType<typeof batchDraftOrThrow>>;
     try {
-      batchResults = await batchDraft(batchInputs);
+      batchResults = await withMlRetry('batch deckbuild (phase 2)', () => batchDraftOrThrow(batchInputs));
     } catch (err) {
       throw new Error(`Batch deckbuild (phase 2) failed: ${err instanceof Error ? err.message : err}`);
     }

@@ -5,6 +5,7 @@ import Card from '@utils/datatypes/Card';
 
 import { Flexbox } from 'components/base/Layout';
 import { cardKingdomBulkLink } from 'utils/Affiliate';
+import { trackEvent } from 'utils/analytics';
 
 import Button from '../base/Button';
 import Text from '../base/Text';
@@ -38,7 +39,15 @@ const CardKingdomBulkButton: React.FC<MassBuyButtonProps> = ({ cards }) => {
 
   return (
     <Form method="POST" action={cardKingdomBulkLink} formData={formData} ref={formRef}>
-      <Button block outline color="accent" onClick={() => formRef.current?.submit()}>
+      <Button
+        block
+        outline
+        color="accent"
+        onClick={() => {
+          trackEvent('affiliate_click', { vendor: 'cardkingdom', scope: 'bulk', cards_value: price });
+          formRef.current?.submit();
+        }}
+      >
         <Flexbox direction="row" justify="between" className="w-full">
           <Text semibold>Card Kingdom</Text>
           {price > 0 && <Text semibold>{`$${price.toFixed(2)}`}</Text>}

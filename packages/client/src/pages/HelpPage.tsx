@@ -18,37 +18,37 @@ interface HelpLink {
 const HELP_LINKS: HelpLink[] = [
   {
     label: 'Filter Syntax',
-    href: '/filters',
+    href: '/help/filters',
     description: 'Reference for the search syntax used throughout cube and card search.',
     Icon: FilterIcon,
   },
   {
     label: 'Markdown Guide',
-    href: '/markdown',
+    href: '/help/markdown',
     description: 'How to format blog posts, comments, and cube descriptions with Markdown.',
     Icon: MarkdownIcon,
   },
   {
     label: 'API Docs',
-    href: '/apidocs',
+    href: '/help/apidocs',
     description: 'Reference for the public-facing Cube Cobra API endpoints.',
     Icon: CodeIcon,
   },
   {
     label: 'Card Updates',
-    href: '/tool/cardupdates',
+    href: '/help/cardupdates',
     description: 'Recent additions and changes to the card database.',
     Icon: SyncIcon,
   },
   {
     label: 'Contact',
-    href: '/contact',
+    href: '/help/contact',
     description: 'Get in touch with the Cube Cobra team for help or feedback.',
     Icon: MailIcon,
   },
   {
     label: 'Donate',
-    href: '/donate',
+    href: '/help/donate',
     description: 'Support Cube Cobra and help keep the site running.',
     Icon: HeartIcon,
   },

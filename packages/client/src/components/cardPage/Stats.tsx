@@ -48,7 +48,7 @@ const CardBreakdownStats: React.FC<CardPageProps> = ({ card }) => {
       <ImageFallback
         className="w-full"
         src={imageUsed}
-        fallbackSrc={cdnUrl('/content/default_card.png')}
+        fallbackSrc={cdnUrl('/content/loadingcard.png')}
         alt={card.name}
       />
       {card.image_flip && (

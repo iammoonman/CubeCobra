@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { userDao } from 'dynamo/daos';
 import { body } from 'express-validator';
 import { csrfProtection, flashValidationErrors, recaptcha } from 'router/middleware';
+import { trackServerEvent } from 'serverutils/analytics';
 import sendEmail from 'serverutils/email';
 import { handleRouteError, redirect, render } from 'serverutils/render';
 import { hasProfanity, validateEmail } from 'serverutils/util';
@@ -98,6 +99,8 @@ export const postHandler = async (req: Request, res: Response) => {
     const salt = await bcrypt.genSalt(10);
     (newUser as any).passwordHash = await bcrypt.hash(password, salt);
     const id = await userDao.createUser(newUser);
+
+    trackServerEvent('sign_up', { method: 'email' }, { clientId: id, logger: req.logger });
 
     if (!skipVerification) {
       await sendEmail(email, 'Please verify your new Cube Cobra account', 'confirm_email', {

@@ -798,13 +798,23 @@ export const getDeckHandler = async (req: Request, res: Response) => {
     }
 
     const baseUrl = getBaseUrl();
+    // Strip card details from the draft pool — the client rehydrates from its
+    // IndexedDB cache via cardDetailsCache.ts. Saves ~700 KB per response on
+    // average ([egress] /cube/deck/:id was ~9% of total prod egress).
+    const stripped = {
+      ...draft,
+      cards: (draft.cards || []).map((c: any) => {
+        const { details: _details, ...rest } = c || {};
+        return rest;
+      }),
+    };
     return render(
       req,
       res,
       'CubeDeckPage',
       {
         cube,
-        draft,
+        draft: stripped,
       },
       {
         title: `Draft deck of ${abbreviate(cube.name)}`,

@@ -1,4 +1,5 @@
 import { CUBE_VISIBILITY } from '@utils/datatypes/Cube';
+import { sanitizeChangelog } from 'dynamo/dao/ChangelogDynamoDao';
 import { collaboratorIndexDao, cubeDao, draftDao, feedDao } from 'dynamo/daos';
 import { getDailyP1P1 } from 'serverutils/dailyP1P1';
 import { getFeaturedCubes } from 'serverutils/featuredQueue';
@@ -6,6 +7,18 @@ import { getCubesSortValues, handleRouteError, redirect, render } from 'serverut
 
 import { Request, Response } from '../../types/express';
 import { csrfProtection, ensureAuth } from '../middleware';
+
+// Feed items embed BlogPost.Changelog which is hydrated with full card
+// details by ChangelogDynamoDao.hydrateChangelog. We strip those before
+// shipping to the client — the React feed component rehydrates from
+// utils/cardDetailsCache. Mutates in place; safe because feedDao items
+// are not reused across requests.
+const stripFeedItemDetails = (item: any): any => {
+  if (item?.document?.Changelog) {
+    sanitizeChangelog(item.document.Changelog);
+  }
+  return item;
+};
 
 // Helper function to filter feed items based on cube privacy
 const filterFeedItemsByPrivacy = (feedItems: any[]): any[] => {
@@ -92,7 +105,7 @@ const getMoreFeedItemsHandler = async (req: Request, res: Response) => {
 
   return res.status(200).send({
     success: 'true',
-    items: filteredItems.map((item: any) => item.document),
+    items: filteredItems.map((item: any) => stripFeedItemDetails(item).document),
     lastKey: result.lastKey,
   });
 };

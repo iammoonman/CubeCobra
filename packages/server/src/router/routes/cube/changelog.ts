@@ -1,4 +1,5 @@
 import Card from '@utils/datatypes/Card';
+import { sanitizeChangelog } from 'dynamo/dao/ChangelogDynamoDao';
 import { changelogDao, cubeDao } from 'dynamo/daos';
 import { cardFromId } from 'serverutils/carddb';
 import { CSV_HEADER, writeCard } from 'serverutils/cube';
@@ -26,6 +27,8 @@ export const changelogDetailHandler = async (req: Request, res: Response) => {
     }
 
     const changelog = await changelogDao.getChangelogWithData(cube.id, changelogId);
+
+    if (changelog?.changelog) sanitizeChangelog(changelog.changelog);
 
     const baseUrl = getBaseUrl();
     return render(
@@ -126,6 +129,11 @@ export const pitCompareHandler = async (req: Request, res: Response) => {
 
     const dateStr = new Date(changelog.date).toLocaleDateString();
     const baseUrl = getBaseUrl();
+    // Strip card details — the client rehydrates via cardDetailsCache.
+    const strippedCards = allCards.map((card: any, index: number) => {
+      const { details: _details, ...rest } = card || {};
+      return { ...rest, index };
+    });
     return render(
       req,
       res,
@@ -136,11 +144,7 @@ export const pitCompareHandler = async (req: Request, res: Response) => {
         onlyA: onlyAIndices,
         onlyB: onlyBIndices,
         both: inBothIndices,
-        cards: allCards.map((card: any, index: number) =>
-          Object.assign(card, {
-            index,
-          }),
-        ),
+        cards: strippedCards,
         pitDate: dateStr,
         changelogId,
       },
@@ -179,16 +183,15 @@ export const pitListHandler = async (req: Request, res: Response) => {
     const currentCards = await cubeDao.getCards(cube.id);
     const pitCards = await reconstructCubeAtChangelog(cube.id, changelog.date, currentCards, changelogDao);
 
-    // Populate card details on each board, keeping boards separate
+    // Don't populate details — the client rehydrates via cardDetailsCache.
+    // Just strip any details that snuck through reconstruction.
     const cards: Record<string, Card[]> = {};
     for (const [boardName, list] of Object.entries(pitCards)) {
       if (boardName !== 'id' && Array.isArray(list)) {
-        for (const card of list as Card[]) {
-          if (!card.details) {
-            card.details = cardFromId(card.cardID);
-          }
-        }
-        cards[boardName] = list as Card[];
+        cards[boardName] = (list as Card[]).map((card: any) => {
+          const { details: _details, ...rest } = card || {};
+          return rest as Card;
+        });
       }
     }
 

@@ -1,3 +1,4 @@
+import { sanitizeChangelog } from 'dynamo/dao/ChangelogDynamoDao';
 import { changelogDao } from 'dynamo/daos';
 
 import { Request, Response } from '../../../types/express';
@@ -6,6 +7,8 @@ export const changelogHandler = async (req: Request, res: Response) => {
   const { changelogId, cubeId } = req.body;
   try {
     const changelog = await changelogDao.getChangelog(cubeId, changelogId);
+
+    if (changelog) sanitizeChangelog(changelog);
 
     return res.status(200).send({
       success: 'true',

@@ -5,6 +5,7 @@ import Card from '@utils/datatypes/Card';
 
 import { Flexbox } from 'components/base/Layout';
 import { getBulkManaPoolLink } from 'utils/Affiliate';
+import { trackEvent } from 'utils/analytics';
 
 import Button from '../base/Button';
 import Text from '../base/Text';
@@ -18,7 +19,14 @@ const ManaPoolBulkButton: React.FC<MassBuyButtonProps> = ({ cards, block = true 
   const price = useMemo(() => cards.reduce((acc, card) => acc + (cardPriceManaPool(card) ?? 0), 0), [cards]);
 
   return (
-    <Button type="link" block={block} outline color="accent" href={getBulkManaPoolLink(cards)}>
+    <Button
+      type="link"
+      block={block}
+      outline
+      color="accent"
+      href={getBulkManaPoolLink(cards)}
+      onClick={() => trackEvent('affiliate_click', { vendor: 'manapool', scope: 'bulk', cards_value: price })}
+    >
       <Flexbox direction="row" justify="between" gap="2" className="w-full">
         <Text semibold>Mana Pool</Text>
         {price > 0 && <Text semibold>{`$${price.toFixed(2)}`}</Text>}

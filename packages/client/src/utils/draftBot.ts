@@ -14,14 +14,16 @@
  * draft simulator path does not pay its download cost unless recommendations
  * are actually requested.
  *
- * Models are fetched through /api/mlmodel/* (a thin S3 proxy) and cached by
- * the browser via normal HTTP caching. TF.js itself is dynamically imported
- * to keep it out of the main bundle.
+ * Models are fetched from the assets CDN under /model/* (mirrored there by
+ * scripts/uploadMLModel.ts during deploy) and cached by the browser via
+ * normal HTTP caching. TF.js itself is dynamically imported to keep it out
+ * of the main bundle.
  */
 
+import { cdnUrl } from '@utils/cdnUrl';
 import { BasicLandInfo } from '@utils/datatypes/SimulationReport';
 
-const MODEL_BASE = '/api/mlmodel';
+const modelUrl = (path: string): string => cdnUrl(`/model/${path}`);
 
 let tf: typeof import('@tensorflow/tfjs') | null = null;
 
@@ -79,8 +81,21 @@ export async function loadDraftBot(onProgress?: (pct: number) => void): Promise<
     // Dynamic import — keeps TF.js (~3 MB) out of the main bundle
     tf = await import('@tensorflow/tfjs');
 
+    // On iOS, WebGL hits the shared memory budget (~1.2 GB) and gets killed
+    // mid-simulation. Switch to the WASM backend which uses system RAM instead.
+    const isIOS =
+      typeof navigator !== 'undefined' &&
+      (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent)));
+    if (isIOS) {
+      const wasmModule = await import('@tensorflow/tfjs-backend-wasm');
+      wasmModule.setWasmPaths('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/');
+      await tf.setBackend('wasm');
+      await tf.ready();
+    }
+
     // Oracle index map (1.6 MB) — maps integer index → oracle_id
-    const mapRes = await fetch(`${MODEL_BASE}/indexToOracleMap.json`);
+    const mapRes = await fetch(modelUrl('indexToOracleMap.json'));
     if (!mapRes.ok) throw new Error(`Failed to load oracle index map: ${mapRes.status}`);
     const oracleMap: Record<string, string> = await mapRes.json();
     numOracles = Object.keys(oracleMap).length;
@@ -93,19 +108,19 @@ export async function loadDraftBot(onProgress?: (pct: number) => void): Promise<
     emitLoadProgress(5);
 
     // Encoder: [N, numOracles] → [N, 128]  (~69 MB weight shards)
-    encoder = await tf.loadGraphModel(`${MODEL_BASE}/encoder/model.json`);
+    encoder = await tf.loadGraphModel(modelUrl('encoder/model.json'));
     emitLoadProgress(40);
 
     // Cube context encoder: [N, numOracles] → [N, 32]  (small model)
-    cubeContextEncoder = await tf.loadGraphModel(`${MODEL_BASE}/cube_context_encoder/model.json`);
+    cubeContextEncoder = await tf.loadGraphModel(modelUrl('cube_context_encoder/model.json'));
     emitLoadProgress(55);
 
     // Draft decoder: [N, 160] → [N, numOracles]  (takes pool[128] ⊕ cube_ctx[32])
-    draftDecoder = await tf.loadGraphModel(`${MODEL_BASE}/draft_decoder/model.json`);
+    draftDecoder = await tf.loadGraphModel(modelUrl('draft_decoder/model.json'));
     emitLoadProgress(80);
 
     // Deck build decoder: [N, 128] → [N, numOracles]  (~69 MB weight shards)
-    deckBuildDecoder = await tf.loadGraphModel(`${MODEL_BASE}/deck_build_decoder/model.json`);
+    deckBuildDecoder = await tf.loadGraphModel(modelUrl('deck_build_decoder/model.json'));
     emitLoadProgress(100);
 
     draftBotLoaded = true;
@@ -137,7 +152,7 @@ export async function loadDraftRecommender(): Promise<void> {
   }
 
   recommendLoadPromise = (async () => {
-    recommendDecoder = await tf!.loadGraphModel(`${MODEL_BASE}/cube_decoder/model.json`);
+    recommendDecoder = await tf!.loadGraphModel(modelUrl('cube_decoder/model.json'));
   })();
   const activePromise = recommendLoadPromise;
 

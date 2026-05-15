@@ -1,6 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
-import Image from '@utils/datatypes/Image';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 
 import AutocompleteInput from 'components/base/AutocompleteInput';
 import Button from 'components/base/Button';
@@ -12,7 +10,7 @@ import CSRFForm from 'components/CSRFForm';
 import MtgImage from 'components/MtgImage';
 import TextEntry from 'components/TextEntry';
 import UserContext from 'contexts/UserContext';
-import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
+import { cardNameMatches, fetchCardImage } from 'utils/cardAutocomplete';
 
 interface UserProfileProps {
   userEmail?: string;
@@ -24,7 +22,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ userEmail }) => {
   const [username, setUsername] = useState(user?.username);
   const [email, setEmail] = useState(userEmail || user?.email);
   const formRef = React.useRef<HTMLFormElement>(null);
-  const [imageDict, setImageDict] = useState<Record<string, Image>>({});
   const [imagename, setImagename] = useState(user?.image?.imageName || '');
   const [image, setImage] = useState(
     user?.image || {
@@ -32,27 +29,15 @@ const UserProfile: React.FC<UserProfileProps> = ({ userEmail }) => {
       uri: user?.image?.uri || '',
     },
   );
-  const imageDictUrl = useCardCatalogUrl('imagedict.json');
-  const fullNamesUrl = useCardCatalogUrl('full_names.json');
 
-  useEffect(() => {
-    if (!imageDictUrl) return;
-    fetch(imageDictUrl)
-      .then((r) => r.json())
-      .then((json) => setImageDict(json));
-  }, [imageDictUrl]);
-
-  const changeImage = useCallback(
-    (img: string) => {
-      setImagename(img);
-
-      console.log(imageDict[img.toLowerCase()]);
-      if (imageDict[img.toLowerCase()]) {
-        setImage(imageDict[img.toLowerCase()]);
+  const changeImage = useCallback((img: string) => {
+    setImagename(img);
+    fetchCardImage(img).then((resolved) => {
+      if (resolved) {
+        setImage(resolved);
       }
-    },
-    [imageDict],
-  );
+    });
+  }, []);
 
   const formData = useMemo(
     () => ({
@@ -83,8 +68,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userEmail }) => {
           </Col>
           <Col xs={6}>
             <AutocompleteInput
-              treeUrl={fullNamesUrl ?? ''}
-              treePath="cardnames"
+              getMatches={cardNameMatches(true)}
               type="text"
               name="remove"
               value={imagename}

@@ -7,6 +7,7 @@ import Draft from '@utils/datatypes/Draft';
 import { getCardDefaultRowColumn, setupPicks } from '@utils/draftutil';
 
 import DisplayContext from 'contexts/DisplayContext';
+import { trackEvent } from 'utils/analytics';
 
 import { CSRFContext } from '../contexts/CSRFContext';
 import Dropdown from './base/Dropdown';
@@ -55,6 +56,9 @@ const DeckbuilderNavbar: React.FC<DeckbuilderNavbarProps> = ({
   const { showCustomImages, toggleShowCustomImages, showDeckBuilderStatsPanel, toggleShowDeckBuilderStatsPanel } =
     useContext(DisplayContext);
   const formRef = useRef<HTMLFormElement>(null);
+  // Tracks whether the user ran autobuild before saving, so the deck_build
+  // event can attribute the save to 'autobuild' vs 'manual'.
+  const autobuildUsedRef = useRef(false);
   const [displayDropdownOpen, setDisplayDropdownOpen] = React.useState(false);
   const [autobuilding, setAutobuilding] = useState(false);
   const seatData = draft.seats[seat];
@@ -129,6 +133,7 @@ const DeckbuilderNavbar: React.FC<DeckbuilderNavbarProps> = ({
 
         setDeck(formattedMainboard);
         setSideboard(formattedSideboard);
+        autobuildUsedRef.current = true;
       } else {
         console.error(json);
       }
@@ -210,7 +215,10 @@ const DeckbuilderNavbar: React.FC<DeckbuilderNavbarProps> = ({
           />
           <Link
             href="#"
-            onClick={() => formRef.current?.submit()}
+            onClick={() => {
+              trackEvent('deck_build', { method: autobuildUsedRef.current ? 'autobuild' : 'manual' });
+              formRef.current?.submit();
+            }}
             className="flex items-center gap-2 !text-link hover:!text-link-active transition-colors font-medium cursor-pointer px-2"
           >
             <PencilIcon size={16} />

@@ -146,7 +146,7 @@ const AddToCubeModal: React.FC<AddToCubeModalProps> = ({
             <ImageFallback
               className="w-full mb-3"
               src={cardImageUrl(card)}
-              fallbackSrc={cdnUrl('/content/default_card.png')}
+              fallbackSrc={cdnUrl('/content/loadingcard.png')}
               alt={cardName(card)}
             />
             <p>You don't appear to have any cubes to add this card to. Are you logged in?</p>
@@ -178,7 +178,7 @@ const AddToCubeModal: React.FC<AddToCubeModalProps> = ({
           <ImageFallback
             className="w-full"
             src={cardImageUrl(card)}
-            fallbackSrc={cdnUrl('/content/default_card.png')}
+            fallbackSrc={cdnUrl('/content/loadingcard.png')}
             alt={cardName(card)}
           />
           <Select

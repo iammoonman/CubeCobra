@@ -4,6 +4,8 @@ import { QuestionIcon } from '@primer/octicons-react';
 import { cardName } from '@utils/cardutil';
 import { BoardType } from '@utils/datatypes/Card';
 
+import { trackEvent } from 'utils/analytics';
+import { cardNameMatches, cubeCardNameMatches } from 'utils/cardAutocomplete';
 import { getCard } from 'utils/cards/getCard';
 
 import { CSRFContext } from '../contexts/CSRFContext';
@@ -73,6 +75,7 @@ const EditCollapse: React.FC<EditCollapseProps> = ({ isOpen }) => {
           { cardID: card.scryfall_id, addedTmsp: new Date().valueOf().toString(), status: cube.defaultStatus },
           boardToEdit,
         );
+        trackEvent('cube_card_add', { method: 'single', count: 1, board: boardToEdit });
         setAddValue('');
 
         if (addRef.current) {
@@ -181,8 +184,7 @@ const EditCollapse: React.FC<EditCollapseProps> = ({ isOpen }) => {
           <Col xs={12} md={3}>
             <Flexbox direction="row" justify="start" gap="1">
               <AutocompleteInput
-                treeUrl={specifyEdition ? '/cube/api/fullnames' : '/cube/api/cardnames'}
-                treePath="cardnames"
+                getMatches={cardNameMatches(specifyEdition)}
                 type="text"
                 innerRef={addRef}
                 name="add"
@@ -205,8 +207,7 @@ const EditCollapse: React.FC<EditCollapseProps> = ({ isOpen }) => {
             <Flexbox direction="row" justify="start" gap="1">
               <AutocompleteInput
                 cubeId={cube.id}
-                treeUrl={`/cube/api/cubecardnames/${cube.id}/${boardToEdit}`}
-                treePath="cardnames"
+                getMatches={cubeCardNameMatches(cube.id, boardToEdit)}
                 type="text"
                 innerRef={removeRef}
                 name="remove"

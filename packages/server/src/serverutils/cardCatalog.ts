@@ -1,10 +1,10 @@
 // import missing types from @utils/datatypes/Catalog
+import { normalizeName } from '@utils/cardutil';
 import { Catalog } from '@utils/datatypes/CardCatalog';
 import json from 'big-json';
 import fs from 'fs';
 
 const catalog: Catalog = {
-  cardtree: {},
   imagedict: {},
   cardimages: {},
   cardnames: [],
@@ -21,13 +21,13 @@ const catalog: Catalog = {
   comboOracleToIndex: {}, // Combo-specific mapping saved with comboTree
 };
 
-// full_names and cardtree are written by the card update job and shipped to the
-// client via the CDN (assets bucket /cards/*), so the server doesn't load them.
-// imagedict and cardimages stay loaded because serverutils/imageutil still
-// reads them.
+// names/full_names back the card-name autocomplete (served via /tool/api/cardnames
+// query endpoint); imagedict/cardimages back image lookups (imageutil +
+// /tool/api/cardimagedata). All are kept in memory so nothing ships to the client.
 export const fileToAttribute: Record<string, keyof Catalog> = {
   'carddict.json': '_carddict',
   'names.json': 'cardnames',
+  'full_names.json': 'full_names',
   'nameToId.json': 'nameToId',
   'oracleToId.json': 'oracleToId',
   'imagedict.json': 'imagedict',
@@ -85,6 +85,16 @@ export async function loadAllFiles(basePath: string = 'private') {
 export async function initializeCardDb(basePath: string = 'private') {
   console.info('Loading carddb...');
   await loadAllFiles(basePath);
+
+  // The autocomplete endpoint needs full_names as a sorted string array. If the
+  // loaded file isn't one (older builds wrote a different shape, or it's absent
+  // in local dev), rebuild it from the in-memory card dict — no dependency on
+  // the card-update job having re-run.
+  if (!Array.isArray(catalog.full_names) || catalog.full_names.length === 0) {
+    catalog.full_names = Array.from(
+      new Set(Object.values(catalog._carddict).map((card) => normalizeName(card.full_name))),
+    ).sort();
+  }
 
   catalog.printedCardList = Object.values(catalog._carddict).filter((card) => !card.digital && !card.isToken);
   catalog.oracleToIndex = Object.fromEntries(
