@@ -677,9 +677,8 @@ async function writeCatalog(basePath = PRIVATE_DIR) {
   await writeFile(path.join(basePath, 'nameToId.json'), catalog.nameToId);
   await writeFile(path.join(basePath, 'oracleToId.json'), catalog.oracleToId);
   await writeFile(path.join(basePath, 'english.json'), catalog.english);
-  // full_names is written as the sorted array (not a trie): the server loads it
-  // into memory for the /tool/api/cardnames autocomplete endpoint. cardtree.json
-  // is no longer produced — card-name matching now runs server-side.
+  // full_names is a sorted string array; the server loads it into memory for
+  // the /tool/api/cardnames autocomplete endpoint (matching runs server-side).
   await writeFile(path.join(basePath, 'full_names.json'), catalog.full_names);
   await writeFile(path.join(basePath, 'imagedict.json'), catalog.imagedict);
   await writeFile(path.join(basePath, 'cardimages.json'), catalog.cardimages);

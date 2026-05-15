@@ -87,7 +87,6 @@ cards/
 ├── metadatadict.json        # Card metadata (ELO, picks, etc.)
 ├── nameToId.json            # Card name → ID lookup
 ├── oracleToId.json          # Oracle ID → card ID lookup
-├── cardtree.json            # Autocomplete search tree
 ├── names.json               # All card names
 ├── full_names.json          # Full card names with set info
 ├── imagedict.json           # Card image URLs
@@ -395,10 +394,6 @@ const cubeInstance = cubeInstances[pick.cubeCards];  // Also oracle indexes`}
                 <li>
                   <code className="bg-bg-active px-1 rounded">nameToId.json</code> and{' '}
                   <code className="bg-bg-active px-1 rounded">oracleToId.json</code> - Lookup tables for finding cards
-                </li>
-                <li>
-                  <code className="bg-bg-active px-1 rounded">cardtree.json</code> - Prefix tree for fast autocomplete
-                  search
                 </li>
                 <li>
                   <code className="bg-bg-active px-1 rounded">comboTree.json</code> - Card combo and synergy

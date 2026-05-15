@@ -27,7 +27,7 @@ const Suggestions: React.FC = () => {
   const [pageCards, setPageCards] = useState<CardType[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [modalCard, setModalCard] = useState<CardType | null>(null);
 
   // When the filter changes, jump back to page 0. We track this in a separate
@@ -41,6 +41,15 @@ const Suggestions: React.FC = () => {
   // the persistent IndexedDB cache (cardDetailsCache), which coalesces any
   // misses into a single /cube/api/getdetailsforcards call.
   useEffect(() => {
+    // Smart Search is filter-driven: with no filter there is nothing to rank,
+    // so don't hit the endpoint at all — just clear any prior results.
+    if (!filterInput || filterInput.trim().length === 0) {
+      setPageCards([]);
+      setHasMore(false);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     const run = async () => {
       setLoading(true);
@@ -97,7 +106,7 @@ const Suggestions: React.FC = () => {
         <Text>
           Smart Search is card search with a context-aware sort. It runs your filter against the full card pool and then
           ranks the results by how well each card fits this specific cube — surfacing relevant additions that a plain
-          alphabetical search would bury. Leave the filter blank to see the recommender's top picks for your cube.
+          alphabetical search would bury. Enter a search filter to begin.
         </Text>
         <FilterCollapse isOpen buttonLabel="Search" />
       </Flexbox>
@@ -113,11 +122,7 @@ const Suggestions: React.FC = () => {
               <ResponsiveDiv baseVisible sm>
                 {`Page ${page + 1}`}
               </ResponsiveDiv>
-              <ResponsiveDiv md>
-                {filterInput
-                  ? `Smart-sorted results for the query: ${filterInput}`
-                  : 'Top recommended additions for this cube'}
-              </ResponsiveDiv>
+              <ResponsiveDiv md>{`Smart-sorted results for the query: ${filterInput}`}</ResponsiveDiv>
             </Text>
             <Paginate count={pageCount} active={page} onClick={setPage} hasMore={hasMore} loading={loading} />
           </Flexbox>
@@ -142,6 +147,18 @@ const Suggestions: React.FC = () => {
             <Paginate count={pageCount} active={page} onClick={setPage} hasMore={hasMore} loading={loading} />
           </Flexbox>
         </Flexbox>
+      ) : !filterInput || filterInput.trim().length === 0 ? (
+          <CardBody>
+            <Flexbox direction="col" gap="3" alignItems="start" justify="start">
+            <Text lg semibold>
+              Enter a search filter
+            </Text>
+            <Text sm className="text-text-secondary">
+              Smart Search ranks the cards matching your filter by how well they fit this cube. Type a filter above to
+              see suggestions.
+            </Text>
+            </Flexbox>
+          </CardBody>
       ) : (
         <Card className="mt-2">
           <CardBody>
@@ -149,7 +166,7 @@ const Suggestions: React.FC = () => {
               No results
             </Text>
             <Text sm className="text-text-secondary">
-              Try a different filter, or clear the filter to see the top recommended additions for this cube.
+              No cards match this filter. Try a different one.
             </Text>
           </CardBody>
         </Card>

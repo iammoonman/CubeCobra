@@ -264,28 +264,6 @@ export function fromBase36(str: string): number {
   return parseInt(str, 36);
 }
 
-export function addWordToTree(obj: any, word: string): void {
-  if (word.length <= 0) {
-    return;
-  }
-  if (word.length === 1) {
-    if (!obj[word.charAt(0)]) {
-      obj[word.charAt(0)] = {
-        $: {},
-      };
-    } else {
-      obj[word.charAt(0)].$ = {};
-    }
-  } else {
-    const character = word.charAt(0);
-    word = word.substr(1, word.length);
-    if (!obj[character]) {
-      obj[character] = {};
-    }
-    addWordToTree(obj[character], word);
-  }
-}
-
 export function binaryInsert(value: any, array: any[], startVal?: number, endVal?: number) {
   const { length } = array;
   const start = typeof startVal !== 'undefined' ? startVal : 0;
@@ -446,12 +424,36 @@ export function shuffle(array: any[], seed?: number) {
   }
   return shuffleSeed.shuffle(array, seed);
 }
-export function turnToTree(arr: string[]) {
-  const res: Record<string, any> = {};
-  arr.forEach((item) => {
-    addWordToTree(res, item);
-  });
-  return res;
+
+// Leftmost index in a sorted (default lexicographic) array whose element is
+// >= value. Standard lower-bound binary search.
+function lowerBound(arr: string[], value: string): number {
+  let lo = 0;
+  let hi = arr.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (arr[mid]! < value) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  return lo;
+}
+
+// Top-`limit` entries of a sorted array that start with `prefix`. Because the
+// array is sorted, every prefix match is contiguous starting at the lower
+// bound of `prefix`, so this is O(log n + limit) instead of an O(n) scan.
+export function prefixMatches(arr: string[], prefix: string, limit: number): string[] {
+  const out: string[] = [];
+  for (let i = lowerBound(arr, prefix); i < arr.length && out.length < limit; i += 1) {
+    const name = arr[i]!;
+    if (!name.startsWith(prefix)) {
+      break;
+    }
+    out.push(name);
+  }
+  return out;
 }
 
 export function arraysEqual(a: any[], b: any[]) {

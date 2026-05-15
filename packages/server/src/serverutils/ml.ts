@@ -90,14 +90,21 @@ export const recommend = async (
   }
 };
 
+// Throwing variant. Callers that need to distinguish a transient ML failure
+// (5xx / timeout) from a genuine empty result — e.g. the deckbuild loop, which
+// retries rather than truncating the deck — use this instead of build().
+export const buildOrThrow = async (oracles: string[]): Promise<{ oracle: string; rating: number }[]> => {
+  const response = await mlServiceRequest<{
+    success: boolean;
+    cards: { oracle: string; rating: number }[];
+  }>('build', { oracles });
+
+  return response.cards;
+};
+
 export const build = async (oracles: string[]): Promise<{ oracle: string; rating: number }[]> => {
   try {
-    const response = await mlServiceRequest<{
-      success: boolean;
-      cards: { oracle: string; rating: number }[];
-    }>('build', { oracles });
-
-    return response.cards;
+    return await buildOrThrow(oracles);
   } catch {
     return [];
   }
@@ -113,50 +120,71 @@ export const cubeContext = async (oracles: string[]): Promise<number[]> => {
   }
 };
 
+// Throwing variant — see buildOrThrow.
+export const draftOrThrow = async (
+  pack: string[],
+  pool: string[],
+  cubeContextEmbedding?: number[],
+): Promise<{ oracle: string; rating: number }[]> => {
+  const body: { pack: string[]; pool: string[]; cubeContext?: number[] } = { pack, pool };
+  if (cubeContextEmbedding) body.cubeContext = cubeContextEmbedding;
+
+  const response = await mlServiceRequest<{
+    success: boolean;
+    cards: { oracle: string; rating: number }[];
+  }>('draft', body);
+
+  return response.cards;
+};
+
 export const draft = async (
   pack: string[],
   pool: string[],
   cubeContextEmbedding?: number[],
 ): Promise<{ oracle: string; rating: number }[]> => {
   try {
-    const body: { pack: string[]; pool: string[]; cubeContext?: number[] } = { pack, pool };
-    if (cubeContextEmbedding) body.cubeContext = cubeContextEmbedding;
-
-    const response = await mlServiceRequest<{
-      success: boolean;
-      cards: { oracle: string; rating: number }[];
-    }>('draft', body);
-
-    return response.cards;
+    return await draftOrThrow(pack, pool, cubeContextEmbedding);
   } catch {
     return [];
   }
+};
+
+// Throwing variant — see buildOrThrow.
+export const batchDraftOrThrow = async (
+  inputs: { pack: string[]; pool: string[]; cubeContext?: number[] }[],
+): Promise<{ oracle: string; rating: number }[][]> => {
+  const response = await mlServiceRequest<{
+    success: boolean;
+    results: { oracle: string; rating: number }[][];
+  }>('batchdraft', { inputs });
+
+  return response.results;
 };
 
 export const batchDraft = async (
   inputs: { pack: string[]; pool: string[]; cubeContext?: number[] }[],
 ): Promise<{ oracle: string; rating: number }[][]> => {
   try {
-    const response = await mlServiceRequest<{
-      success: boolean;
-      results: { oracle: string; rating: number }[][];
-    }>('batchdraft', { inputs });
-
-    return response.results;
+    return await batchDraftOrThrow(inputs);
   } catch {
     console.warn('Failed to batch draft, returning empty arrays');
     return inputs.map(() => []);
   }
 };
 
+// Throwing variant — see buildOrThrow.
+export const batchBuildOrThrow = async (inputs: string[][]): Promise<{ oracle: string; rating: number }[][]> => {
+  const response = await mlServiceRequest<{
+    success: boolean;
+    results: { oracle: string; rating: number }[][];
+  }>('batchbuild', { inputs });
+
+  return response.results;
+};
+
 export const batchBuild = async (inputs: string[][]): Promise<{ oracle: string; rating: number }[][]> => {
   try {
-    const response = await mlServiceRequest<{
-      success: boolean;
-      results: { oracle: string; rating: number }[][];
-    }>('batchbuild', { inputs });
-
-    return response.results;
+    return await batchBuildOrThrow(inputs);
   } catch {
     console.warn('Failed to batch build, returning empty arrays');
     return inputs.map(() => []);

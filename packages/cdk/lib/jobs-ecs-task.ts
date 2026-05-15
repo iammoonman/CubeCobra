@@ -97,7 +97,7 @@ export class JobsEcsTask extends Construct {
     }
 
     // Grant cross-region PutObject on the CloudFront-fronted assets bucket so
-    // the daily card update job can mirror imagedict/full_names/cardtree/cardimages.
+    // the daily card update job can mirror imagedict/full_names/cardimages.
     // Bucket lives in us-east-1 alongside the CloudFront distribution; S3 IAM
     // is global, so a policy from the us-east-2 jobs stack reaches it fine.
     const assetsBucket = props.environmentVariables.CUBECOBRA_ASSETS_BUCKET;

@@ -1,10 +1,10 @@
 // import missing types from @utils/datatypes/Catalog
+import { normalizeName } from '@utils/cardutil';
 import { Catalog } from '@utils/datatypes/CardCatalog';
 import json from 'big-json';
 import fs from 'fs';
 
 const catalog: Catalog = {
-  cardtree: {},
   imagedict: {},
   cardimages: {},
   cardnames: [],
@@ -85,6 +85,16 @@ export async function loadAllFiles(basePath: string = 'private') {
 export async function initializeCardDb(basePath: string = 'private') {
   console.info('Loading carddb...');
   await loadAllFiles(basePath);
+
+  // The autocomplete endpoint needs full_names as a sorted string array. If the
+  // loaded file isn't one (older builds wrote a different shape, or it's absent
+  // in local dev), rebuild it from the in-memory card dict — no dependency on
+  // the card-update job having re-run.
+  if (!Array.isArray(catalog.full_names) || catalog.full_names.length === 0) {
+    catalog.full_names = Array.from(
+      new Set(Object.values(catalog._carddict).map((card) => normalizeName(card.full_name))),
+    ).sort();
+  }
 
   catalog.printedCardList = Object.values(catalog._carddict).filter((card) => !card.digital && !card.isToken);
   catalog.oracleToIndex = Object.fromEntries(

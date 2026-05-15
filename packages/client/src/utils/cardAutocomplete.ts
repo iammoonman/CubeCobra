@@ -1,6 +1,5 @@
 // Fetchers for AutocompleteInput. Each returns the top-N matches for a query
-// from a server endpoint. These replaced the old approach of downloading whole
-// card-name tries (cardtree.json / full_names.json, multi-MB) to the browser.
+// from a server endpoint; the card-name catalog never ships to the browser.
 
 import Image from '@utils/datatypes/Image';
 
@@ -20,7 +19,7 @@ const getJson = async (url: string, signal?: AbortSignal): Promise<any | null> =
 };
 
 // Global card-name autocomplete. `full` switches between bare names and
-// name-with-set strings (the old cardtree.json vs full_names.json split).
+// name-with-set strings (printing-specific suggestions).
 export const cardNameMatches =
   (full: boolean = false): MatchFetcher =>
   async (query, signal) => {

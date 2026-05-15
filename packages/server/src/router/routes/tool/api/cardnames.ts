@@ -1,5 +1,6 @@
 import { normalizeName } from '@utils/cardutil';
 import catalog from 'serverutils/cardCatalog';
+import { prefixMatches } from 'serverutils/util';
 
 import { Request, Response } from '../../../../types/express';
 
@@ -9,10 +10,9 @@ const MIN_QUERY_LENGTH = 3;
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 25;
 
-// Card-name autocomplete. Replaces the old cardtree.json / full_names.json
-// catalog files that were shipped whole to the browser — the matching now runs
-// server-side against the in-memory sorted name arrays and only the top N
-// suggestions cross the wire.
+// Card-name autocomplete. Matching runs server-side against the in-memory
+// sorted name arrays (binary-search prefix scan); only the top N suggestions
+// cross the wire — the catalog itself never ships to the browser.
 export const cardNamesHandler = async (req: Request, res: Response) => {
   try {
     const raw = typeof req.query.q === 'string' ? req.query.q : '';
@@ -32,15 +32,7 @@ export const cardNamesHandler = async (req: Request, res: Response) => {
     }
 
     const source = full ? catalog.full_names : catalog.cardnames;
-    const names: string[] = [];
-    for (const name of source) {
-      if (name.startsWith(query)) {
-        names.push(name);
-        if (names.length >= limit) {
-          break;
-        }
-      }
-    }
+    const names = prefixMatches(source, query, limit);
 
     return res.status(200).send({ success: 'true', names });
   } catch (err) {
