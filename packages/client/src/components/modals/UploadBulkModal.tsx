@@ -11,6 +11,7 @@ import { Modal, ModalBody, ModalFooter, ModalHeader } from '../base/Modal';
 import Select from '../base/Select';
 import Text from '../base/Text';
 import CSRFForm from '../CSRFForm';
+import { trackEvent } from '../../utils/analytics';
 
 interface UploadBulkModalProps {
   isOpen: boolean;
@@ -95,7 +96,13 @@ const UploadBulkModal: React.FC<UploadBulkModalProps> = ({ isOpen, setOpen, cube
         </ModalBody>
         <ModalFooter>
           <Flexbox direction="row" justify="between" gap="2" className="w-full">
-            <Button color="primary" type="submit" disabled={!file} block>
+            <Button
+              color="primary"
+              type="submit"
+              disabled={!file}
+              block
+              onClick={() => trackEvent('cube_card_add', { method: 'bulk_file', board: targetBoard })}
+            >
               Upload
             </Button>
             <Button color="secondary" onClick={() => setOpen(false)} block>

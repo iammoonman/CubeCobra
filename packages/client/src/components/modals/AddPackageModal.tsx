@@ -14,6 +14,7 @@ import Text from 'components/base/Text';
 import { CSRFContext } from 'contexts/CSRFContext';
 import CubeContext from 'contexts/CubeContext';
 import UserContext from 'contexts/UserContext';
+import { trackEvent } from 'utils/analytics';
 
 const LIMIT = 100;
 
@@ -110,6 +111,7 @@ const AddPackageModal: React.FC<AddPackageModalProps> = ({ isOpen, setOpen, boar
         status: cube.defaultStatus,
       }));
     await bulkAddCard(cards, boardToEdit);
+    trackEvent('cube_card_add', { method: 'package', count: cards.length, board: boardToEdit });
     reset();
     setOpen(false);
   }, [selectedPackage, cube.defaultStatus, bulkAddCard, boardToEdit, reset, setOpen]);

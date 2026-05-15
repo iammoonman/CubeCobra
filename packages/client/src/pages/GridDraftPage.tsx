@@ -22,6 +22,7 @@ import { DisplayContextProvider } from '../contexts/DisplayContext';
 import DraftLocation, { addCard, locations, moveCard } from '../drafting/DraftLocation';
 import CubeLayout from '../layouts/CubeLayout';
 import MainLayout from '../layouts/MainLayout';
+import { trackEvent } from '../utils/analytics';
 
 const MUTATIONS = {
   makePick: ({
@@ -152,6 +153,7 @@ const GridDraftPage: React.FC<GridDraftPageProps> = ({ cube, initialDraft, seatN
           headers: { 'Content-Type': 'application/json' },
         });
 
+        trackEvent('draft_complete', { type: 'grid' });
         submitDeckForm.current?.submit?.();
       }
     })();

@@ -28,8 +28,9 @@ import withModal from 'components/WithModal';
 import { CSRFContext } from 'contexts/CSRFContext';
 import CubeContext from 'contexts/CubeContext';
 import DisplayContext, { DisplayContextValue } from 'contexts/DisplayContext';
-import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 import useLocalStorage from 'hooks/useLocalStorage';
+import { trackEvent } from 'utils/analytics';
+import { cardNameMatches, cubeCardNameMatches } from 'utils/cardAutocomplete';
 import { getCard } from 'utils/cards/getCard';
 
 const DEFAULT_BLOG_TITLE = 'Cube Updated – Automatic Post';
@@ -50,8 +51,6 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
   const { setRightSidebarMode, activeView } = useContext(DisplayContext) as DisplayContextValue;
   const addRef = useRef<HTMLInputElement>(null);
   const removeRef = useRef<HTMLInputElement>(null);
-  const fullNamesUrl = useCardCatalogUrl('full_names.json');
-  const cardNamesUrl = useCardCatalogUrl('cardtree.json');
 
   const {
     cube,
@@ -116,6 +115,7 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
           { cardID: card.scryfall_id, addedTmsp: new Date().valueOf().toString(), status: cube.defaultStatus },
           boardToEdit,
         );
+        trackEvent('cube_card_add', { method: 'single', count: 1, board: boardToEdit });
         setAddValue('');
 
         if (addRef.current) {
@@ -259,8 +259,7 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
               Add Card
             </Text>
             <AutocompleteInput
-              treeUrl={(specifyEdition ? fullNamesUrl : cardNamesUrl) ?? ''}
-              treePath="cardnames"
+              getMatches={cardNameMatches(specifyEdition)}
               type="text"
               innerRef={addRef}
               name="add"
@@ -283,8 +282,7 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
             </Text>
             <AutocompleteInput
               cubeId={cube.id}
-              treeUrl={`/cube/api/cubecardnames/${cube.id}/${boardToEdit}`}
-              treePath="cardnames"
+              getMatches={cubeCardNameMatches(cube.id, boardToEdit)}
               type="text"
               innerRef={removeRef}
               name="remove"
@@ -413,8 +411,7 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
               <div className="flex gap-2">
                 <div className="flex-1">
                   <AutocompleteInput
-                    treeUrl={(specifyEdition ? fullNamesUrl : cardNamesUrl) ?? ''}
-                    treePath="cardnames"
+                    getMatches={cardNameMatches(specifyEdition)}
                     type="text"
                     innerRef={addRef}
                     name="add"
@@ -439,8 +436,7 @@ const CubeListEditSidebar: React.FC<CubeListEditSidebarProps> = ({ isHorizontal 
                 <div className="flex-1">
                   <AutocompleteInput
                     cubeId={cube.id}
-                    treeUrl={`/cube/api/cubecardnames/${cube.id}/${boardToEdit}`}
-                    treePath="cardnames"
+                    getMatches={cubeCardNameMatches(cube.id, boardToEdit)}
                     type="text"
                     innerRef={removeRef}
                     name="remove"

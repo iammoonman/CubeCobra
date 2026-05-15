@@ -25,6 +25,8 @@ export interface CubeCobraStackParams {
   jobs?: Map<string, ScheduledJobProps>;
   captchaSiteKey: string;
   captchaSecretKey: string;
+  gaMeasurementId: string;
+  gaApiSecret: string;
   draftmancerApiKey: string;
   stripeSecretKey: string;
   stripePublicKey: string;

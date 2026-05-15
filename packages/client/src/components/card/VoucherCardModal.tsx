@@ -26,7 +26,7 @@ import ImageFallback from 'components/ImageFallback';
 import { CSRFContext } from '../../contexts/CSRFContext';
 import CubeContext from '../../contexts/CubeContext';
 import DisplayContext from '../../contexts/DisplayContext';
-import useCardCatalogUrl from '../../hooks/useCardCatalogUrl';
+import { cardNameMatches } from '../../utils/cardAutocomplete';
 import { getCard } from '../../utils/cards/getCard';
 import AutocompleteInput from '../base/AutocompleteInput';
 import Badge from '../base/Badge';
@@ -82,7 +82,6 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
   const [targetBoard, setTargetBoard] = useState<string>('');
   const [searchValue, setSearchValue] = useState('');
   const [selection, setSelection] = useState<Selection>('voucher');
-  const cardNamesUrl = useCardCatalogUrl('cardtree.json');
   const [subCardVersions, setSubCardVersions] = useState<Record<string, any>>({});
   const [subCardVersionsLoading, setSubCardVersionsLoading] = useState(false);
   const fetchedSubCardsRef = useRef<Set<string>>(new Set());
@@ -305,8 +304,7 @@ const VoucherCardModal: React.FC<VoucherCardModalProps> = ({
                 <Flexbox direction="row" gap="2" alignItems="center">
                   <div className="flex-1">
                     <AutocompleteInput
-                      treeUrl={cardNamesUrl ?? ''}
-                      treePath="cardnames"
+                      getMatches={cardNameMatches(false)}
                       value={searchValue}
                       setValue={setSearchValue}
                       onSubmit={handleAddCard}

@@ -14,33 +14,40 @@ import DynamicFlash from 'components/DynamicFlash';
 import LoadingButton from 'components/LoadingButton';
 import RenderToRoot from 'components/RenderToRoot';
 import { CSRFContext } from 'contexts/CSRFContext';
-import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 import MainLayout from 'layouts/MainLayout';
+import { cardNameMatches, fetchCardImage } from 'utils/cardAutocomplete';
 
 const CreatePackagePage: React.FC = () => {
   const { csrfFetch } = useContext(CSRFContext);
   const [cards, setCards] = useState<string[]>([]);
   const [cardName, setCardName] = useState<string>('');
   const [packageName, setPackageName] = useState<string>('');
-  const [imageDict, setImageDict] = useState<{ [key: string]: { id: string } }>({});
+  // Scryfall id of the card currently named in the input, or null if the name
+  // doesn't resolve. Gates the Add button (replaces the old in-memory imagedict).
+  const [resolvedId, setResolvedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const imageDictUrl = useCardCatalogUrl('imagedict.json');
-  const fullNamesUrl = useCardCatalogUrl('full_names.json');
 
   useEffect(() => {
-    if (!imageDictUrl) return;
-    fetch(imageDictUrl)
-      .then((response) => response.json())
-      .then((json) => setImageDict(json));
-  }, [imageDictUrl]);
+    if (!cardName) {
+      setResolvedId(null);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      const image = await fetchCardImage(cardName, controller.signal);
+      setResolvedId(image?.id ?? null);
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [cardName]);
 
   const submitCard = () => {
-    if (imageDict) {
-      const result = imageDict[cardName.toLowerCase()];
-      if (result) {
-        setCards([...cards, result.id]);
-        setCardName('');
-      }
+    if (resolvedId) {
+      setCards([...cards, resolvedId]);
+      setCardName('');
+      setResolvedId(null);
     }
   };
 
@@ -107,8 +114,7 @@ const CreatePackagePage: React.FC = () => {
                 />
 
                 <AutocompleteInput
-                  treeUrl={fullNamesUrl ?? ''}
-                  treePath="cardnames"
+                  getMatches={cardNameMatches(true)}
                   type="text"
                   className="me-2"
                   name="add-card"
@@ -122,12 +128,7 @@ const CreatePackagePage: React.FC = () => {
                   autoComplete="off"
                   data-lpignore
                 />
-                <Button
-                  color="primary"
-                  block
-                  onClick={submitCard}
-                  disabled={!(imageDict && imageDict[cardName.toLowerCase()])}
-                >
+                <Button color="primary" block onClick={submitCard} disabled={!resolvedId}>
                   Add Card
                 </Button>
 

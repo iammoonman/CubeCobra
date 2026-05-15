@@ -8,6 +8,9 @@ declare global {
     nitroAds: {
       createAd(id: string, options: NitroAdOptions): NitroAd | Promise<NitroAd> | Promise<NitroAd[]> | null;
     };
+    // Injected by the GA4 gtag.js snippet in main.pug. Absent in dev, on beta,
+    // and when blocked by a privacy extension — callers must treat it as optional.
+    gtag?: (command: 'event', eventName: string, params?: Record<string, unknown>) => void;
   }
 }
 

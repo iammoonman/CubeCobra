@@ -3,7 +3,7 @@ import React, { useCallback, useContext, useState } from 'react';
 import { PrintingPreference } from '@utils/datatypes/Card';
 
 import { CSRFContext } from '../../contexts/CSRFContext';
-import useCardCatalogUrl from '../../hooks/useCardCatalogUrl';
+import { cardNameMatches } from '../../utils/cardAutocomplete';
 import Alert, { UncontrolledAlertProps } from '../base/Alert';
 import AutocompleteInput from '../base/AutocompleteInput';
 import Button from '../base/Button';
@@ -33,7 +33,6 @@ const SeedCrystalModal: React.FC<SeedCrystalModalProps> = ({
   defaultCardCount = 180,
 }) => {
   const { csrfFetch } = useContext(CSRFContext);
-  const cardNamesUrl = useCardCatalogUrl('cardtree.json');
   const [cardName, setCardName] = useState('');
   const [cardCount, setCardCount] = useState<string>(String(defaultCardCount));
   const [printingPreference, setPrintingPreference] = useState<string>(
@@ -101,8 +100,7 @@ const SeedCrystalModal: React.FC<SeedCrystalModalProps> = ({
             </label>
             <AutocompleteInput
               id="seedCrystalCard"
-              treeUrl={cardNamesUrl ?? ''}
-              treePath="cardnames"
+              getMatches={cardNameMatches(false)}
               type="text"
               name="seedCrystalCard"
               value={cardName}

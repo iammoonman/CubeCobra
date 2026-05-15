@@ -15,11 +15,11 @@ import RenderToRoot from 'components/RenderToRoot';
 import ChangesContext from 'contexts/ChangesContext';
 import { CSRFContext } from 'contexts/CSRFContext';
 import CubeContext from 'contexts/CubeContext';
-import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 import useLocalStorage from 'hooks/useLocalStorage';
 import useMount from 'hooks/UseMount';
 import CubeLayout from 'layouts/CubeLayout';
 import MainLayout from 'layouts/MainLayout';
+import { cardNameMatches } from 'utils/cardAutocomplete';
 import { getCard } from 'utils/cards/getCard';
 
 const DEFAULT_BLOG_TITLE = 'Cube Updated - Automatic Post';
@@ -34,7 +34,6 @@ interface BulkUploadPageRawProps {
 const BulkUploadPageRaw: React.FC<BulkUploadPageRawProps> = ({ missing, addedByBoard, changelog }) => {
   const { csrfFetch } = useContext(CSRFContext);
   const [addValue, setAddValue] = useState('');
-  const cardNamesUrl = useCardCatalogUrl('cardtree.json');
 
   const { alerts, setAlerts, cube, loading, addCard, commitChanges, clearChanges } = useContext(CubeContext);
   const { changes, setChanges } = useContext(ChangesContext);
@@ -178,8 +177,7 @@ const BulkUploadPageRaw: React.FC<BulkUploadPageRawProps> = ({ missing, addedByB
                   <Row>
                     <Col xs={8}>
                       <AutocompleteInput
-                        treeUrl={cardNamesUrl ?? ''}
-                        treePath="cardnames"
+                        getMatches={cardNameMatches(false)}
                         type="text"
                         innerRef={addInput}
                         value={addValue}

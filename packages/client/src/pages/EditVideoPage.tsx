@@ -13,9 +13,9 @@ import Video from 'components/content/Video';
 import CSRFForm from 'components/CSRFForm';
 import DynamicFlash from 'components/DynamicFlash';
 import RenderToRoot from 'components/RenderToRoot';
-import useCardCatalogUrl from 'hooks/useCardCatalogUrl';
 import useQueryParam from 'hooks/useQueryParam';
 import MainLayout from 'layouts/MainLayout';
+import { fetchCardImage } from 'utils/cardAutocomplete';
 
 interface EditVideoPageProps {
   video: VideoType;
@@ -30,31 +30,26 @@ const EditVideoPage: React.FC<EditVideoPageProps> = ({ video }) => {
   const [imageName, setImageName] = useState(video.imageName);
   const [imageArtist, setImageArtist] = useState(video.image?.artist);
   const [imageUri, setImageUri] = useState(video.image?.uri);
-  const [imageDict, setImageDict] = useState<Record<string, { artist: string; uri: string }>>({});
-  const [loading, setLoading] = useState(true);
   const saveFormRef = React.createRef<HTMLFormElement>();
   const submitFormRef = React.createRef<HTMLFormElement>();
-  const imageDictUrl = useCardCatalogUrl('imagedict.json');
+  // No catalog to wait for anymore — the preview renders immediately.
+  const loading = false;
 
   useEffect(() => {
-    if (!imageDictUrl) return;
-    fetch(imageDictUrl)
-      .then((response) => response.json())
-      .then((json) => {
-        setLoading(false);
-        setImageDict(json);
-      });
-  }, [imageDictUrl]);
-
-  useEffect(() => {
-    if (imageDict && imageName) {
-      const result = imageDict[imageName.toLowerCase()];
-      if (result) {
-        setImageArtist(result.artist);
-        setImageUri(result.uri);
+    if (!imageName) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      const image = await fetchCardImage(imageName, controller.signal);
+      if (image) {
+        setImageArtist(image.artist);
+        setImageUri(image.uri);
       }
-    }
-  }, [imageName, imageDict]);
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [imageName]);
 
   const hasChanges = video.body !== body || video.url !== url || video.title !== title || video.imageName !== imageName;
 

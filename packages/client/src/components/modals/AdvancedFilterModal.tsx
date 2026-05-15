@@ -14,6 +14,7 @@ import Text from 'components/base/Text';
 import { ColorChecksAddon } from 'components/ColorCheck';
 import NumericField from 'components/NumericField';
 import CubeContext from 'contexts/CubeContext';
+import { cubeCardTagMatches } from 'utils/cardAutocomplete';
 
 export interface AdvancedFilterModalProps {
   isOpen: boolean;
@@ -127,8 +128,7 @@ const AdvancedFilterModal: React.FC<AdvancedFilterModalProps> = ({ isOpen, setOp
           {cubeId && (
             <AutocompleteInput
               label="Tag"
-              treeUrl={`/cube/api/cubecardtags/${cubeId}`}
-              treePath="tags"
+              getMatches={cubeCardTagMatches(cubeId)}
               type="text"
               name="tag"
               value={values.tag ?? ''}

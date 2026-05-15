@@ -3,9 +3,13 @@ import { boardNameToKey, getBoardDefinitions } from '@utils/datatypes/Cube';
 import { cubeDao } from 'dynamo/daos';
 import { cardFromId } from 'serverutils/carddb';
 import { isCubeViewable } from 'serverutils/cubefn';
-import { binaryInsert, turnToTree } from 'serverutils/util';
+import { binaryInsert } from 'serverutils/util';
 
 import { Request, Response } from '../../../../types/express';
+
+const MIN_QUERY_LENGTH = 3;
+const DEFAULT_LIMIT = 12;
+const MAX_LIMIT = 25;
 
 export const cubecardnamesHandler = async (req: Request, res: Response) => {
   try {
@@ -48,21 +52,33 @@ export const cubecardnamesHandler = async (req: Request, res: Response) => {
       // Board is valid but empty
       return res.status(200).send({
         success: 'true',
-        cardnames: {},
+        cardnames: [],
       });
     }
 
-    const cardnames: string[] = [];
+    const query = normalizeName(typeof req.query.q === 'string' ? req.query.q : '');
+    if (query.length < MIN_QUERY_LENGTH) {
+      return res.status(200).send({ success: 'true', cardnames: [] });
+    }
 
+    let limit = DEFAULT_LIMIT;
+    if (typeof req.query.limit === 'string') {
+      const parsed = parseInt(req.query.limit, 10);
+      if (!Number.isNaN(parsed)) {
+        limit = Math.min(Math.max(parsed, 1), MAX_LIMIT);
+      }
+    }
+
+    const cardnames: string[] = [];
     for (const card of cubeCards[boardKey]) {
       //Normalize the name like update_cards.ts, as AutoCompleteInput also normalizes what a user types
       binaryInsert(normalizeName(cardFromId(card.cardID).name), cardnames);
     }
 
-    const result = turnToTree(cardnames);
+    const matches = cardnames.filter((name) => name.startsWith(query)).slice(0, limit);
     return res.status(200).send({
       success: 'true',
-      cardnames: result,
+      cardnames: matches,
     });
   } catch (err) {
     const error = err as Error;

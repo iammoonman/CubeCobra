@@ -21,13 +21,13 @@ const catalog: Catalog = {
   comboOracleToIndex: {}, // Combo-specific mapping saved with comboTree
 };
 
-// full_names and cardtree are written by the card update job and shipped to the
-// client via the CDN (assets bucket /cards/*), so the server doesn't load them.
-// imagedict and cardimages stay loaded because serverutils/imageutil still
-// reads them.
+// names/full_names back the card-name autocomplete (served via /tool/api/cardnames
+// query endpoint); imagedict/cardimages back image lookups (imageutil +
+// /tool/api/cardimagedata). All are kept in memory so nothing ships to the client.
 export const fileToAttribute: Record<string, keyof Catalog> = {
   'carddict.json': '_carddict',
   'names.json': 'cardnames',
+  'full_names.json': 'full_names',
   'nameToId.json': 'nameToId',
   'oracleToId.json': 'oracleToId',
   'imagedict.json': 'imagedict',
